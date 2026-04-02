@@ -1,0 +1,94 @@
+package routes
+
+import (
+	"codingplatform/controllers"
+	"codingplatform/middleware"
+
+	"github.com/gin-gonic/gin"
+)
+
+func RegisterRoutes(r *gin.Engine) {
+	// Public routes
+	r.POST("/signup", controllers.Register)
+	r.POST("/login", controllers.Login)
+
+	// Auth routes
+	auth := r.Group("/auth")
+	{
+		auth.POST("/forgot-password", controllers.ForgotPassword)
+		auth.POST("/reset-password", controllers.ResetPassword)
+		auth.GET("/verify-reset-token", controllers.VerifyResetToken)
+		auth.GET("/github/login", controllers.GitHubLogin)
+		auth.GET("/github/callback", controllers.GitHubCallback)
+	}
+
+	// Challenge routes
+	r.GET("/challenges", controllers.GetChallenges)
+	r.GET("/challenges/:id", controllers.GetChallengeByID)
+
+	// Protected routes
+	protected := r.Group("/")
+	protected.Use(middleware.AuthMiddleware())
+	{
+		protected.GET("/dashboard/stats", controllers.GetDashboardStats)
+		protected.GET("/analytics", controllers.GetAnalytics)
+		protected.POST("/dashboard/reset-stats", controllers.ResetStats)
+		protected.GET("/profile", controllers.GetProfile)
+		protected.PUT("/profile", controllers.UpdateProfile)
+		protected.POST("/profile/avatar", controllers.UploadAvatar)
+		protected.POST("/profile/change-password", controllers.ChangePassword)
+
+		// Admin routes
+		admin := protected.Group("/admin")
+		admin.Use(middleware.AdminOnly())
+		{
+			admin.GET("/stats", controllers.GetAdminStats)
+			admin.GET("/users", controllers.GetUsers)
+			admin.GET("/challenges", controllers.GetAdminChallenges)
+			admin.POST("/challenges", controllers.CreateChallenge)
+			admin.PUT("/challenges/:id", controllers.UpdateChallenge)
+			admin.DELETE("/challenges/:id", controllers.DeleteChallenge)
+			admin.GET("/submissions", controllers.GetSubmissionsAudit)
+
+			// Super Admin routes
+			super := admin.Group("/super")
+			super.Use(middleware.SuperAdminOnly())
+			{
+				super.POST("/promote", controllers.PromoteUser)
+				super.POST("/suspend", controllers.SuspendUser)
+				super.POST("/create-admin", controllers.CreateAdmin)
+				super.DELETE("/users/:id", controllers.DeleteUser)
+			}
+		}
+
+		// Duo routes
+		duo := protected.Group("/duo")
+		{
+			duo.GET("/pending-invites", controllers.GetPendingInvites)
+			duo.POST("/invite", controllers.SendDuelInvite)
+			duo.GET("/status/:duel_id", controllers.GetDuelStatus)
+			duo.POST("/accept/:duel_id", controllers.AcceptDuelInvite)
+			duo.POST("/decline/:duel_id", controllers.DeclineDuelInvite)
+			duo.POST("/submit/:duel_id", controllers.SubmitDuel)
+		}
+
+		// Notification routes
+		notifications := protected.Group("/notifications")
+		{
+			notifications.GET("", controllers.GetNotifications)
+			notifications.POST("/mark-read/:id", controllers.MarkNotificationRead)
+		}
+
+		// Submission routes
+		protected.POST("/run", controllers.RunCode)
+		protected.POST("/submit", controllers.SubmitCode)
+	}
+
+	// Leaderboard and Search
+	r.GET("/leaderboard", controllers.GetLeaderboard)
+	r.GET("/search", controllers.GetSearch)
+	r.GET("/search/user/:id", controllers.GetUserByID)
+
+	// News Proxy
+	r.GET("/news-proxy", controllers.ProxyNews)
+}
