@@ -21,19 +21,15 @@ import (
 )
 
 func init() {
-	// Load environment variables before other packages are initialized
 	_ = godotenv.Load()
 }
 
 func main() {
-	// Connect to Database
 	database.ConnectDB()
 	appCtx := context.Background()
 
-	// Start rate limiter cleanup routine
 	services.StartCleanupRoutine()
 
-	// Seed challenges if needed
 	challengesCollection := database.GetCollection("challenges")
 	err := seedChallengesFromJSON(appCtx, challengesCollection)
 	if err != nil {
@@ -42,21 +38,33 @@ func main() {
 		fmt.Println(">>> CHALLENGE_SEED_CHECK_COMPLETE")
 	}
 
-	// Initialize Gin
 	if os.Getenv("GIN_MODE") == "release" {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
 
-	// Configure CORS
+	frontendURL := os.Getenv("FRONTEND_URL")
+	frontendBaseURL := os.Getenv("FRONTEND_BASE_URL")
+
+	allowOrigins := []string{
+		"http://localhost:3000",
+		"http://localhost:3001",
+		"http://127.0.0.1:3000",
+		"http://127.0.0.1:3001",
+	}
+
+	if frontendURL != "" {
+		allowOrigins = append(allowOrigins, frontendURL)
+	}
+
+	if frontendBaseURL != "" && frontendBaseURL != frontendURL {
+		allowOrigins = append(allowOrigins, frontendBaseURL)
+	}
+
 	r.Use(cors.New(cors.Config{
-		AllowOrigins: []string{
-			"http://localhost:3000",
-			"http://localhost:3001",
-			"http://127.0.0.1:3000",
-			"http://127.0.0.1:3001",
-		},
+		AllowOrigins:     allowOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -64,22 +72,19 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Static files
 	r.Static("/uploads", "./uploads")
 
-	// Register Routes
 	routes.RegisterRoutes(r)
 
-	// Start Server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
+
 	fmt.Printf(">>> SERVER_STARTED: Listening on port %s\n", port)
 	r.Run("0.0.0.0:" + port)
 }
 
-// seedChallengesFromJSON seeds initial challenges from a JSON file
 func seedChallengesFromJSON(ctx context.Context, collection *mongo.Collection) error {
 	filePath := "data/challenges.json"
 	data, err := os.ReadFile(filePath)
