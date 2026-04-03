@@ -8,7 +8,7 @@ import Footer from "../components/Footer";
 import GuestGuard from "../components/GuestGuard";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
 type RequestState = "IDLE" | "LOADING" | "SUCCESS" | "ERROR";
 
@@ -30,7 +30,6 @@ function ResetPasswordForm() {
       return;
     }
 
-    // Verify token validity
     const verifyToken = async () => {
       try {
         const res = await fetch(
@@ -38,13 +37,14 @@ function ResetPasswordForm() {
             token
           )}`
         );
+
         if (res.ok) {
           setIsTokenValid(true);
         } else {
           setIsTokenValid(false);
         }
       } catch (err) {
-        console.error(err);
+        console.error("Verify reset token failed:", err);
         setIsTokenValid(false);
       }
     };
@@ -85,7 +85,9 @@ function ResetPasswordForm() {
 
     if (!isPasswordValid) {
       setRequestState("ERROR");
-      setFeedbackMessage("Please meet all password requirements and ensure passwords match.");
+      setFeedbackMessage(
+        "Please meet all password requirements and ensure passwords match."
+      );
       return;
     }
 
@@ -108,10 +110,20 @@ function ResetPasswordForm() {
 
       if (!response.ok) {
         setRequestState("ERROR");
-        let errorMessage = data?.error || "Failed to reset password. Please try again.";
+
+        let errorMessage =
+          data?.error || "Failed to reset password. Please try again.";
+
         if (data?.error === "RATE_LIMITED") {
-          errorMessage = "Too many reset attempts. Please wait a few minutes before trying again.";
+          errorMessage =
+            "Too many reset attempts. Please wait a few minutes before trying again.";
         }
+
+        if (data?.error === "INVALID_OR_EXPIRED_TOKEN") {
+          errorMessage =
+            "This password reset link is invalid or has expired. Please request a new one.";
+        }
+
         setFeedbackMessage(errorMessage);
         return;
       }
@@ -119,7 +131,6 @@ function ResetPasswordForm() {
       setRequestState("SUCCESS");
       setFeedbackMessage("Your password has been successfully reset.");
 
-      // Redirect to login after 2 seconds
       setTimeout(() => {
         router.push("/login?message=Password reset successfully. Please log in.");
       }, 2000);
@@ -142,9 +153,12 @@ function ResetPasswordForm() {
     return (
       <div className="w-full max-w-md text-center">
         <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-6">
-          <h2 className="text-lg font-semibold text-red-300">Invalid or Expired Link</h2>
+          <h2 className="text-lg font-semibold text-red-300">
+            Invalid or Expired Link
+          </h2>
           <p className="mt-2 text-sm leading-6 text-red-200/80">
-            The password reset link is invalid or has expired. Please request a new one.
+            The password reset link is invalid or has expired. Please request a
+            new one.
           </p>
         </div>
         <Link
@@ -179,7 +193,9 @@ function ResetPasswordForm() {
               {feedbackMessage}
             </p>
           </div>
-          <p className="text-center text-sm text-white/50">Redirecting to login...</p>
+          <p className="text-center text-sm text-white/50">
+            Redirecting to login...
+          </p>
         </div>
       ) : (
         <form onSubmit={handleReset} className="space-y-4">
@@ -202,7 +218,7 @@ function ResetPasswordForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-white/40 hover:text-white/80 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-white/40 transition-colors hover:text-white/80"
               >
                 {showPassword ? "Hide" : "Show"}
               </button>
