@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Header from "./../app/components/dashboard/header";
+// import Header from "./../app/components/dashboard/header";
 
 export default function NotFound() {
   const router = useRouter();
 
   return (
     <div className="min-h-screen bg-[#0D0F12] text-white flex flex-col">
-      <Header />
+      {/* <Header /> */}
       
       <main className="flex-1 flex items-center justify-center px-4 py-32">
         <div className="text-center max-w-lg mx-auto">
