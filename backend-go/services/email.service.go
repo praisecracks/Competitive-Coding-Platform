@@ -59,7 +59,7 @@ type ResendEmailResponse struct {
 	ID string `json:"id"`
 }
 
-// SendPasswordResetEmail sends a password reset email to the user using Resend API
+// SendPasswordResetEmail sends a password reset email to the user
 func SendPasswordResetEmail(toEmail, resetLink string) error {
 	config := GetEmailConfig()
 
@@ -77,8 +77,7 @@ func SendPasswordResetEmail(toEmail, resetLink string) error {
 
 	fromEmail := strings.TrimSpace(config.FromEmail)
 	if fromEmail == "" || !isValidSender(fromEmail) {
-		fmt.Printf(">>> EMAIL SERVICE WARNING: Invalid sender '%s'. Falling back to 'onboarding@resend.dev'\n", fromEmail)
-		fromEmail = "onboarding@resend.dev"
+		return fmt.Errorf("invalid FROM_EMAIL configuration")
 	}
 
 	subject := "Reset your CODEMASTER password"
@@ -240,7 +239,7 @@ The CODEMASTER Team`, resetLink)
 			return fmt.Errorf("failed to read email response: %w", err)
 		}
 
-		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusCreated {
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			fmt.Printf(">>> EMAIL SEND FAILED (Resend): Status %d, Response: %s\n", resp.StatusCode, string(respBody))
 			return fmt.Errorf("email API returned status %d: %s", resp.StatusCode, string(respBody))
 		}
