@@ -41,8 +41,8 @@ func GetEmailConfig() EmailConfig {
 // IsEmailConfigured checks if any email method is properly configured
 func IsEmailConfigured() bool {
 	config := GetEmailConfig()
-	// Configured if either Resend OR SMTP is set up
-	return config.ResendAPIKey != "" || (config.SMTPHost != "" && config.SMTPUser != "" && config.SMTPPass != "")
+	return config.ResendAPIKey != "" ||
+		(config.SMTPHost != "" && config.SMTPUser != "" && config.SMTPPass != "")
 }
 
 // ResendEmailRequest represents the request body for Resend API
@@ -59,37 +59,32 @@ type ResendEmailResponse struct {
 	ID string `json:"id"`
 }
 
-// SendPasswordResetEmail sends a password reset email to the user using Resend API
+// SendPasswordResetEmail sends a password reset email to the user
 func SendPasswordResetEmail(toEmail, resetLink string) error {
 	config := GetEmailConfig()
 
 	fmt.Printf(">>> EMAIL SERVICE: Attempting to send password reset email to %s\n", toEmail)
 
 	if !IsEmailConfigured() {
-		// Fallback to mock email if not configured
-		fmt.Printf(">>> MOCK EMAIL (Resend API not configured):\nTo: %s\nSubject: CODEMASTER Password Reset\nBody: Click here to reset your password: %s\n\n", toEmail, resetLink)
+		fmt.Printf(">>> MOCK EMAIL (email service not configured):\nTo: %s\nSubject: CODEMASTER Password Reset\nBody: Click here to reset your password: %s\n\n", toEmail, resetLink)
 		return nil
 	}
 
-	fromName := config.FromName
+	fromName := strings.TrimSpace(config.FromName)
 	if fromName == "" {
 		fromName = "CODEMASTER"
 	}
 
-	fromEmail := config.FromEmail
-	// PRODUCTION TIP: Resend requires a verified domain to send emails in production.
-	// If you're using a free tier without a domain, you MUST use 'onboarding@resend.dev'.
+	fromEmail := strings.TrimSpace(config.FromEmail)
 	if fromEmail == "" || !isValidSender(fromEmail) {
-		fmt.Printf(">>> EMAIL SERVICE WARNING: Invalid sender '%s'. Falling back to 'onboarding@resend.dev'\n", fromEmail)
-		fromEmail = "onboarding@resend.dev"
+		return fmt.Errorf("invalid FROM_EMAIL configuration")
 	}
 
-	subject := "Reset your CODEMASTER password"
+	subject := "CODEMASTER password reset request"
 
-	// Plain text fallback
 	textBody := fmt.Sprintf(`Hello,
 
-You requested a password reset for your CODEMASTER account.
+We received a request to reset the password for your CODEMASTER account.
 
 Click the link below to reset your password:
 %s
@@ -101,10 +96,13 @@ If you did not request this reset, please ignore this email.
 Best regards,
 The CODEMASTER Team`, resetLink)
 
-	// Professional HTML template
-	logoHTML := fmt.Sprintf(`<a href="#" class="logo">%s</a>`, fromName)
-	if config.AppLogoURL != "" {
-		logoHTML = fmt.Sprintf(`<img src="%s" alt="%s" height="40" style="display: block; margin: 0 auto;">`, config.AppLogoURL, fromName)
+	logoHTML := fmt.Sprintf(`<a href="https://codemasterx.com.ng" class="logo">%s</a>`, fromName)
+	if strings.TrimSpace(config.AppLogoURL) != "" {
+		logoHTML = fmt.Sprintf(
+			`<img src="%s" alt="%s" style="display:block;margin:0 auto;max-width:140px;height:auto;">`,
+			config.AppLogoURL,
+			fromName,
+		)
 	}
 
 	htmlBody := fmt.Sprintf(`
@@ -123,9 +121,9 @@ The CODEMASTER Team`, resetLink)
         h1 { font-size: 22px; font-weight: 700; color: #111; margin-bottom: 16px; }
         p { margin-bottom: 16px; color: #4b5563; }
         .button-container { text-align: center; margin: 32px 0; }
-        .button { background-color: #000; color: #fff !important; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block; transition: background-color 0.2s; }
+        .button { background-color: #000; color: #fff !important; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block; }
         .footer { font-size: 13px; color: #9ca3af; text-align: center; border-top: 1px solid #f1f1f1; padding-top: 24px; }
-        .link { color: #d946ef; text-decoration: none; }
+        .link { color: #d946ef; text-decoration: none; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -159,26 +157,24 @@ The CODEMASTER Team`, resetLink)
 
 	htmlBody = fmt.Sprintf(htmlBody, resetLink, resetLink, resetLink)
 
-	// Prepare final sender identity
 	from := fmt.Sprintf("%s <%s>", fromName, fromEmail)
 
-	// --- OPTION 1: SMTP (Gmail/Personal Email) ---
+	// OPTION 1: SMTP
 	if config.SMTPHost != "" && config.SMTPUser != "" && config.SMTPPass != "" {
 		fmt.Printf(">>> EMAIL SERVICE: Using SMTP (%s)\n", config.SMTPHost)
 
-		// Gmail SMTP often requires 587. Default to 587 if not set.
-		port := config.SMTPPort
+		port := strings.TrimSpace(config.SMTPPort)
 		if port == "" {
 			port = "587"
 		}
 
-		// SMTP Headers
-		header := make(map[string]string)
-		header["From"] = from
-		header["To"] = toEmail
-		header["Subject"] = subject
-		header["MIME-Version"] = "1.0"
-		header["Content-Type"] = "text/html; charset=\"utf-8\""
+		header := map[string]string{
+			"From":         from,
+			"To":           toEmail,
+			"Subject":      subject,
+			"MIME-Version": "1.0",
+			"Content-Type": `text/html; charset="utf-8"`,
+		}
 
 		message := ""
 		for k, v := range header {
@@ -188,7 +184,6 @@ The CODEMASTER Team`, resetLink)
 
 		auth := smtp.PlainAuth("", config.SMTPUser, config.SMTPPass, config.SMTPHost)
 		err := smtp.SendMail(config.SMTPHost+":"+port, auth, config.SMTPUser, []string{toEmail}, []byte(message))
-
 		if err != nil {
 			fmt.Printf(">>> SMTP SEND FAILED: %v\n", err)
 			return fmt.Errorf("failed to send email via SMTP: %w", err)
@@ -198,9 +193,10 @@ The CODEMASTER Team`, resetLink)
 		return nil
 	}
 
-	// --- OPTION 2: Resend API (SaaS Default) ---
+	// OPTION 2: Resend API
 	if config.ResendAPIKey != "" {
 		fmt.Printf(">>> EMAIL SERVICE: Using Resend API\n")
+
 		reqBody := ResendEmailRequest{
 			From:    from,
 			To:      []string{toEmail},
@@ -215,7 +211,6 @@ The CODEMASTER Team`, resetLink)
 			return fmt.Errorf("failed to prepare email request: %w", err)
 		}
 
-		// Send request to Resend API
 		req, err := http.NewRequest("POST", "https://api.resend.com/emails", bytes.NewBuffer(jsonData))
 		if err != nil {
 			fmt.Printf(">>> EMAIL SERVICE: Failed to create request: %v\n", err)
@@ -228,6 +223,7 @@ The CODEMASTER Team`, resetLink)
 		client := &http.Client{
 			Timeout: 15 * time.Second,
 		}
+
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Printf(">>> EMAIL SEND FAILED (Resend): %v\n", err)
@@ -235,20 +231,17 @@ The CODEMASTER Team`, resetLink)
 		}
 		defer resp.Body.Close()
 
-		// Read response body
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Printf(">>> EMAIL SERVICE: Failed to read response: %v\n", err)
 			return fmt.Errorf("failed to read email response: %w", err)
 		}
 
-		// Check response status
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			fmt.Printf(">>> EMAIL SEND FAILED (Resend): Status %d, Response: %s\n", resp.StatusCode, string(respBody))
 			return fmt.Errorf("email API returned status %d: %s", resp.StatusCode, string(respBody))
 		}
 
-		// Parse response
 		var resendResp ResendEmailResponse
 		if err := json.Unmarshal(respBody, &resendResp); err != nil {
 			fmt.Printf(">>> EMAIL SERVICE: Failed to parse response: %v\n", err)
@@ -263,18 +256,17 @@ The CODEMASTER Team`, resetLink)
 }
 
 // isValidSender checks if the sender email is valid for Resend.
-// In a real production app, this would check if the domain is verified.
 func isValidSender(email string) bool {
 	if email == "" {
 		return false
 	}
-	// Resend's free tier restricted domains (cannot send FROM these without verification)
-	// This is a simple check; in production, you'd verify against your own domain.
+
 	if strings.HasSuffix(email, "@gmail.com") ||
 		strings.HasSuffix(email, "@yahoo.com") ||
 		strings.HasSuffix(email, "@hotmail.com") ||
 		strings.HasSuffix(email, "@outlook.com") {
 		return false
 	}
+
 	return true
 }
