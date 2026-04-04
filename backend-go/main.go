@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"codingplatform/database"
@@ -38,30 +39,17 @@ func main() {
 		fmt.Println(">>> CHALLENGE_SEED_CHECK_COMPLETE")
 	}
 
-	if os.Getenv("GIN_MODE") == "release" {
+	environment := strings.ToLower(strings.TrimSpace(os.Getenv("ENVIRONMENT")))
+	if environment == "production" || os.Getenv("GIN_MODE") == "release" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
 
-	frontendURL := os.Getenv("FRONTEND_URL")
-	frontendBaseURL := os.Getenv("FRONTEND_BASE_URL")
+	allowOrigins := buildAllowedOrigins()
 
-	allowOrigins := []string{
-		"http://localhost:3000",
-		"http://localhost:3001",
-		"http://127.0.0.1:3000",
-		"http://127.0.0.1:3001",
-	}
-
-	if frontendURL != "" {
-		allowOrigins = append(allowOrigins, frontendURL)
-	}
-
-	if frontendBaseURL != "" && frontendBaseURL != frontendURL {
-		allowOrigins = append(allowOrigins, frontendBaseURL)
-	}
+	fmt.Println(">>> ALLOWED_CORS_ORIGINS:", allowOrigins)
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     allowOrigins,
@@ -76,13 +64,64 @@ func main() {
 
 	routes.RegisterRoutes(r)
 
-	port := os.Getenv("PORT")
+	port := strings.TrimSpace(os.Getenv("PORT"))
 	if port == "" {
 		port = "8080"
 	}
 
 	fmt.Printf(">>> SERVER_STARTED: Listening on port %s\n", port)
-	r.Run("0.0.0.0:" + port)
+
+	if err := r.Run("0.0.0.0:" + port); err != nil {
+		fmt.Println(">>> SERVER_START_ERROR:", err)
+	}
+}
+
+func buildAllowedOrigins() []string {
+	originMap := map[string]bool{}
+
+	defaultOrigins := []string{
+		"http://localhost:3000",
+		"http://localhost:3001",
+		"http://127.0.0.1:3000",
+		"http://127.0.0.1:3001",
+		"https://codemasterx.com.ng",
+		"https://www.codemasterx.com.ng",
+		"https://codemasterx.netlify.app",
+	}
+
+	for _, origin := range defaultOrigins {
+		origin = strings.TrimSpace(origin)
+		if origin != "" {
+			originMap[origin] = true
+		}
+	}
+
+	envOrigins := []string{
+		os.Getenv("FRONTEND_URL"),
+		os.Getenv("FRONTEND_BASE_URL"),
+		os.Getenv("FRONTEND_FALLBACK_URL"),
+	}
+
+	for _, origin := range envOrigins {
+		origin = strings.TrimSpace(origin)
+		if origin != "" {
+			originMap[origin] = true
+
+			if strings.HasPrefix(origin, "https://") {
+				host := strings.TrimPrefix(origin, "https://")
+				if !strings.HasPrefix(host, "www.") {
+					originMap["https://www."+host] = true
+				}
+			}
+		}
+	}
+
+	allowOrigins := make([]string, 0, len(originMap))
+	for origin := range originMap {
+		allowOrigins = append(allowOrigins, origin)
+	}
+
+	return allowOrigins
 }
 
 func seedChallengesFromJSON(ctx context.Context, collection *mongo.Collection) error {

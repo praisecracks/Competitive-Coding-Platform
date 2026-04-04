@@ -358,11 +358,11 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <h1 className="bg-gradient-to-b from-white via-white to-white/55 bg-clip-text text-4xl font-semibold tracking-tight text-transparent sm:text-5xl">
+            {/* <h1 className="bg-gradient-to-b from-white via-white to-white/55 bg-clip-text text-4xl font-semibold tracking-tight text-transparent sm:text-5xl">
               Set-up your account
-            </h1>
+            </h1> */}
             <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-white/50 sm:text-base">
-              Clean access to your coding workspace.
+             // Set-up your account <br /> Clean access to your coding workspace.
             </p>
           </div>
 
