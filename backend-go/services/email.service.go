@@ -62,7 +62,7 @@ type ResendEmailResponse struct {
 // SendPasswordResetEmail sends a password reset email to the user
 func SendPasswordResetEmail(toEmail, resetLink string) error {
 	config := GetEmailConfig()
-
+	fmt.Printf(">>> APP_LOGO_URL: %s\n", config.AppLogoURL)
 	fmt.Printf(">>> EMAIL SERVICE: Attempting to send password reset email to %s\n", toEmail)
 
 	if !IsEmailConfigured() {
@@ -84,26 +84,22 @@ func SendPasswordResetEmail(toEmail, resetLink string) error {
 
 	textBody := fmt.Sprintf(`Hello,
 
-We received a request to reset the password for your CODEMASTER account.
+You requested a password reset for your CODEMASTER account.
 
-Reset your password using the secure link below:
+Click the link below to reset your password:
 %s
 
-This link expires in 1 hour.
+This link will expire in 1 hour.
 
-If you did not request a password reset, you can safely ignore this email.
+If you did not request this reset, please ignore this email.
 
 Best regards,
 The CODEMASTER Team`, resetLink)
 
-	logoHTML := fmt.Sprintf(
-		`<div style="font-size:30px;font-weight:800;letter-spacing:-0.03em;color:#2563eb;">%s</div>`,
-		fromName,
-	)
-
+	logoHTML := fmt.Sprintf(`<a href="https://codemasterx.com.ng" class="logo">%s</a>`, fromName)
 	if strings.TrimSpace(config.AppLogoURL) != "" {
 		logoHTML = fmt.Sprintf(
-			`<img src="%s" alt="%s" style="display:block;margin:0 auto;max-width:180px;height:auto;">`,
+			`<img src="%s" alt="%s" style="display:block;margin:0 auto;max-width:140px;height:auto;">`,
 			config.AppLogoURL,
 			fromName,
 		)
@@ -111,71 +107,50 @@ The CODEMASTER Team`, resetLink)
 
 	htmlBody := fmt.Sprintf(`
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Reset your password</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset your password</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9f9f9; }
+        .container { max-width: 600px; margin: 40px auto; padding: 40px; background: #ffffff; border-radius: 12px; border: 1px solid #e1e4e8; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .header { margin-bottom: 32px; text-align: center; }
+        .logo { font-size: 24px; font-weight: 800; color: #d946ef; letter-spacing: -0.02em; text-decoration: none; }
+        .content { margin-bottom: 32px; }
+        h1 { font-size: 22px; font-weight: 700; color: #111; margin-bottom: 16px; }
+        p { margin-bottom: 16px; color: #4b5563; }
+        .button-container { text-align: center; margin: 32px 0; }
+        .button { background-color: #000; color: #fff !important; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block; }
+        .footer { font-size: 13px; color: #9ca3af; text-align: center; border-top: 1px solid #f1f1f1; padding-top: 24px; }
+        .link { color: #d946ef; text-decoration: none; word-break: break-all; }
+    </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111827;">
-	<div style="width:100%%;background-color:#f4f7fb;padding:32px 16px;">
-		<div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,0.08);">
-			
-			<div style="background:linear-gradient(135deg,#020617 0%%,#111827 100%%);padding:28px 24px;text-align:center;">
-				%s
-			</div>
+<body>
+    <div class="container">
+        <div class="header">
+            %s
+        </div>
+        <div class="content">
+            <h1>Reset your password</h1>
+            <p>Hello,</p>
+            <p>We received a request to reset the password for your CODEMASTER account. Click the button below to proceed:</p>
 
-			<div style="padding:40px 32px 24px 32px;">
-				<div style="display:inline-block;padding:6px 12px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:18px;">
-					Security Notice
-				</div>
+            <div class="button-container">
+                <a href="%%s" class="button">Reset Password</a>
+            </div>
 
-				<h1 style="margin:0 0 14px 0;font-size:30px;line-height:1.2;font-weight:800;color:#111827;">
-					Reset your password
-				</h1>
+            <p>If you prefer, you can also copy and paste this link into your browser:</p>
+            <p><a href="%%s" class="link">%%s</a></p>
 
-				<p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:#4b5563;">
-					Hello,
-				</p>
-
-				<p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:#4b5563;">
-					We received a request to reset the password for your CODEMASTER account. Click the secure button below to continue.
-				</p>
-
-				<div style="margin:32px 0;text-align:center;">
-					<a href="%%s" style="display:inline-block;background:linear-gradient(90deg,#111827 0%%,#000000 100%%);color:#ffffff !important;text-decoration:none;padding:15px 28px;border-radius:12px;font-size:16px;font-weight:700;letter-spacing:0.01em;box-shadow:0 8px 20px rgba(0,0,0,0.15);">
-						Reset Password
-					</a>
-				</div>
-
-				<div style="margin:0 0 18px 0;padding:16px 18px;border-radius:14px;background:#f9fafb;border:1px solid #e5e7eb;">
-					<p style="margin:0 0 8px 0;font-size:13px;font-weight:700;color:#111827;text-transform:uppercase;letter-spacing:0.04em;">
-						Direct link
-					</p>
-					<p style="margin:0;font-size:14px;line-height:1.7;word-break:break-all;">
-						<a href="%%s" style="color:#2563eb;text-decoration:none;">%%s</a>
-					</p>
-				</div>
-
-				<p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#4b5563;">
-					This password reset link will expire in <strong>1 hour</strong> for your security.
-				</p>
-
-				<p style="margin:0;font-size:15px;line-height:1.7;color:#4b5563;">
-					If you did not request this, you can safely ignore this email. Your account will remain secure.
-				</p>
-			</div>
-
-			<div style="padding:24px 32px 32px 32px;border-top:1px solid #f3f4f6;text-align:center;background:#ffffff;">
-				<p style="margin:0 0 8px 0;font-size:13px;color:#9ca3af;">
-					© 2026 CODEMASTER. All rights reserved.
-				</p>
-				<p style="margin:0;font-size:13px;color:#9ca3af;">
-					Train smarter. Solve like a pro.
-				</p>
-			</div>
-		</div>
-	</div>
+            <p><strong>Note:</strong> This link will expire in 1 hour for security reasons.</p>
+            <p>If you didn't request this, you can safely ignore this email.</p>
+        </div>
+        <div class="footer">
+            &copy; 2026 CODEMASTER. All rights reserved.<br>
+            Level up your coding skills.
+        </div>
+    </div>
 </body>
 </html>
 `, logoHTML)
