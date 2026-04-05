@@ -5,7 +5,12 @@ const isProduction = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  allowedDevOrigins: ["127.0.0.1", "localhost", "10.44.100.174"],
+  allowedDevOrigins: [
+    "127.0.0.1",
+    "localhost",
+    "10.16.186.174",
+    "10.185.182.174",
+  ],
   outputFileTracingRoot: path.join(__dirname),
 
   async rewrites() {

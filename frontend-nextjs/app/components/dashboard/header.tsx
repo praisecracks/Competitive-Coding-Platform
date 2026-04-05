@@ -140,7 +140,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <div className="flex h-16 items-center justify-between gap-4">
           <div className="flex items-center">
             {/* Sidebar Toggle Button Area - Aligned with Sidebar Icons */}
-            <div className="flex w-[84px] items-center justify-center lg:flex">
+            <div className="flex w-10 sm:w-12 items-center justify-center lg:flex">
               <button
                 onClick={onMenuClick}
                 className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
@@ -164,7 +164,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </div>
 
             {/* Logo and other left items */}
-            <div className="flex items-center gap-4 pl-2">
+            <div className="flex items-center gap-1 pl-1">
               <div
                 className="cursor-pointer"
                 onClick={() => router.push("/dashboard")}
@@ -190,7 +190,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <SearchBar />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Notifications />
 
             <div className="relative" data-user-menu-wrapper>

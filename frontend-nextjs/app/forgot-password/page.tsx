@@ -6,8 +6,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import GuestGuard from "../components/GuestGuard";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 type RequestState = "IDLE" | "LOADING" | "SUCCESS" | "ERROR";
 
@@ -66,6 +65,12 @@ export default function ForgotPasswordPage() {
       return;
     }
 
+    if (!API_BASE_URL) {
+      setRequestState("ERROR");
+      setFeedbackMessage("Backend URL is not configured. Please check your environment settings.");
+      return;
+    }
+
     setRequestState("LOADING");
     setFeedbackMessage("");
 
@@ -80,9 +85,7 @@ export default function ForgotPasswordPage() {
         }),
       });
 
-      const data: ForgotPasswordResponse | null = await response
-        .json()
-        .catch(() => null);
+      const data: ForgotPasswordResponse | null = await response.json().catch(() => null);
 
       if (!response.ok) {
         setRequestState("ERROR");
@@ -98,9 +101,7 @@ export default function ForgotPasswordPage() {
     } catch (error) {
       console.error("Forgot password request failed:", error);
       setRequestState("ERROR");
-      setFeedbackMessage(
-        "Unable to connect to the server. Please try again."
-      );
+      setFeedbackMessage("Unable to connect to the server. Please try again.");
     }
   };
 

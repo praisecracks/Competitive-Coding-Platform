@@ -42,6 +42,63 @@ func getUserID(c *gin.Context) (primitive.ObjectID, bool) {
 	return objID, true
 }
 
+func buildBackendBaseURL(c *gin.Context) string {
+	envURL := strings.TrimSpace(os.Getenv("BACKEND_URL"))
+	if envURL != "" {
+		return strings.TrimRight(envURL, "/")
+	}
+
+	scheme := "http"
+	if proto := strings.TrimSpace(c.GetHeader("X-Forwarded-Proto")); proto != "" {
+		scheme = proto
+	} else if c.Request.TLS != nil {
+		scheme = "https"
+	}
+
+	host := strings.TrimSpace(c.GetHeader("X-Forwarded-Host"))
+	if host == "" {
+		host = strings.TrimSpace(c.Request.Host)
+	}
+
+	if host == "" {
+		return "http://127.0.0.1:8080"
+	}
+
+	return fmt.Sprintf("%s://%s", scheme, host)
+}
+
+func normalizeStoredFilePath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+
+	path = strings.ReplaceAll(path, "\\", "/")
+
+	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
+		return path
+	}
+
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	return path
+}
+
+func resolvePublicFileURL(c *gin.Context, storedPath string) string {
+	storedPath = normalizeStoredFilePath(storedPath)
+	if storedPath == "" {
+		return ""
+	}
+
+	if strings.HasPrefix(storedPath, "http://") || strings.HasPrefix(storedPath, "https://") {
+		return storedPath
+	}
+
+	return buildBackendBaseURL(c) + storedPath
+}
+
 // GetProfile returns the current user's profile
 func GetProfile(c *gin.Context) {
 	userID, ok := getUserID(c)
@@ -64,12 +121,13 @@ func GetProfile(c *gin.Context) {
 
 	// Fetch actual stats
 	solvedCount, currentStreak := getUserProfileStats(ctx, submissionsCollection, userID.Hex())
+	resolvedProfilePic := resolvePublicFileURL(c, user.ProfilePic)
 
 	c.JSON(http.StatusOK, gin.H{
 		"id":            user.ID.Hex(),
 		"username":      user.Username,
 		"email":         user.Email,
-		"profile_pic":   user.ProfilePic,
+		"profile_pic":   resolvedProfilePic,
 		"country":       user.Country,
 		"rank":          user.Rank,
 		"role":          user.Role,
@@ -136,6 +194,9 @@ func UpdateProfile(c *gin.Context) {
 	}
 	if input.PublicProfile != nil {
 		updateData["public_profile"] = *input.PublicProfile
+	}
+	if input.ProfilePic != nil {
+		updateData["profile_pic"] = normalizeStoredFilePath(*input.ProfilePic)
 	}
 
 	usersCollection := database.GetCollection("users")
@@ -227,7 +288,10 @@ func UploadAvatar(c *gin.Context) {
 	}
 
 	uploadDir := "uploads/profiles"
-	os.MkdirAll(uploadDir, os.ModePerm)
+	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "UPLOAD_DIR_CREATE_FAILED"})
+		return
+	}
 
 	filename := userID.Hex() + "_" + time.Now().Format("20060102150405") + ext
 	filePath := filepath.Join(uploadDir, filename)
@@ -237,7 +301,9 @@ func UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	dbPath := "/" + filePath
+	// store a normalized relative path in DB
+	dbPath := normalizeStoredFilePath(filePath)
+	publicURL := resolvePublicFileURL(c, dbPath)
 
 	usersCollection := database.GetCollection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -257,7 +323,7 @@ func UploadAvatar(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":     "AVATAR_UPDATED",
-		"profile_pic": dbPath,
+		"profile_pic": publicURL,
 	})
 }
 
@@ -381,7 +447,7 @@ func GetDashboardStats(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"totalSolved":       len(solvedMap),
 		"currentStreak":     calculateCurrentStreak(submissions),
-		"challengesWon":     acceptedCount, // Assuming won means accepted
+		"challengesWon":     acceptedCount,
 		"challengesPlayed":  len(submissions),
 		"rank":              rank,
 		"totalPoints":       totalPoints,
@@ -520,7 +586,6 @@ func GetAnalytics(c *gin.Context) {
 			"value": performance,
 		})
 	}
-	// Sort categories by label
 	sort.Slice(categoryPerformance, func(i, j int) bool {
 		return categoryPerformance[i]["label"].(string) < categoryPerformance[j]["label"].(string)
 	})
