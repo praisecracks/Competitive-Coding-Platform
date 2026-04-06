@@ -47,9 +47,14 @@ func GetSearch(c *gin.Context) {
 	defer cancel()
 
 	userFilter := bson.M{
-		"$or": []bson.M{
-			{"username": bson.M{"$regex": query, "$options": "i"}},
-			{"email": bson.M{"$regex": query, "$options": "i"}},
+		"$and": []bson.M{
+			{"public_profile": true},
+			{
+				"$or": []bson.M{
+					{"username": bson.M{"$regex": query, "$options": "i"}},
+					{"email": bson.M{"$regex": query, "$options": "i"}},
+				},
+			},
 		},
 	}
 	challengeFilter := bson.M{

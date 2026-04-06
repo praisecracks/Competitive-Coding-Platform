@@ -119,7 +119,6 @@ func GetProfile(c *gin.Context) {
 		return
 	}
 
-	// Fetch actual stats
 	solvedCount, currentStreak := getUserProfileStats(ctx, submissionsCollection, userID.Hex())
 	resolvedProfilePic := resolvePublicFileURL(c, user.ProfilePic)
 
@@ -301,7 +300,6 @@ func UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// store a normalized relative path in DB
 	dbPath := normalizeStoredFilePath(filePath)
 	publicURL := resolvePublicFileURL(c, dbPath)
 
@@ -339,12 +337,10 @@ func GetDashboardStats(c *gin.Context) {
 	challengesCollection := database.GetCollection("challenges")
 	submissionsCollection := database.GetCollection("submissions")
 
-	// 1. Fetch user to get rank and points
 	objID, _ := primitive.ObjectIDFromHex(userID)
 	var user models.User
 	_ = usersCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&user)
 
-	// 2. Fetch all submissions for this user
 	var submissions []models.SubmissionRecord
 	cursor, err := submissionsCollection.Find(ctx, bson.M{"user_id": userID})
 	if err == nil {
@@ -352,7 +348,6 @@ func GetDashboardStats(c *gin.Context) {
 		_ = cursor.All(ctx, &submissions)
 	}
 
-	// 3. Fetch all challenges to map details
 	var allChallenges []models.Challenge
 	challengeCursor, err := challengesCollection.Find(ctx, bson.M{})
 	if err == nil {
@@ -365,7 +360,6 @@ func GetDashboardStats(c *gin.Context) {
 		challengeMap[ch.ID] = ch
 	}
 
-	// 4. Difficulty Breakdown and Totals
 	easyTotal, easySolved := 0, 0
 	mediumTotal, mediumSolved := 0, 0
 	hardTotal, hardSolved := 0, 0
@@ -403,7 +397,6 @@ func GetDashboardStats(c *gin.Context) {
 		}
 	}
 
-	// 5. Recent Activity
 	recentSubmissions := []gin.H{}
 	sort.Slice(submissions, func(i, j int) bool {
 		return submissions[i].CreatedAt.After(submissions[j].CreatedAt)
@@ -430,7 +423,6 @@ func GetDashboardStats(c *gin.Context) {
 		})
 	}
 
-	// 6. Leaderboard for rank
 	totalPoints := 0
 	rank := 0
 	leaderboard, err := services.BuildLeaderboard(ctx, usersCollection, submissionsCollection, challengesCollection)
@@ -473,12 +465,10 @@ func GetAnalytics(c *gin.Context) {
 	challengesCollection := database.GetCollection("challenges")
 	submissionsCollection := database.GetCollection("submissions")
 
-	// 1. Fetch user for total points and rank
 	objID, _ := primitive.ObjectIDFromHex(userID)
 	var user models.User
 	_ = usersCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&user)
 
-	// 2. Fetch all submissions for this user
 	var submissions []models.SubmissionRecord
 	cursor, err := submissionsCollection.Find(ctx, bson.M{"user_id": userID})
 	if err == nil {
@@ -486,7 +476,6 @@ func GetAnalytics(c *gin.Context) {
 		_ = cursor.All(ctx, &submissions)
 	}
 
-	// 3. Fetch all challenges to map details
 	var allChallenges []models.Challenge
 	challengeCursor, err := challengesCollection.Find(ctx, bson.M{})
 	if err == nil {
@@ -499,7 +488,6 @@ func GetAnalytics(c *gin.Context) {
 		challengeMap[ch.ID] = ch
 	}
 
-	// 4. Difficulty Breakdown and Totals
 	easyTotal, easySolved := 0, 0
 	mediumTotal, mediumSolved := 0, 0
 	hardTotal, hardSolved := 0, 0
@@ -539,7 +527,6 @@ func GetAnalytics(c *gin.Context) {
 		}
 	}
 
-	// 5. Weekly Progress (Last 7 Days)
 	weeklyProgress := []gin.H{}
 	now := time.Now()
 	for i := 6; i >= 0; i-- {
@@ -557,7 +544,6 @@ func GetAnalytics(c *gin.Context) {
 		})
 	}
 
-	// 6. Category Performance
 	categoryMap := make(map[string]struct {
 		solved int
 		total  int
@@ -590,7 +576,6 @@ func GetAnalytics(c *gin.Context) {
 		return categoryPerformance[i]["label"].(string) < categoryPerformance[j]["label"].(string)
 	})
 
-	// 7. Recent Activity
 	recentActivity := []gin.H{}
 	sort.Slice(submissions, func(i, j int) bool {
 		return submissions[i].CreatedAt.After(submissions[j].CreatedAt)
@@ -623,7 +608,6 @@ func GetAnalytics(c *gin.Context) {
 		})
 	}
 
-	// 8. Stats for Rank
 	rank := 0
 	totalPoints := 0
 	leaderboard, err := services.BuildLeaderboard(ctx, usersCollection, submissionsCollection, challengesCollection)
