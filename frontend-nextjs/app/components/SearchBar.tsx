@@ -222,9 +222,14 @@ Search Results
                               src={user.profile_pic}
                               alt={user.username}
                               className="h-8 w-8 rounded-lg border border-white/10 object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.classList.remove('hidden');
+                              }}
                             />
                           ) : (
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-gradient-to-br from-pink-500/20 to-purple-500/20 text-xs font-bold text-pink-400">
+                            <div className="hidden flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-gradient-to-br from-pink-500/20 to-purple-500/20 text-xs font-bold text-pink-400">
                               {getInitials(user.username)}
                             </div>
                           )}

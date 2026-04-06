@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight, Clock3, Layers3, Sparkles } from "lucide-react";
 
 const previewChallenges = [
   {
@@ -38,11 +39,24 @@ const getDifficultyStyles = (difficulty: string) => {
     case "Easy":
       return "border border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
     case "Medium":
-      return "border border-yellow-500/20 bg-yellow-500/10 text-yellow-300";
+      return "border border-amber-500/20 bg-amber-500/10 text-amber-300";
     case "Hard":
       return "border border-red-500/20 bg-red-500/10 text-red-300";
     default:
-      return "border border-gray-100/10 bg-gray-100/5 text-gray-100";
+      return "border border-white/10 bg-white/5 text-gray-200";
+  }
+};
+
+const getStatusStyles = (status: string) => {
+  switch (status) {
+    case "Starter Mission":
+      return "border border-cyan-500/20 bg-cyan-500/10 text-cyan-300";
+    case "Popular Mission":
+      return "border border-pink-500/20 bg-pink-500/10 text-pink-300";
+    case "Core Mission":
+      return "border border-purple-500/20 bg-purple-500/10 text-purple-300";
+    default:
+      return "border border-white/10 bg-white/5 text-gray-300";
   }
 };
 
@@ -50,59 +64,63 @@ export default function ChallengesPreview() {
   return (
     <section
       id="challenges"
-      className="relative overflow-hidden py-20 text-gray-100 sm:py-24"
+      className="relative overflow-hidden bg-[#020202] py-20 text-gray-100 sm:py-24"
     >
-      {/* background atmosphere */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute left-[8%] top-10 h-64 w-64 rounded-full bg-pink-500/10 blur-[120px]" />
-        <div className="absolute right-[10%] top-20 h-72 w-72 rounded-full bg-purple-500/10 blur-[130px]" />
+        <div className="absolute left-[7%] top-10 h-64 w-64 rounded-full bg-pink-500/10 blur-[120px]" />
+        <div className="absolute right-[10%] top-16 h-72 w-72 rounded-full bg-purple-500/10 blur-[130px]" />
+        <div className="absolute bottom-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-fuchsia-500/10 blur-[120px]" />
         <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_35%)]" />
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        {/* section header */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-14 max-w-3xl text-center">
-          <p className="mb-4 text-[10px] font-mono uppercase tracking-[0.35em] text-pink-400">
+          <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.28em] text-pink-300 backdrop-blur-xl">
             Mission Preview
-          </p>
+          </div>
 
-          <h2 className="text-3xl font-black uppercase tracking-tight text-gray-300 sm:text-4xl lg:text-5xl">
-            Explore Missions
-            <span className="block bg-gradient-to-r sm:text-lg from-pink-500 via-fuchsia-400 to-purple-500 bg-clip-text text-transparent">
+          <h2 className="mt-5 text-4xl font-black tracking-[-0.04em] text-white sm:text-5xl md:text-6xl">
+            Explore missions
+            <span className="block bg-gradient-to-r from-white via-pink-200 to-purple-300 bg-clip-text text-transparent">
               before you enter the system
             </span>
           </h2>
 
-          <p className="mx-auto mt-5 max-w-2xl text-xs leading-7 text-gray-400 xs:text-base">
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-gray-400 sm:text-base">
             Preview the kind of coding missions waiting inside CODEMASTER.
-            Understand the challenge, difficulty, and training style before you
-            begin.
+            Understand the challenge style, difficulty, and training flow before
+            you begin.
           </p>
         </div>
-        {/* cards */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+
+        <div className="grid gap-6 lg:grid-cols-3">
           {previewChallenges.map((challenge) => (
             <div
               key={challenge.id}
-              className="group relative overflow-hidden rounded-[28px] border border-gray-100/10 bg-[#08080c]/90 p-6 shadow-[0_18px_50px_rgba(8, 8, 12, 1)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-pink-500/25 hover:bg-[#0b0b10]"
+              className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-pink-500/25 hover:shadow-[0_30px_80px_rgba(168,85,247,0.12)] sm:p-7"
             >
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pink-500/60 to-transparent opacity-70" />
+              <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_top_right,rgba(236,72,153,0.08),transparent_30%)]" />
 
-              <div className="mb-5 flex items-start justify-between gap-3">
+              <div className="relative z-10 flex items-start justify-between gap-4">
                 <div>
-                  <p className="mb-2 text-[10px] font-mono uppercase tracking-[0.26em] text-gray-500">
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-300">
+                    <Sparkles className="h-3.5 w-3.5 text-pink-300" />
                     Mission #{challenge.id}
-                  </p>
+                  </div>
 
-                  <h3 className="text-xl font-bold tracking-tight text-gray-100 transition-colors duration-300 group-hover:text-pink-400">
+                  <h3 className="text-2xl font-bold tracking-tight text-white transition-colors duration-300 group-hover:text-pink-300">
                     {challenge.title}
                   </h3>
-
-                  <p className="mt-2 text-[10px] uppercase tracking-[0.22em] text-purple-300">
-                    {challenge.status}
-                  </p>
                 </div>
 
+                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
+                  <Layers3 className="h-5 w-5" />
+                </div>
+              </div>
+
+              <div className="relative z-10 mt-5 flex flex-wrap items-center gap-2.5">
                 <span
                   className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${getDifficultyStyles(
                     challenge.difficulty
@@ -110,47 +128,72 @@ export default function ChallengesPreview() {
                 >
                   {challenge.difficulty}
                 </span>
+
+                <span
+                  className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${getStatusStyles(
+                    challenge.status
+                  )}`}
+                >
+                  {challenge.status}
+                </span>
               </div>
 
-              <div className="mb-5 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.16em] text-gray-500">
-                <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-1 text-purple-300">
+              <div className="relative z-10 mt-5 flex items-center gap-3 text-[11px] uppercase tracking-[0.16em] text-gray-400">
+                <span className="inline-flex items-center gap-2 rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-1.5 text-purple-300">
+                  <Layers3 className="h-3.5 w-3.5" />
                   {challenge.category}
                 </span>
 
-                <span className="rounded-full border border-gray-100/10 bg-gray-100/5 px-3 py-1 text-gray-300">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-gray-300">
+                  <Clock3 className="h-3.5 w-3.5" />
                   {challenge.duration}
                 </span>
               </div>
 
-              <p className="mb-6 text-sm leading-7 text-gray-400">
+              <p className="relative z-10 mt-6 text-sm leading-7 text-gray-400">
                 {challenge.description}
               </p>
 
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-gray-500">
-                  <span className="h-1.5 w-1.5 rounded-full bg-pink-400" />
-                  <span>Preview only</span>
-                </div>
+              <div className="relative z-10 mt-6 border-t border-white/10 pt-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-gray-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-pink-400" />
+                    <span>Preview only</span>
+                  </div>
 
-                <Link
-                  href="/login"
-                  className="inline-flex items-center justify-center rounded-xl border border-gray-100/10 bg-gray-100/5 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-100 transition-all duration-300 hover:border-pink-500/30 hover:bg-pink-500 hover:text-gray-100"
-                >
-                  Start Mission
-                </Link>
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-all duration-300 hover:border-pink-500/30 hover:bg-white hover:text-black"
+                  >
+                    Start Mission
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* bottom CTA */}
-        <div className="mt-14 text-center">
-          <Link
-            href="/challenges"
-            className="inline-flex items-center justify-center rounded-2xl bg-purple-600  px-7 py-3.5 text-sm font-semibold uppercase tracking-[0.18em] text-gray-100 shadow-[0_0_25px_rgba(236,72,153,0.22)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_38px_rgba(168,85,247,0.28)]"
-          >
-            Browse All Missions
-          </Link>
+        <div className="mt-14 rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-5 backdrop-blur-xl">
+          <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <p className="text-sm font-medium text-white">
+                Missions built for real coding growth
+              </p>
+              <p className="mt-1 text-sm text-gray-400">
+                Train with structured challenges, clear difficulty levels, and
+                mission flows designed to make improvement feel measurable.
+              </p>
+            </div>
+
+            <Link
+              href="/challenges"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_24px_rgba(236,72,153,0.22)] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_36px_rgba(168,85,247,0.28)]"
+            >
+              Browse All Missions
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </div>
     </section>

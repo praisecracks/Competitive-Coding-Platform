@@ -64,8 +64,8 @@ const RANK_OPTIONS = [
 
 function resolveAssetUrl(path?: string | null) {
   if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${API_BASE_URL}${path}`;
+  // Return as-is - the backend should return a full accessible URL
+  return path;
 }
 
 function clampUsername(value: string) {
@@ -115,6 +115,7 @@ export default function ProfilePage() {
   const [statsError, setStatsError] = useState("");
 
   const [recentActivity, setRecentActivity] = useState<SubmissionItem[]>([]);
+  const [imageError, setImageError] = useState(false);
 
   const notify = useCallback((msg: string, type: "success" | "error" = "success") => {
     setNotification({ msg, type });
@@ -494,6 +495,10 @@ export default function ProfilePage() {
   }, [user?.username]);
 
   const resolvedProfilePic = useMemo(() => {
+    // Reset image error when profile changes
+    if (user?.profile_pic) {
+      setImageError(false);
+    }
     return resolveAssetUrl(user?.profile_pic);
   }, [user?.profile_pic]);
 
@@ -723,11 +728,12 @@ export default function ProfilePage() {
                 onClick={handleAvatarIntent}
                 className={`flex h-24 w-24 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 ${isAdmin ? 'border-purple-500/30' : 'border-white/10'} bg-gradient-to-br from-white/[0.06] to-white/[0.02] transition hover:border-pink-500/40 shadow-2xl`}
               >
-                {resolvedProfilePic ? (
+                {resolvedProfilePic && !imageError ? (
                   <img
                     src={resolvedProfilePic}
                     alt={user.username}
                     className="h-full w-full object-cover"
+                    onError={() => setImageError(true)}
                   />
                 ) : (
                   <span className="text-2xl font-bold uppercase tracking-wide text-white/70">
