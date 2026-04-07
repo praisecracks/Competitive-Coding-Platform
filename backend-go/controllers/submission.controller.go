@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"codingplatform/database"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -47,16 +50,74 @@ type SubmissionsAuditResponse struct {
 	Metrics     SubmissionMetrics    `json:"metrics"`
 }
 
+func normalizeSubmissionInput(req *SubmitRequest) {
+	req.Language = strings.ToLower(strings.TrimSpace(req.Language))
+	req.Code = strings.TrimSpace(req.Code)
+
+	for i := range req.History {
+		req.History[i].Time = strings.TrimSpace(req.History[i].Time)
+		req.History[i].Line = strings.TrimSpace(req.History[i].Line)
+	}
+}
+
+func normalizeSubmissionStatus(status string) string {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "accepted":
+		return "accepted"
+	case "rejected":
+		return "rejected"
+	case "pending":
+		return "pending"
+	case "runtime_error":
+		return "runtime_error"
+	case "compilation_error":
+		return "compilation_error"
+	case "internal_error":
+		return "internal_error"
+	default:
+		return "rejected"
+	}
+}
+
 // SubmitCode handles code submission
 func SubmitCode(c *gin.Context) {
-	userIDValue, _ := c.Get("user_id")
-	userID := userIDValue.(string)
-	usernameValue, _ := c.Get("username")
-	username := usernameValue.(string)
+	userIDValue, userIDExists := c.Get("user_id")
+	usernameValue, usernameExists := c.Get("username")
+	if !userIDExists || !usernameExists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "UNAUTHORIZED"})
+		return
+	}
+
+	userID, ok := userIDValue.(string)
+	if !ok || strings.TrimSpace(userID) == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_USER_CONTEXT"})
+		return
+	}
+
+	username, ok := usernameValue.(string)
+	if !ok || strings.TrimSpace(username) == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_USERNAME_CONTEXT"})
+		return
+	}
 
 	var req SubmitRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_PAYLOAD"})
+		return
+	}
+
+	normalizeSubmissionInput(&req)
+
+	if req.ChallengeID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_CHALLENGE_ID"})
+		return
+	}
+	if req.Language == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "LANGUAGE_REQUIRED"})
+		return
+	}
+	if req.Code == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "CODE_REQUIRED"})
 		return
 	}
 
@@ -67,12 +128,16 @@ func SubmitCode(c *gin.Context) {
 	var challenge models.Challenge
 	err := challengesCollection.FindOne(ctx, bson.M{"id": req.ChallengeID}).Decode(&challenge)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "CHALLENGE_NOT_FOUND"})
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "CHALLENGE_NOT_FOUND"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "CHALLENGE_FETCH_FAILED"})
 		return
 	}
 
-	// Grade the submission
 	result := services.ExecuteSubmissionAgainstChallenge(req.Language, req.Code, challenge, 5*time.Second)
+	result.Status = normalizeSubmissionStatus(result.Status)
 
 	score := 0
 	if result.TotalTests > 0 {
@@ -90,8 +155,10 @@ func SubmitCode(c *gin.Context) {
 		PassedTests:   result.PassedTests,
 		TotalTests:    result.TotalTests,
 		Output:        result.Output,
-		History:       req.History,
+		Error:         result.Error,
 		ExecutionTime: result.ExecutionTime,
+		History:       req.History,
+		JudgeVersion:  "v2",
 		CreatedAt:     time.Now().UTC(),
 	}
 
@@ -105,6 +172,7 @@ func SubmitCode(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":        result.Status,
 		"output":        result.Output,
+		"error":         result.Error,
 		"passedTests":   result.PassedTests,
 		"totalTests":    result.TotalTests,
 		"executionTime": result.ExecutionTime,
@@ -121,17 +189,25 @@ func GetSubmissionsAudit(c *gin.Context) {
 	challengesCollection := database.GetCollection("challenges")
 
 	var submissions []models.SubmissionRecord
-	cursor, err := submissionsCollection.Find(ctx, bson.M{}, options.Find().SetSort(bson.M{"created_at": -1}).SetLimit(200))
+	cursor, err := submissionsCollection.Find(
+		ctx,
+		bson.M{},
+		options.Find().SetSort(bson.M{"created_at": -1}).SetLimit(200),
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "FETCH_SUBMISSIONS_FAILED"})
 		return
 	}
 	defer cursor.Close(ctx)
-	_ = cursor.All(ctx, &submissions)
+
+	if err := cursor.All(ctx, &submissions); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "SUBMISSIONS_PARSE_FAILED"})
+		return
+	}
 
 	var challenges []models.Challenge
-	challengeCursor, _ := challengesCollection.Find(ctx, bson.M{})
-	if challengeCursor != nil {
+	challengeCursor, err := challengesCollection.Find(ctx, bson.M{})
+	if err == nil {
 		defer challengeCursor.Close(ctx)
 		_ = challengeCursor.All(ctx, &challenges)
 	}
@@ -141,11 +217,12 @@ func GetSubmissionsAudit(c *gin.Context) {
 		challengeMap[ch.ID] = ch.Title
 	}
 
-	enrichedSubmissions := []EnrichedSubmission{}
+	enrichedSubmissions := make([]EnrichedSubmission, 0, len(submissions))
 	metrics := SubmissionMetrics{
 		TotalSubmissions: len(submissions),
 	}
-	var totalScore int
+
+	totalScore := 0
 
 	for _, sub := range submissions {
 		enrichedSub := EnrichedSubmission{
@@ -154,22 +231,23 @@ func GetSubmissionsAudit(c *gin.Context) {
 			ChallengeID:   sub.ChallengeID,
 			ChallengeName: challengeMap[sub.ChallengeID],
 			Language:      sub.Language,
-			Status:        sub.Status,
+			Status:        normalizeSubmissionStatus(sub.Status),
 			Score:         sub.Score,
 			SubmittedAt:   sub.CreatedAt,
 		}
 		enrichedSubmissions = append(enrichedSubmissions, enrichedSub)
 
-		switch sub.Status {
+		switch normalizeSubmissionStatus(sub.Status) {
 		case "accepted":
 			metrics.Accepted++
 		case "rejected":
 			metrics.Rejected++
 		case "pending":
 			metrics.Pending++
-		case "runtime_error", "compilation_error":
+		case "runtime_error", "compilation_error", "internal_error":
 			metrics.Errors++
 		}
+
 		totalScore += sub.Score
 	}
 

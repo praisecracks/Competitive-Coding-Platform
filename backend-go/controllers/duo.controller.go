@@ -50,7 +50,10 @@ func GetPendingInvites(c *gin.Context) {
 	defer cursor.Close(ctx)
 
 	var duels []models.Duel
-	_ = cursor.All(ctx, &duels)
+	if err := cursor.All(ctx, &duels); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse invitations", "details": err.Error()})
+		return
+	}
 
 	type InviteResponse struct {
 		ID             string    `json:"id"`
@@ -64,8 +67,13 @@ func GetPendingInvites(c *gin.Context) {
 	response := []InviteResponse{}
 	for _, duel := range duels {
 		var challenger models.User
-		objID, _ := primitive.ObjectIDFromHex(duel.Challenger)
-		_ = usersCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&challenger)
+		objID, err := primitive.ObjectIDFromHex(duel.Challenger)
+		if err == nil {
+			_ = usersCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&challenger)
+		} else {
+			// Fallback: search by string _id if not ObjectID
+			_ = usersCollection.FindOne(ctx, bson.M{"_id": duel.Challenger}).Decode(&challenger)
+		}
 
 		var challenge models.Challenge
 		_ = challengesCollection.FindOne(ctx, bson.M{"id": duel.ChallengeID}).Decode(&challenge)

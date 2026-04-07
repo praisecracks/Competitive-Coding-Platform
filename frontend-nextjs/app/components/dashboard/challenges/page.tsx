@@ -4,6 +4,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { getStoredToken } from "@/lib/auth";
 
 type Challenge = {
   id: number;
@@ -13,6 +14,7 @@ type Challenge = {
   category: string;
   duration: number;
   tags: string[];
+  opened?: boolean;
 };
 
 const difficultyOrder = ["Easy", "Medium", "Hard"];
@@ -33,8 +35,17 @@ export default function ChallengesPage() {
     setErrorMessage("");
 
     try {
+      const token = getStoredToken();
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const res = await fetch("/api/challenges", {
         cache: "no-store",
+        headers,
       });
 
       if (!res.ok) {
@@ -241,9 +252,16 @@ export default function ChallengesPage() {
             >
               <div className="p-5">
                 <div className="flex items-start justify-between mb-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyClasses(challenge.difficulty)}`}>
-                    {challenge.difficulty}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyClasses(challenge.difficulty)}`}>
+                      {challenge.difficulty}
+                    </span>
+                    {challenge.opened && (
+                      <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 uppercase tracking-wider">
+                        Opened
+                      </span>
+                    )}
+                  </div>
                   <span className="text-xs text-gray-500">{challenge.duration} min</span>
                 </div>
                 
@@ -312,6 +330,11 @@ export default function ChallengesPage() {
                 <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyClasses(selectedChallenge.difficulty)}`}>
                   {selectedChallenge.difficulty}
                 </span>
+                {selectedChallenge.opened && (
+                  <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 uppercase tracking-wider">
+                    Opened
+                  </span>
+                )}
                 <span className="text-xs text-gray-500">{selectedChallenge.duration} minutes</span>
               </div>
               

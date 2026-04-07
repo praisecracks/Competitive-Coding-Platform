@@ -1,5 +1,9 @@
 package models
 
+import (
+	"time"
+)
+
 type ChallengeExample struct {
 	Input       string `json:"input,omitempty" bson:"input,omitempty"`
 	Output      string `json:"output,omitempty" bson:"output,omitempty"`
@@ -13,9 +17,9 @@ type StarterCodeMap struct {
 }
 
 type ChallengeTestCase struct {
-	Input          string `json:"input" bson:"input"`
-	ExpectedOutput string `json:"expectedOutput" bson:"expectedOutput"`
-	IsHidden       bool   `json:"isHidden,omitempty" bson:"isHidden,omitempty"`
+	InputJSON          string `json:"inputJson" bson:"inputJson"`
+	ExpectedOutputJSON string `json:"expectedOutputJson" bson:"expectedOutputJson"`
+	IsHidden           bool   `json:"isHidden,omitempty" bson:"isHidden,omitempty"`
 }
 
 type Challenge struct {
@@ -30,4 +34,16 @@ type Challenge struct {
 	Constraints []string            `json:"constraints,omitempty" bson:"constraints,omitempty"`
 	StarterCode StarterCodeMap      `json:"starterCode,omitempty" bson:"starterCode,omitempty"`
 	TestCases   []ChallengeTestCase `json:"testCases,omitempty" bson:"testCases,omitempty"`
+
+	FunctionName  string `json:"functionName,omitempty" bson:"functionName,omitempty"`
+	ValidatorType string `json:"validatorType,omitempty" bson:"validatorType,omitempty"`
+	InputType     string `json:"inputType,omitempty" bson:"inputType,omitempty"`
+	ReturnType    string `json:"returnType,omitempty" bson:"returnType,omitempty"`
+}
+
+type ChallengeInteraction struct {
+	UserID      string    `json:"user_id" bson:"user_id"`
+	ChallengeID int       `json:"challenge_id" bson:"challenge_id"`
+	Opened      bool      `json:"opened" bson:"opened"`
+	OpenedAt    time.Time `json:"opened_at" bson:"opened_at"`
 }

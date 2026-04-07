@@ -112,6 +112,60 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
+func OptionalAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+		if authHeader == "" {
+			c.Next()
+			return
+		}
+
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+			c.Next()
+			return
+		}
+
+		tokenString := strings.TrimSpace(parts[1])
+		if tokenString == "" {
+			c.Next()
+			return
+		}
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.New("unexpected signing method")
+			}
+			return getJWTSecret(), nil
+		})
+
+		if err != nil || !token.Valid {
+			c.Next()
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.Next()
+			return
+		}
+
+		userID, _ := claims["user_id"].(string)
+		username, _ := claims["username"].(string)
+		email, _ := claims["email"].(string)
+		role, _ := claims["role"].(string)
+
+		if userID != "" {
+			c.Set("user_id", userID)
+			c.Set("username", username)
+			c.Set("email", email)
+			c.Set("role", role)
+		}
+
+		c.Next()
+	}
+}
+
 func AdminOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")

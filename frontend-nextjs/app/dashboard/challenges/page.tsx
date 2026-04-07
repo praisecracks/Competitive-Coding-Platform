@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getStoredToken } from "@/lib/auth";
 
 type Challenge = {
   id: number;
@@ -11,6 +12,7 @@ type Challenge = {
   category: string;
   duration: number;
   tags: string[];
+  opened?: boolean;
 };
 
 const difficultyOrder = ["Easy", "Medium", "Hard"];
@@ -39,8 +41,17 @@ export default function DashboardChallengesPage() {
     setErrorMessage("");
 
     try {
+      const token = getStoredToken();
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const res = await fetch("/api/challenges", {
         cache: "no-store",
+        headers,
       });
 
       if (!res.ok) {
@@ -164,6 +175,12 @@ export default function DashboardChallengesPage() {
                 >
                   {selectedChallenge.difficulty}
                 </span>
+
+                {selectedChallenge.opened && (
+                  <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-purple-400">
+                    Opened
+                  </span>
+                )}
 
                 <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-300">
                   {selectedChallenge.category}
@@ -303,9 +320,16 @@ export default function DashboardChallengesPage() {
                 className="group rounded-2xl border border-white/10 bg-[#0a0a0a] p-5 transition hover:border-pink-500/20 hover:bg-[#0c0c11]"
               >
                 <div className="mb-4 flex items-start justify-between gap-3">
-                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-gray-400">
-                    #{String(challenge.id).padStart(3, "0")}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-gray-400">
+                      #{String(challenge.id).padStart(3, "0")}
+                    </span>
+                    {challenge.opened && (
+                      <span className="rounded-full bg-purple-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-purple-400 border border-purple-500/20">
+                        Opened
+                      </span>
+                    )}
+                  </div>
 
                   <span
                     className={`rounded-full border px-3 py-1 text-[11px] ${getDifficultyClasses(

@@ -170,19 +170,26 @@ function Search() {
                             {challenge.title}
                           </p>
 
-                          {challenge.difficulty && (
-                            <span
-                              className={`rounded-full px-3 py-1 text-xs ${
-                                challenge.difficulty === "Easy"
-                                  ? "bg-emerald-500/10 text-emerald-400"
-                                  : challenge.difficulty === "Medium"
-                                  ? "bg-yellow-500/10 text-yellow-400"
-                                  : "bg-red-500/10 text-red-400"
-                              }`}
-                            >
-                              {challenge.difficulty}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-3">
+                            {challenge.opened && (
+                              <span className="rounded-full bg-purple-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-purple-400 border border-purple-500/20">
+                                Opened
+                              </span>
+                            )}
+                            {challenge.difficulty && (
+                              <span
+                                className={`rounded-full px-3 py-1 text-xs ${
+                                  challenge.difficulty === "Easy"
+                                    ? "bg-emerald-500/10 text-emerald-400"
+                                    : challenge.difficulty === "Medium"
+                                    ? "bg-yellow-500/10 text-yellow-400"
+                                    : "bg-red-500/10 text-red-400"
+                                }`}
+                              >
+                                {challenge.difficulty}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {challenge.category && (

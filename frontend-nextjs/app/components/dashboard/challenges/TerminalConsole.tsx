@@ -19,10 +19,10 @@ type Tone = {
   textClass: string;
 };
 
-const MIN_HEIGHT = 220;
-const DEFAULT_HEIGHT = 320;
-const MAX_HEIGHT = 620;
-const MOBILE_HEIGHT = 260;
+const MIN_HEIGHT = 280;
+const DEFAULT_HEIGHT = 420;
+const MAX_HEIGHT = 760;
+const MOBILE_HEIGHT = 320;
 
 function getEntryTone(line: string): Tone {
   const value = line.toLowerCase();
@@ -293,7 +293,7 @@ export default function TerminalConsole({
 
       <div
         ref={scrollRef}
-        className="relative flex-1 overflow-y-auto bg-[#050507] px-3 py-4 font-mono text-[12px] sm:px-4 lg:px-5"
+        className="relative min-h-0 flex-1 overflow-y-auto bg-[#050507] px-3 py-4 font-mono text-[12px] sm:px-4 lg:px-5"
       >
         {isLocked && (
           <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center px-4 py-3">
@@ -364,7 +364,7 @@ export default function TerminalConsole({
     <>
       <div
         ref={terminalRef}
-        className="relative flex h-full min-h-[240px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#05060a] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]"
+        className="relative flex h-full min-h-[340px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#05060a] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]"
         style={!expanded && isDesktop ? { height } : undefined}
       >
         {!expanded && isDesktop && (
@@ -382,9 +382,9 @@ export default function TerminalConsole({
       </div>
 
       {expanded && (
-        <div className="fixed inset-0 z-50 bg-black/75 p-4 backdrop-blur-sm">
-          <div className="mx-auto flex h-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#05060a] shadow-[0_25px_80px_rgba(0,0,0,0.5)]">
-            <div className="flex items-center justify-between border-b border-white/10 bg-[#0b0c10] px-4 py-3">
+        <div className="fixed inset-0 z-50 bg-black/75 p-3 backdrop-blur-sm sm:p-4">
+          <div className="mx-auto flex h-full max-w-6xl min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#05060a] shadow-[0_25px_80px_rgba(0,0,0,0.5)]">
+            <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#0b0c10] px-4 py-3">
               <div>
                 <p className="text-sm font-semibold text-white">Expanded Terminal</p>
                 <p className="text-xs text-gray-500">
@@ -401,7 +401,9 @@ export default function TerminalConsole({
               </button>
             </div>
 
-            <div className="flex-1 overflow-hidden">{terminalContent}</div>
+            <div className="flex min-h-0 flex-1 flex-col">
+              {terminalContent}
+            </div>
           </div>
         </div>
       )}

@@ -14,6 +14,7 @@ export interface SearchChallenge {
   difficulty?: string;
   category?: string;
   tags?: string[];
+  opened?: boolean;
 }
 
 export interface SearchResults {

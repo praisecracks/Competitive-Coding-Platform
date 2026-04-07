@@ -21,6 +21,32 @@ interface User {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+function resolveAssetUrl(path?: string | null) {
+  if (!path) return null;
+  
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    const productionDomain = "codemaster-q9oo.onrender.com";
+    if (path.includes(productionDomain)) {
+      if (IS_PRODUCTION) {
+        return path;
+      }
+      const url = new URL(path);
+      return `/api${url.pathname}`;
+    }
+    return path;
+  }
+  
+  let cleanPath = path.trim().replace(/\/+/g, "/");
+  if (cleanPath.startsWith("/")) cleanPath = cleanPath.substring(1);
+
+  if (!cleanPath.includes("/")) {
+    return `/api/uploads/profiles/${cleanPath}`;
+  }
+
+  return `/api/${cleanPath}`;
+}
 
 export default function DuoCreatePage() {
   const searchParams = useSearchParams();
@@ -37,8 +63,9 @@ export default function DuoCreatePage() {
   const [inviteState, setInviteState] = useState<"idle" | "waiting" | "declined" | "expired">("idle");
   const [countdown, setCountdown] = useState(120); // 2 minutes
   const [activeDuelId, setActiveDuelId] = useState<string | null>(null);
+  const [duelCountdown, setDuelCountdown] = useState<number | null>(null);
 
-  const pollInterval = 3000; // Poll every 3 seconds
+  const pollInterval = 1000; // Poll every 1 second for ultra-fast detection
 
   useEffect(() => {
     if (!challengeId) {
@@ -71,7 +98,8 @@ export default function DuoCreatePage() {
 
     try {
       const token = localStorage.getItem("terminal_token");
-      const res = await fetch(`${API_BASE_URL}/users/search-by-id?id=${searchId}`, {
+      // Use relative /api path to ensure proxy works correctly
+      const res = await fetch(`/api/users/search?q=${searchId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -80,7 +108,7 @@ export default function DuoCreatePage() {
         const data = await res.json();
         setFoundUser(data);
       } else {
-        setError("User not found. Please check the ID.");
+        setError("User not found. Please check the ID or Username.");
       }
     } catch (err) {
       setError("Search failed. Try again later.");
@@ -142,8 +170,15 @@ export default function DuoCreatePage() {
       if (res.ok) {
         const data = await res.json();
         if (data.status === "accepted") {
-          // Both enter duel room
-          router.push(`/dashboard/duo/${activeDuelId}`);
+          // Calculate synchronized countdown based on accepted_at
+          const acceptedAt = data.accepted_at ? new Date(data.accepted_at).getTime() : Date.now();
+          const now = Date.now();
+          const elapsedSeconds = Math.floor((now - acceptedAt) / 1000);
+          const remainingSeconds = Math.max(0, 5 - elapsedSeconds);
+
+          if (duelCountdown === null) {
+            setDuelCountdown(remainingSeconds);
+          }
         } else if (data.status === "declined") {
           setInviteState("declined");
           setActiveDuelId(null);
@@ -155,21 +190,34 @@ export default function DuoCreatePage() {
     } catch (err) {
       console.error("Polling status error:", err);
     }
-  }, [activeDuelId, router]);
+  }, [activeDuelId, duelCountdown, router]);
+
+  // Handle the 5-second countdown for both users
+  useEffect(() => {
+    if (duelCountdown === null) return;
+
+    if (duelCountdown > 0) {
+      const timer = setTimeout(() => setDuelCountdown(duelCountdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // Countdown finished, enter the duel room
+      router.push(`/dashboard/duo/${activeDuelId}`);
+    }
+  }, [duelCountdown, activeDuelId, router]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (inviteState === "waiting" && countdown > 0) {
+    if (inviteState === "waiting" && countdown > 0 && duelCountdown === null) {
       timer = setInterval(() => {
         setCountdown((prev) => prev - 1);
-        checkDuelStatus(); // Poll status every second or use a separate interval
-      }, 1000);
-    } else if (countdown === 0 && inviteState === "waiting") {
+        checkDuelStatus();
+      }, pollInterval);
+    } else if (countdown === 0 && inviteState === "waiting" && duelCountdown === null) {
       setInviteState("expired");
       setActiveDuelId(null);
     }
     return () => clearInterval(timer);
-  }, [inviteState, countdown, checkDuelStatus]);
+  }, [inviteState, countdown, duelCountdown, checkDuelStatus]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -280,7 +328,7 @@ export default function DuoCreatePage() {
                     >
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-white/10 to-transparent border border-white/10 flex items-center justify-center text-xl">
-                          {foundUser.profilePic ? <img src={foundUser.profilePic} alt="" className="h-full w-full object-cover rounded-2xl" /> : "👤"}
+                          {foundUser.profilePic ? <img src={resolveAssetUrl(foundUser.profilePic) || ""} alt="" className="h-full w-full object-cover rounded-2xl" /> : "👤"}
                         </div>
                         <div>
                           <p className="text-sm font-black text-white">{foundUser.username}</p>
@@ -317,16 +365,30 @@ export default function DuoCreatePage() {
                       {formatTime(countdown)}
                     </div>
                   </div>
-                  <h3 className="text-lg font-black text-white uppercase tracking-wider mb-2">Waiting for response</h3>
-                  <p className="text-xs text-gray-500 mb-8 max-w-[200px] mx-auto leading-relaxed">
-                    Sent to <span className="text-white">{foundUser?.username}</span>. Duel will begin automatically upon acceptance.
-                  </p>
-                  <button
-                    onClick={cancelInvite}
-                    className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] hover:text-rose-400 transition-colors"
-                  >
-                    Cancel Invitation
-                  </button>
+                  <h3 className="text-lg font-black text-white uppercase tracking-wider mb-2">
+                    {duelCountdown !== null ? "Match Starting!" : "Waiting for response"}
+                  </h3>
+                  
+                  {duelCountdown !== null ? (
+                    <div className="flex flex-col items-center">
+                      <div className="text-6xl font-black text-pink-500 animate-bounce mb-4">
+                        {duelCountdown}
+                      </div>
+                      <p className="text-xs text-gray-400 font-black uppercase tracking-[0.3em]">Prepare for Battle</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-xs text-gray-500 mb-8 max-w-[200px] mx-auto leading-relaxed">
+                        Sent to <span className="text-white">{foundUser?.username}</span>. Duel will begin automatically upon acceptance.
+                      </p>
+                      <button
+                        onClick={cancelInvite}
+                        className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] hover:text-rose-400 transition-colors"
+                      >
+                        Cancel Invitation
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </section>

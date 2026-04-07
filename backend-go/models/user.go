@@ -32,4 +32,6 @@ type User struct {
 	ResetTokenExpiry   time.Time          `bson:"reset_token_expiry,omitempty" json:"-"`
 	CreatedAt          time.Time          `bson:"created_at" json:"createdAt"`
 	UpdatedAt          time.Time          `bson:"updated_at" json:"updatedAt"`
+	ReferralCode       string             `bson:"referral_code,omitempty" json:"referralCode,omitempty"`
+	ReferredBy         primitive.ObjectID `bson:"referred_by,omitempty" json:"referredBy,omitempty"`
 }

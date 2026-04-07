@@ -9,6 +9,7 @@ import { clearUserSession } from "@/lib/auth";
 type SettingsTab = "profile" | "account" | "preferences" | "danger";
 
 type ProfileData = {
+  id: string;
   username: string;
   email: string;
   bio: string;
@@ -17,11 +18,31 @@ type ProfileData = {
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 function resolveAssetUrl(path?: string | null) {
   if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${API_BASE_URL}${path}`;
+  
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    const productionDomain = "codemaster-q9oo.onrender.com";
+    if (path.includes(productionDomain)) {
+      if (IS_PRODUCTION) {
+        return path;
+      }
+      const url = new URL(path);
+      return `/api${url.pathname}`;
+    }
+    return path;
+  }
+  
+  let cleanPath = path.trim().replace(/\/+/g, "/");
+  if (cleanPath.startsWith("/")) cleanPath = cleanPath.substring(1);
+
+  if (!cleanPath.includes("/")) {
+    return `/api/uploads/profiles/${cleanPath}`;
+  }
+
+  return `/api/${cleanPath}`;
 }
 
 export default function SettingsPage() {
@@ -39,6 +60,7 @@ export default function SettingsPage() {
 
   // Profile State
   const [profile, setProfile] = useState<ProfileData>({
+    id: "",
     username: "",
     email: "",
     bio: "",
@@ -57,7 +79,7 @@ export default function SettingsPage() {
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
     challengeReminders: true,
-    publicProfile: true,
+    publicProfile: false,
     weeklySummary: false,
   });
 
@@ -73,6 +95,7 @@ export default function SettingsPage() {
         return;
       }
 
+      // Use relative /api path to ensure proxy works correctly
       const res = await fetch("/api/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -81,6 +104,7 @@ export default function SettingsPage() {
 
       const data = await res.json();
       setProfile({
+        id: data.id || "",
         username: data.username || "",
         email: data.email || "",
         bio: data.bio || "",
@@ -91,7 +115,7 @@ export default function SettingsPage() {
       setPreferences({
         emailNotifications: data.emailNotifications ?? true,
         challengeReminders: data.challengeReminders ?? true,
-        publicProfile: data.publicProfile ?? true,
+        publicProfile: data.publicProfile ?? false,
         weeklySummary: false, // weeklySummary is not yet in DB
       });
     } catch (err) {
@@ -114,6 +138,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const token = localStorage.getItem("terminal_token");
+      // Use relative /api path to ensure proxy works correctly
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: {
@@ -171,6 +196,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const token = localStorage.getItem("terminal_token");
+      // Use relative /api path to ensure proxy works correctly
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: {
@@ -431,7 +457,31 @@ export default function SettingsPage() {
                 </div>
                 
                 <div className="space-y-8">
-                  <div className="p-6 rounded-[24px] border border-white/10 bg-gradient-to-br from-white/[0.03] to-transparent">
+                  <div className="p-6 rounded-[24px] border border-white/10 bg-gradient-to-br from-white/[0.03] to-transparent space-y-6">
+                    <InputGroup label="Public User ID">
+                      <div className="flex items-center gap-3 w-full rounded-xl border border-white/5 bg-black/20 px-4 py-3 text-sm text-gray-400">
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                        <span className="font-mono truncate flex-1">{profile.id}</span>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(profile.id);
+                            showNotification("ID copied to clipboard!");
+                          }}
+                          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-pink-400"
+                          title="Copy ID"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                          </svg>
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-2">
+                        Share this ID with others to invite you to duels.
+                      </p>
+                    </InputGroup>
+
                     <InputGroup label="Registered Email">
                       <div className="flex items-center gap-3 w-full rounded-xl border border-white/5 bg-black/20 px-4 py-3 text-sm text-gray-500">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -118,7 +118,7 @@ export default function ChallengeWorkspace({
   const renderInfoPanel = () => {
     const tabContent =
       activeTab === "problem" ? (
-        <div className="space-y-4 sm:space-y-5">
+        <div className="space-y-3 sm:space-y-4">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-pink-300">
               Problem Brief
@@ -128,7 +128,7 @@ export default function ChallengeWorkspace({
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4">
             <p className="break-words text-sm leading-7 text-gray-300 sm:leading-8">
               {challenge.description}
             </p>
@@ -148,7 +148,7 @@ export default function ChallengeWorkspace({
           )}
         </div>
       ) : activeTab === "examples" ? (
-        <div className="space-y-4 sm:space-y-5">
+        <div className="space-y-3 sm:space-y-4">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-pink-300">
               Examples
@@ -207,7 +207,7 @@ export default function ChallengeWorkspace({
               {fallbackExamples.map((item, index) => (
                 <div
                   key={`${item.title}-${index}`}
-                  className="rounded-2xl border border-yellow-500/15 bg-yellow-500/[0.05] p-4 sm:p-5"
+                  className="rounded-2xl border border-yellow-500/15 bg-yellow-500/[0.05] p-3 sm:p-4"
                 >
                   <p className="text-sm font-semibold text-yellow-200">
                     {item.title}
@@ -221,7 +221,7 @@ export default function ChallengeWorkspace({
           )}
         </div>
       ) : (
-        <div className="space-y-4 sm:space-y-5">
+        <div className="space-y-3 sm:space-y-4">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-pink-300">
               Constraints
@@ -246,8 +246,8 @@ export default function ChallengeWorkspace({
       );
 
     return (
-      <div className="space-y-4 sm:space-y-5">
-        <div className="rounded-3xl border border-white/10 bg-[#0a0a0a] p-4 sm:p-5 lg:p-6">
+      <div className="space-y-3 sm:space-y-4">
+        <div className="rounded-3xl border border-white/10 bg-[#0a0a0a] p-3 sm:p-4">
           {tabContent}
         </div>
 
@@ -265,9 +265,9 @@ export default function ChallengeWorkspace({
   };
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-3 sm:space-y-4">
       <div className="grid gap-4 sm:gap-5 xl:grid-cols-[0.78fr_1.22fr]">
-        <section className="min-h-[220px] xl:min-h-[300px]">
+        <section className="min-h-[160px] xl:min-h-[200px]">
           {renderInfoPanel()}
         </section>
 

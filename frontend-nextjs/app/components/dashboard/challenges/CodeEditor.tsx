@@ -72,7 +72,7 @@ export default function CodeEditor({
   }, [isLocked, isSubmitting, isRunning]);
 
   return (
-    <div className="flex h-full min-h-[360px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] lg:min-h-[520px]">
+    <div className="flex h-full min-h-[280px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] lg:min-h-[400px]">
       <div className="border-b border-white/10 bg-[#0d0d12] px-3 py-3 sm:px-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
@@ -138,7 +138,7 @@ export default function CodeEditor({
         </div>
       </div>
 
-      <div className="relative min-h-[300px] flex-1 lg:min-h-[440px]">
+      <div className="relative min-h-[220px] flex-1 lg:min-h-[320px]">
         {isLocked && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[#050507]/55 backdrop-blur-[2px]">
             <div className="rounded-2xl border border-red-500/20 bg-[#0b0b10]/90 px-5 py-4 text-center shadow-[0_20px_60px_rgba(0,0,0,0.35)]">

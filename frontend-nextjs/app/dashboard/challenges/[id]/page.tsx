@@ -57,6 +57,29 @@ export default function DashboardChallengeDetailsPage() {
   const challengeId = Number(params?.id);
 
   useEffect(() => {
+    if (!challengeId || Number.isNaN(challengeId)) return;
+
+    const markOpened = async () => {
+      try {
+        const token = localStorage.getItem("terminal_token");
+        if (!token) return;
+
+        // Use relative /api path to ensure proxy works correctly
+        await fetch(`/api/challenges/${challengeId}/open`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }).catch(() => {});
+      } catch (err) {
+        console.error("Failed to mark challenge as opened:", err);
+      }
+    };
+
+    markOpened();
+  }, [challengeId]);
+
+  useEffect(() => {
     if (!challengeId || Number.isNaN(challengeId)) {
       setLoading(false);
       setErrorMessage("Invalid challenge ID.");

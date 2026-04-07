@@ -27,10 +27,11 @@ import (
 )
 
 type SignupRequest struct {
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Country  string `json:"country"`
+	Email        string `json:"email"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+	Country      string `json:"country"`
+	ReferralCode string `json:"referralCode,omitempty"`
 }
 
 type LoginRequest struct {
@@ -139,6 +140,16 @@ func Register(c *gin.Context) {
 		CurrentStreak: 0,
 		CreatedAt:     now,
 		UpdatedAt:     now,
+	}
+
+	if input.ReferralCode != "" {
+		var referrer models.User
+		err := usersCollection.FindOne(ctx, bson.M{"referral_code": input.ReferralCode}).Decode(&referrer)
+		if err == nil {
+			user.ReferredBy = referrer.ID
+		} else if !errors.Is(err, mongo.ErrNoDocuments) {
+			fmt.Printf("Error finding referrer with code %s: %v\n", input.ReferralCode, err)
+		}
 	}
 
 	result, err := usersCollection.InsertOne(ctx, user)

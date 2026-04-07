@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import Header from "../components/Header";
@@ -106,12 +106,14 @@ const COUNTRY_OPTIONS = [
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [checkingSession, setCheckingSession] = useState(true);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [country, setCountry] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [status, setStatus] = useState<Status>("IDLE");
@@ -124,8 +126,13 @@ export default function SignupPage() {
       return;
     }
 
+    const refCode = searchParams.get("ref");
+    if (refCode) {
+      setReferralCode(refCode);
+    }
+
     setCheckingSession(false);
-  }, [router]);
+  }, [router, searchParams]);
 
   const passwordChecks = useMemo(() => {
     return {
@@ -261,6 +268,7 @@ export default function SignupPage() {
           username: cleanUsername,
           password,
           country: country.trim(),
+          referralCode,
         }),
       });
 

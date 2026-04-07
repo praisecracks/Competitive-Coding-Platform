@@ -122,98 +122,102 @@ export default function SubmissionPanel({
   const submitDisabled = submitting || !hasCode || !missionActive;
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-[#0a0a0a] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-5">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4">
+    <div className="rounded-3xl border border-white/10 bg-[#0a0a0a] p-3.5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-4">
+      <div className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-pink-300">
-              Submission Control
-            </p>
-            <p className="mt-2 text-sm leading-7 text-gray-400">
-              Run only checks execution output. Submit is what actually validates
-              your challenge and determines pass or fail.
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-pink-300">
+                Submission Control
+              </p>
+
+              <span
+                className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] ${badgeClasses}`}
+              >
+                {badgeText}
+              </span>
+            </div>
+
+            <p className="mt-1.5 text-xs leading-6 text-gray-400">
+              Run checks output. Submit is what validates your challenge result.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-              <p className="text-[11px] uppercase tracking-[0.15em] text-gray-500">
-                Last Score
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-gray-500">
+                Score
               </p>
-              <p className="mt-1 text-lg font-semibold text-white">
+              <p className="mt-1 text-base font-semibold leading-none text-white">
                 {lastScore !== null ? `${lastScore}%` : "—"}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-              <p className="text-[11px] uppercase tracking-[0.15em] text-gray-500">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-gray-500">
                 Time Left
               </p>
-              <p className="mt-1 text-lg font-semibold text-white">
+              <p className="mt-1 text-base font-semibold leading-none text-white">
                 {timeLeftLabel}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-4">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-            <p className="text-[11px] uppercase tracking-[0.15em] text-gray-500">
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-gray-500">
               Lines
             </p>
-            <p className="mt-1 text-lg font-semibold text-white">{lineCount}</p>
+            <p className="mt-1 text-base font-semibold leading-none text-white">
+              {lineCount}
+            </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-            <p className="text-[11px] uppercase tracking-[0.15em] text-gray-500">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-gray-500">
               Characters
             </p>
-            <p className="mt-1 text-lg font-semibold text-white">{charCount}</p>
+            <p className="mt-1 text-base font-semibold leading-none text-white">
+              {charCount}
+            </p>
           </div>
 
-          <div className={`rounded-2xl border px-4 py-3 ${qualityClasses}`}>
-            <p className="text-[11px] uppercase tracking-[0.15em] text-inherit/80">
+          <div className={`rounded-2xl border px-3 py-2.5 ${qualityClasses}`}>
+            <p className="text-[10px] uppercase tracking-[0.14em] text-inherit/80">
               Code State
             </p>
-            <p className="mt-1 text-lg font-semibold">{qualityLabel}</p>
+            <p className="mt-1 text-sm font-semibold leading-none">
+              {qualityLabel}
+            </p>
           </div>
 
-          <div className={`rounded-2xl border px-4 py-3 ${missionBadgeClass}`}>
-            <p className="text-[11px] uppercase tracking-[0.15em] text-inherit/80">
+          <div className={`rounded-2xl border px-3 py-2.5 ${missionBadgeClass}`}>
+            <p className="text-[10px] uppercase tracking-[0.14em] text-inherit/80">
               Mission
             </p>
-            <p className="mt-1 text-lg font-semibold capitalize">
+            <p className="mt-1 text-sm font-semibold capitalize leading-none">
               {missionState}
             </p>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#08080c] px-4 py-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-white">Submission status</p>
-              <p className="mt-1 text-xs leading-6 text-gray-500">
-                {submissionText}
-              </p>
-            </div>
-
-            <span
-              className={`inline-flex w-fit rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.15em] ${badgeClasses}`}
-            >
-              {badgeText}
-            </span>
-          </div>
+        <div className="rounded-2xl border border-white/10 bg-[#08080c] px-3 py-2.5">
+          <p className="text-xs font-medium text-white">Submission status</p>
+          <p className="mt-1 text-[11px] leading-5 text-gray-500">
+            {submissionText}
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           <button
             onClick={onSubmit}
             disabled={submitDisabled}
-            className="w-full rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 px-5 py-3.5 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-3 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             type="button"
           >
             {submitting
-              ? "Submitting Solution..."
+              ? "Submitting..."
               : missionActive
               ? "Submit Solution"
               : "Submission Locked"}
@@ -221,7 +225,7 @@ export default function SubmissionPanel({
 
           <button
             onClick={onReplay}
-            className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3.5 text-sm font-medium text-white transition hover:bg-white/[0.08]"
+            className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white transition hover:bg-white/[0.08]"
             type="button"
           >
             Retry Mission

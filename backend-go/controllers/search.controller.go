@@ -30,6 +30,7 @@ type SearchChallenge struct {
 	Difficulty string   `json:"difficulty,omitempty" bson:"difficulty"`
 	Category   string   `json:"category,omitempty" bson:"category"`
 	Tags       []string `json:"tags,omitempty" bson:"tags"`
+	Opened     bool     `json:"opened"`
 }
 
 // GetSearch handles the search request for users and challenges
@@ -78,6 +79,34 @@ func GetSearch(c *gin.Context) {
 	if challengeCursor != nil {
 		defer challengeCursor.Close(ctx)
 		_ = challengeCursor.All(ctx, &challenges)
+
+		// Check if user is logged in
+		userID := ""
+		if userIDRaw, exists := c.Get("user_id"); exists {
+			userID = userIDRaw.(string)
+		}
+
+		if userID != "" {
+			interactionsCollection := database.GetCollection("challenge_interactions")
+			var interactions []struct {
+				ChallengeID int `bson:"challenge_id"`
+			}
+			cursor, err := interactionsCollection.Find(ctx, bson.M{"user_id": userID, "opened": true})
+			if err == nil {
+				defer cursor.Close(ctx)
+				_ = cursor.All(ctx, &interactions)
+				openedMap := make(map[int]bool)
+				for _, inter := range interactions {
+					openedMap[inter.ChallengeID] = true
+				}
+
+				for i := range challenges {
+					if openedMap[challenges[i].ID] {
+						challenges[i].Opened = true
+					}
+				}
+			}
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -101,6 +130,42 @@ func GetUserByID(c *gin.Context) {
 
 	var user SearchUser
 	err = usersCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			c.JSON(http.StatusNotFound, gin.H{"error": "USER_NOT_FOUND"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "SEARCH_FAILED"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+// SearchUserByQuery searches for a user by their ID or username
+func SearchUserByQuery(c *gin.Context) {
+	query := strings.TrimSpace(c.Query("q"))
+	if query == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "QUERY_REQUIRED"})
+		return
+	}
+
+	usersCollection := database.GetCollection("users")
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	var filter bson.M
+	objID, err := primitive.ObjectIDFromHex(query)
+	if err == nil {
+		// If query is a valid ObjectID, search by ID
+		filter = bson.M{"_id": objID}
+	} else {
+		// Otherwise, search by case-insensitive exact username
+		filter = bson.M{"username": bson.M{"$regex": "^" + query + "$", "$options": "i"}}
+	}
+
+	var user SearchUser
+	err = usersCollection.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			c.JSON(http.StatusNotFound, gin.H{"error": "USER_NOT_FOUND"})

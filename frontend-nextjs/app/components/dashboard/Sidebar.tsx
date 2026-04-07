@@ -32,13 +32,32 @@ interface SidebarUser {
   winRate: number;
 }
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 function resolveAssetUrl(path?: string | null) {
   if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${API_BASE_URL}${path}`;
+
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    const productionDomain = "codemaster-q9oo.onrender.com";
+    if (path.includes(productionDomain)) {
+      if (IS_PRODUCTION) {
+        return path;
+      }
+      const url = new URL(path);
+      return `/api${url.pathname}`;
+    }
+    return path;
+  }
+  
+  let cleanPath = path.trim().replace(/\/+/g, "/");
+  if (cleanPath.startsWith("/")) cleanPath = cleanPath.substring(1);
+
+  if (!cleanPath.includes("/")) {
+    return `/api/uploads/profiles/${cleanPath}`;
+  }
+
+  return `/api/${cleanPath}`;
 }
 
 function getInitials(name?: string) {

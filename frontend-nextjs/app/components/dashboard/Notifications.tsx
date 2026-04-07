@@ -80,15 +80,17 @@ export default function Notifications() {
         let fetchedNotifications: Notification[] = [];
         if (notifRes.ok) {
           const data = await notifRes.json();
-          fetchedNotifications = data.map((n: any) => ({
-            id: n.id,
-            type: n.type,
-            title: n.title,
-            message: n.message,
-            timestamp: new Date(n.created_at),
-            read: n.read,
-            data: n.data,
-          }));
+          if (Array.isArray(data)) {
+            fetchedNotifications = data.map((n: any) => ({
+              id: n.id,
+              type: n.type,
+              title: n.title,
+              message: n.message,
+              timestamp: new Date(n.created_at),
+              read: n.read,
+              data: n.data,
+            }));
+          }
         }
 
         // Fetch duel invites (existing logic)
@@ -126,9 +128,11 @@ export default function Notifications() {
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5000); // Poll every 5 seconds
+    const interval = setInterval(fetchNotifications, 2000); // Poll every 2 seconds for invitations
     return () => clearInterval(interval);
   }, []);
+
+  const [countdown, setCountdown] = useState<{ [key: string]: number }>({});
 
   const handleDuelAction = async (duelId: string, action: "accept" | "decline") => {
     try {
@@ -139,15 +143,37 @@ export default function Notifications() {
       });
 
       if (res.ok) {
-        removeNotification(`duel-${duelId}`);
         if (action === "accept") {
-          window.location.href = `/dashboard/duo/${duelId}`;
+          // Immediately start countdown for receiver
+          setCountdown(prev => ({ ...prev, [duelId]: 5 }));
+        } else {
+          removeNotification(`invite-${duelId}`);
         }
       }
     } catch (e) {
       console.error(`Failed to ${action} duel`);
     }
   };
+
+  // Effect to handle countdowns
+  useEffect(() => {
+    const activeDuelIds = Object.keys(countdown);
+    if (activeDuelIds.length === 0) return;
+
+    const timers = activeDuelIds.map(duelId => {
+      if (countdown[duelId] > 0) {
+        return setTimeout(() => {
+          setCountdown(prev => ({ ...prev, [duelId]: prev[duelId] - 1 }));
+        }, 1000);
+      } else {
+        // Redirect once finished
+        window.location.href = `/dashboard/duo/${duelId}`;
+        return null;
+      }
+    });
+
+    return () => timers.forEach(t => t && clearTimeout(t));
+  }, [countdown]);
 
   const markAsRead = (id: string) => {
     setNotifications(prev =>
@@ -267,25 +293,34 @@ export default function Notifications() {
                         <p className="text-xs text-gray-400 mt-1">{notification.message}</p>
                         
                         {notification.type === "duel_invite" && notification.duelId && (
-                          <div className="mt-3 flex gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDuelAction(notification.duelId!, "accept");
-                              }}
-                              className="flex-1 rounded-lg bg-emerald-500 py-1.5 text-[10px] font-black uppercase tracking-widest text-white hover:opacity-90 transition-all"
-                            >
-                              Accept
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDuelAction(notification.duelId!, "decline");
-                              }}
-                              className="flex-1 rounded-lg bg-white/5 border border-white/10 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all"
-                            >
-                              Decline
-                            </button>
+                          <div className="mt-3">
+                            {countdown[notification.duelId] !== undefined ? (
+                              <div className="flex flex-col items-center bg-pink-500/10 rounded-xl p-3 border border-pink-500/20">
+                                <span className="text-2xl font-black text-pink-500 mb-1">{countdown[notification.duelId]}</span>
+                                <span className="text-[8px] font-black uppercase tracking-widest text-pink-400">Match Starting...</span>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDuelAction(notification.duelId!, "accept");
+                                  }}
+                                  className="flex-1 rounded-lg bg-emerald-500 py-1.5 text-[10px] font-black uppercase tracking-widest text-white hover:opacity-90 transition-all"
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDuelAction(notification.duelId!, "decline");
+                                  }}
+                                  className="flex-1 rounded-lg bg-white/5 border border-white/10 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all"
+                                >
+                                  Decline
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
 

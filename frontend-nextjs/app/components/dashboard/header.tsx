@@ -12,13 +12,39 @@ interface HeaderProps {
   onMenuClick?: () => void;
 }
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 function resolveAssetUrl(path?: string | null) {
   if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${API_BASE_URL}${path}`;
+
+  // If it's a full URL, check if it's our own production domain
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    const productionDomain = "codemaster-q9oo.onrender.com"; // Replace with your actual production domain
+    if (path.includes(productionDomain)) {
+      // If in production, use the full URL directly
+      if (IS_PRODUCTION) {
+        return path;
+      }
+      // If in development, rewrite to local proxy
+      const url = new URL(path);
+      return `/api${url.pathname}`;
+    }
+    // External URL, return as is
+    return path;
+  }
+
+  // Handle relative paths
+  let cleanPath = path.trim().replace(/\/+/g, "/");
+  if (cleanPath.startsWith("/")) cleanPath = cleanPath.substring(1);
+
+  // If it's a profile pic upload filename (e.g., "image.jpg")
+  if (!cleanPath.includes("/")) {
+    return `/api/uploads/profiles/${cleanPath}`;
+  }
+
+  // If it's already a full relative path (e.g., "uploads/profiles/image.jpg")
+  return `/api/${cleanPath}`;
 }
 
 function ProfileAvatarIcon() {

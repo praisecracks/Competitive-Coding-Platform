@@ -16,11 +16,59 @@ import (
 	"codingplatform/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// GetReferralCode returns the user's referral code, generating one if it doesn't exist.
+func GetReferralCode(c *gin.Context) {
+	userID, ok := getUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "UNAUTHORIZED"})
+		return
+	}
+
+	usersCollection := database.GetCollection("users")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var user models.User
+	err := usersCollection.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "USER_NOT_FOUND"})
+		return
+	}
+
+	if user.ReferralCode != "" {
+		c.JSON(http.StatusOK, gin.H{"referralCode": user.ReferralCode})
+		return
+	}
+
+	// Generate a new referral code
+	newReferralCode := uuid.New().String()
+
+	update := bson.M{
+		"$set": bson.M{
+			"referral_code": newReferralCode,
+			"updated_at":    time.Now().UTC(),
+		},
+	}
+
+	_, err = usersCollection.UpdateOne(ctx, bson.M{"_id": userID}, update)
+	if err != nil {
+		fmt.Printf(">>> REFERRAL_CODE_UPDATE_ERROR: user=%s, error=%v\n", userID.Hex(), err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "FAILED_TO_UPDATE_REFERRAL_CODE",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"referralCode": newReferralCode})
+}
 
 // helper to get userID from middleware
 func getUserID(c *gin.Context) (primitive.ObjectID, bool) {
@@ -79,6 +127,11 @@ func normalizeStoredFilePath(path string) string {
 		return path
 	}
 
+	// If it's just a filename without any path segments, assume it's in uploads/profiles
+	if !strings.Contains(path, "/") {
+		path = "/uploads/profiles/" + path
+	}
+
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
@@ -123,19 +176,22 @@ func GetProfile(c *gin.Context) {
 	resolvedProfilePic := resolvePublicFileURL(c, user.ProfilePic)
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":            user.ID.Hex(),
-		"username":      user.Username,
-		"email":         user.Email,
-		"profile_pic":   resolvedProfilePic,
-		"country":       user.Country,
-		"rank":          user.Rank,
-		"role":          user.Role,
-		"bio":           user.Bio,
-		"totalSolved":   solvedCount,
-		"currentStreak": currentStreak,
-		"joinDate":      user.CreatedAt,
-		"githubUrl":     user.GithubUrl,
-		"linkedinUrl":   user.LinkedinUrl,
+		"id":                 user.ID.Hex(),
+		"username":           user.Username,
+		"email":              user.Email,
+		"profile_pic":        resolvedProfilePic,
+		"country":            user.Country,
+		"rank":               user.Rank,
+		"role":               user.Role,
+		"bio":                user.Bio,
+		"totalSolved":        solvedCount,
+		"currentStreak":      currentStreak,
+		"joinDate":           user.CreatedAt,
+		"githubUrl":          user.GithubUrl,
+		"linkedinUrl":        user.LinkedinUrl,
+		"publicProfile":      user.PublicProfile,
+		"emailNotifications": user.EmailNotifications,
+		"challengeReminders": user.ChallengeReminders,
 	})
 }
 
@@ -530,11 +586,11 @@ func GetAnalytics(c *gin.Context) {
 	weeklyProgress := []gin.H{}
 	now := time.Now()
 	for i := 6; i >= 0; i-- {
-		day := now.AddDate(0, 0, -i)
+		day := now.AddDate(0, 0, -i).UTC()
 		dayKey := day.Format("2006-01-02")
 		count := 0
 		for _, sub := range submissions {
-			if sub.CreatedAt.Format("2006-01-02") == dayKey {
+			if sub.CreatedAt.UTC().Format("2006-01-02") == dayKey {
 				count++
 			}
 		}
@@ -706,15 +762,15 @@ func calculateCurrentStreak(submissions []models.SubmissionRecord) int {
 		if submission.Status != "accepted" {
 			continue
 		}
-		dayKey := submission.CreatedAt.Format("2006-01-02")
+		dayKey := submission.CreatedAt.UTC().Format("2006-01-02")
 		daySet[dayKey] = true
 	}
 
 	streak := 0
-	current := time.Now()
+	current := time.Now().UTC()
 
 	for {
-		dayKey := current.Format("2006-01-02")
+		dayKey := current.UTC().Format("2006-01-02")
 		if !daySet[dayKey] {
 			break
 		}

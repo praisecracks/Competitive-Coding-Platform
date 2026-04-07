@@ -19,6 +19,7 @@ type ProfileData = {
   githubUrl?: string;
   linkedinUrl?: string;
   role?: string;
+  referralCode?: string;
 };
 
 type SubmissionItem = {
@@ -42,8 +43,8 @@ type InsightItem = {
   tone: InsightTone;
 };
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 const DEFAULT_BIO = "Building, learning, and improving every day.";
 const DEFAULT_RANK = "Beginner";
@@ -64,8 +65,27 @@ const RANK_OPTIONS = [
 
 function resolveAssetUrl(path?: string | null) {
   if (!path) return null;
-  // Return as-is - the backend should return a full accessible URL
-  return path;
+  
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    const productionDomain = "codemaster-q9oo.onrender.com";
+    if (path.includes(productionDomain)) {
+      if (IS_PRODUCTION) {
+        return path;
+      }
+      const url = new URL(path);
+      return `/api${url.pathname}`;
+    }
+    return path;
+  }
+  
+  let cleanPath = path.trim().replace(/\/+/g, "/");
+  if (cleanPath.startsWith("/")) cleanPath = cleanPath.substring(1);
+
+  if (!cleanPath.includes("/")) {
+    return `/api/uploads/profiles/${cleanPath}`;
+  }
+
+  return `/api/${cleanPath}`;
 }
 
 function clampUsername(value: string) {
@@ -101,6 +121,8 @@ function truncateText(value: string, max: number) {
   return value.length > max ? `${value.slice(0, max)}…` : value;
 }
 
+const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
+
 export default function ProfilePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +135,7 @@ export default function ProfilePage() {
   const [notification, setNotification] = useState<Notice | null>(null);
   const [profileError, setProfileError] = useState("");
   const [statsError, setStatsError] = useState("");
+  const [referralLink, setReferralLink] = useState("");
 
   const [recentActivity, setRecentActivity] = useState<SubmissionItem[]>([]);
   const [imageError, setImageError] = useState(false);
@@ -173,6 +196,7 @@ export default function ProfilePage() {
         currentStreak: currentStreak,
         githubUrl: currentGithubUrl,
         linkedinUrl: currentLinkedinUrl,
+        referralCode: payload?.referralCode ?? user?.referralCode ?? "",
       })
     );
 
@@ -203,7 +227,7 @@ export default function ProfilePage() {
 
   const loadProfilePage = async (token: string) => {
     setLoading(true);
-    await Promise.all([fetchProfile(token), fetchDashboardStats(token)]);
+    await Promise.all([fetchProfile(token), fetchDashboardStats(token), fetchReferralCode(token)]);
     setLoading(false);
   };
 
@@ -211,7 +235,8 @@ export default function ProfilePage() {
     try {
       setProfileError("");
 
-      const res = await fetch(`${API_BASE_URL}/profile`, {
+      // Use relative /api path to ensure proxy works correctly
+      const res = await fetch(`/api/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -247,7 +272,7 @@ export default function ProfilePage() {
         role: data.role || "user",
       };
 
-      setUser(normalizedUser);
+      setUser((prev) => ({ ...prev, ...normalizedUser }));
       syncSidebarCache(normalizedUser);
     } catch (error) {
       console.error("Failed to fetch profile:", error);
@@ -256,11 +281,33 @@ export default function ProfilePage() {
     }
   };
 
+  const fetchReferralCode = async (token: string) => {
+    try {
+      const res = await fetch(`/api/profile/referral-code`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const fullReferralLink = `${FRONTEND_URL}/signup?ref=${data.referralCode}`;
+        setReferralLink(fullReferralLink);
+        setUser((prev) => (prev ? { ...prev, referralCode: data.referralCode ?? undefined } : null));
+      } else {
+        console.error("Failed to fetch referral code:", res.status);
+      }
+    } catch (error) {
+      console.error("Failed to fetch referral code:", error);
+    }
+  };
+
   const fetchDashboardStats = async (token: string) => {
     try {
       setStatsError("");
 
-      const res = await fetch(`${API_BASE_URL}/dashboard/stats`, {
+      // Use relative /api path to ensure proxy works correctly
+      const res = await fetch(`/api/dashboard/stats`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -480,7 +527,7 @@ export default function ProfilePage() {
     if (!user?.joinDate) return "—";
     const parsed = new Date(user.joinDate);
     if (Number.isNaN(parsed.getTime())) return "—";
-    return parsed.getFullYear();
+    return parsed.getFullYear().toString();
   }, [user?.joinDate]);
 
   const avatarInitials = useMemo(() => {
@@ -690,43 +737,43 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className={`space-y-6 ${isAdmin ? 'bg-[#0a0a0a]' : ''}`}>
+    <div className={`space-y-4 ${isAdmin ? 'bg-[#0a0a0a]' : ''}`}>
       {notification && (
         <div className="fixed right-6 top-24 z-[100]">
           <div
-            className={`rounded-xl border px-4 py-3 shadow-2xl backdrop-blur-xl ${
+            className={`rounded-xl border px-4 py-2 shadow-2xl backdrop-blur-xl ${
               notification.type === "success"
                 ? "border-green-500/30 bg-green-500/10 text-green-300"
                 : "border-red-500/30 bg-red-500/10 text-red-300"
             }`}
           >
-            <p className="text-sm font-medium">{notification.msg}</p>
+            <p className="text-xs font-medium">{notification.msg}</p>
           </div>
         </div>
       )}
 
       {(profileError || statsError) && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {profileError && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
-              <p className="text-sm text-red-300">{profileError}</p>
+            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2">
+              <p className="text-xs text-red-300">{profileError}</p>
             </div>
           )}
           {statsError && (
-            <div className="rounded-xl border border-pink-500/20 bg-pink-500/10 px-4 py-3">
-              <p className="text-sm text-pink-200">{statsError}</p>
+            <div className="rounded-xl border border-pink-500/20 bg-pink-500/10 px-4 py-2">
+              <p className="text-xs text-pink-200">{statsError}</p>
             </div>
           )}
         </div>
       )}
 
-      <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 sm:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+      <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="relative group">
               <div
                 onClick={handleAvatarIntent}
-                className={`flex h-24 w-24 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 ${isAdmin ? 'border-purple-500/30' : 'border-white/10'} bg-gradient-to-br from-white/[0.06] to-white/[0.02] transition hover:border-pink-500/40 shadow-2xl`}
+                className={`flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 ${isAdmin ? 'border-purple-500/30' : 'border-white/10'} bg-gradient-to-br from-white/[0.06] to-white/[0.02] transition hover:border-pink-500/40 shadow-xl`}
               >
                 {resolvedProfilePic && !imageError ? (
                   <img
@@ -736,24 +783,24 @@ export default function ProfilePage() {
                     onError={() => setImageError(true)}
                   />
                 ) : (
-                  <span className="text-2xl font-bold uppercase tracking-wide text-white/70">
+                  <span className="text-xl font-bold uppercase tracking-wide text-white/70">
                     {avatarInitials}
                   </span>
                 )}
               </div>
               {isAdmin && (
-                <div className="absolute -top-1 -right-1 h-6 w-6 rounded-lg bg-purple-500 flex items-center justify-center shadow-lg border border-white/10">
-                  <span className="text-[10px]">🛡️</span>
+                <div className="absolute -top-1 -right-1 h-5 w-5 rounded-lg bg-purple-500 flex items-center justify-center shadow-lg border border-white/10">
+                  <span className="text-[9px]">🛡️</span>
                 </div>
               )}
 
               <button
                 onClick={handleAvatarIntent}
-                className="absolute -bottom-1 -right-1 rounded-full border border-white/10 bg-gradient-to-r from-pink-500 to-purple-500 p-2 text-white shadow-lg"
+                className="absolute -bottom-1 -right-1 rounded-full border border-white/10 bg-gradient-to-r from-pink-500 to-purple-500 p-1.5 text-white shadow-lg"
                 type="button"
               >
                 <svg
-                  className="h-3.5 w-3.5"
+                  className="h-3 w-3"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -782,24 +829,24 @@ export default function ProfilePage() {
             </div>
 
             <div className="min-w-0">
-              <h1 className="mt-2 max-w-[250px] truncate text-3xl font-semibold text-white">
+              <h1 className="mt-1 max-w-[250px] truncate text-2xl font-semibold text-white">
                 {user.username}
               </h1>
-              <p className="mt-1 text-sm text-gray-500">{user.email}</p>
-              <p className="mt-3 max-w-2xl line-clamp-3 text-sm leading-7 text-gray-400">
+              <p className="text-xs text-gray-500">{user.email}</p>
+              <p className="mt-2 max-w-2xl line-clamp-2 text-xs leading-6 text-gray-400">
                 {user.bio || "No bio added yet."}
               </p>
 
               {(user.githubUrl || user.linkedinUrl) && (
-                <div className="mt-4 flex flex-wrap gap-3">
+                <div className="mt-3 flex flex-wrap gap-2">
                   {user.githubUrl && (
                     <a
                       href={user.githubUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300 transition hover:bg-white/[0.06] hover:text-white"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] text-gray-300 transition hover:bg-white/[0.06] hover:text-white"
                     >
-                      <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
                         <path
                           fillRule="evenodd"
                           d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
@@ -814,9 +861,9 @@ export default function ProfilePage() {
                       href={user.linkedinUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300 transition hover:bg-white/[0.06] hover:text-white"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] text-gray-300 transition hover:bg-white/[0.06] hover:text-white"
                     >
-                      <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451c.979 0 1.771-.773 1.771-1.729V1.729C24 .774 23.204 0 22.225 0z" />
                       </svg>
                       LinkedIn
@@ -825,54 +872,48 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <Badge label={user.role === 'super_admin' ? 'Super Admin' : user.role === 'sub_admin' ? 'Admin' : user.rank || DEFAULT_RANK} tone={user.role === 'super_admin' ? 'purple' : 'pink'} />
                 <Badge label={`${profileCompleteness}% complete`} tone="pink" />
-                <Badge
-                  label={
-                    (user.totalSolved ?? 0) > 0 ? "Active competitor" : "New competitor"
-                  }
-                  tone="neutral"
-                />
               </div>
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className="rounded-lg border border-white/10 bg-white text-black px-6 py-2.5 text-xs font-bold uppercase tracking-widest shadow-xl hover:bg-gray-200 transition-all active:scale-95"
+              className="rounded-lg border border-white/10 bg-white text-black px-4 py-2 text-[10px] font-bold uppercase tracking-widest shadow-xl hover:bg-gray-200 transition-all active:scale-95"
               type="button"
             >
-              Configure Identity
+              Edit Identity
             </button>
           </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Solved" value={user.totalSolved ?? 0} />
         <StatCard label="Streak" value={`${user.currentStreak ?? 0} days`} />
         <StatCard label="Rank" value={user.rank || DEFAULT_RANK} />
         <StatCard label="Joined" value={displayJoinYear} />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-6">
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold text-white">Profile Strength</h2>
-              <p className="mt-1 text-xs text-gray-500">
-                A metric evaluating your account completeness.
+      <section className="grid gap-4 xl:grid-cols-[1fr_0.8fr]">
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+            <div className="mb-3">
+              <h2 className="text-base font-semibold text-white">Profile Strength</h2>
+              <p className="mt-0.5 text-[10px] text-gray-500">
+                Metric evaluating account completeness.
               </p>
             </div>
 
-            <div className="mb-5">
-              <div className="mb-2 flex items-center justify-between text-xs">
+            <div className="mb-4">
+              <div className="mb-1.5 flex items-center justify-between text-[10px]">
                 <p className="text-gray-400">Completion</p>
                 <p className="font-bold text-pink-500">{profileCompleteness}%</p>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+              <div className="h-1 w-full overflow-hidden rounded-full bg-white/5">
                 <div
                   className="h-full rounded-full bg-pink-500 transition-all duration-500"
                   style={{ width: `${profileCompleteness}%` }}
@@ -881,7 +922,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="grid gap-2">
-              {intelligenceInsights.slice(0, 3).map((item, index) => (
+              {intelligenceInsights.slice(0, 2).map((item, index) => (
                 <InsightCard
                   key={`${item.title}-${index}`}
                   title={item.title}
@@ -892,61 +933,62 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6">
-            <h2 className="text-lg font-semibold text-white">Account Information</h2>
+          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+            <h2 className="text-base font-semibold text-white">Account Information</h2>
 
-            <div className="mt-5 grid gap-5 md:grid-cols-2">
-              <InfoItem label="Email" value={user.email || "Not available"} />
-              <InfoItem label="Username" value={user.username || "Not available"} />
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <InfoItem label="Email" value={user.email} />
+              <InfoItem label="Username" value={user.username} />
               <InfoItem label="Country" value={user.country ? `${getCountryFlag(user.country)} ${user.country}` : "Not specified"} />
-              <InfoItem label="Member Since" value={displayJoinDate} />
+              <InfoItem label="Member Since" value={displayJoinYear} />
               <InfoItem label="User ID" value={user.id || "Not available yet"} />
-              <InfoItem label="GitHub" value={user.githubUrl || "Not added"} />
-              <InfoItem label="LinkedIn" value={user.linkedinUrl || "Not added"} />
+              {referralLink && (
+                <InfoItem label="Referral Link" value={referralLink} isReferral={true} />
+              )}
             </div>
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6">
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Smart Recommendations</h2>
-              <span className="text-xs text-pink-300">Adaptive</span>
+              <h2 className="text-base font-semibold text-white">Smart Tips</h2>
+              <span className="text-[10px] text-pink-300">Adaptive</span>
             </div>
 
-            <div className="mt-5 space-y-3">
+            <div className="mt-4 space-y-2">
               {recommendedActions.map((action, index) => (
                 <div
                   key={`${action}-${index}`}
-                  className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+                  className="rounded-xl border border-white/10 bg-white/[0.03] p-3"
                 >
-                  <p className="text-sm text-gray-200">{action}</p>
+                  <p className="text-[11px] text-gray-200">{action}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-6">
+          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
+              <h2 className="text-base font-semibold text-white">Recent Activity</h2>
               <button
                 onClick={() => router.push("/dashboard/challenges")}
-                className="text-sm text-pink-300 transition hover:text-pink-200"
+                className="text-xs text-pink-300 transition hover:text-pink-200"
                 type="button"
               >
                 View all
               </button>
             </div>
 
-            <div className="mt-5 space-y-3">
+            <div className="mt-4 space-y-2">
               {recentActivity.length === 0 ? (
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-10 text-center">
-                  <p className="text-sm text-gray-400">
-                    No recent activity yet. Start solving challenges.
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center">
+                  <p className="text-xs text-gray-400">
+                    No activity yet.
                   </p>
                 </div>
               ) : (
-                recentActivity.slice(0, 5).map((item, index) => (
+                recentActivity.slice(0, 3).map((item, index) => (
                   <ActivityItem
                     key={`${item.id ?? index}-${index}`}
                     title={item.title || `Challenge #${item.id ?? index + 1}`}
@@ -997,7 +1039,7 @@ function Badge({
       : "border-white/10 bg-white/[0.04] text-gray-300";
 
   return (
-    <span className={`rounded-full border px-3 py-1 text-xs ${toneClass}`}>
+    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${toneClass}`}>
       {label}
     </span>
   );
@@ -1020,11 +1062,11 @@ function InsightCard({
       : "text-blue-400";
 
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/[0.01] p-3">
-      <div className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current ${toneClass}`} />
+    <div className="flex items-start gap-2 rounded-xl border border-white/5 bg-white/[0.01] p-2.5">
+      <div className={`mt-1 h-1 w-1 shrink-0 rounded-full bg-current ${toneClass}`} />
       <div>
-        <p className="text-xs font-bold text-white">{title}</p>
-        <p className="mt-1 text-[11px] leading-relaxed text-gray-500">{description}</p>
+        <p className="text-[11px] font-bold text-white">{title}</p>
+        <p className="mt-0.5 text-[10px] leading-relaxed text-gray-500">{description}</p>
       </div>
     </div>
   );
@@ -1032,34 +1074,96 @@ function InsightCard({
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-[#0a0a0a] p-4 text-center">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="mt-2 text-xl font-semibold text-white">{value}</p>
+    <div className="rounded-xl border border-white/10 bg-[#0a0a0a] p-3 text-center transition-all hover:border-pink-500/20">
+      <p className="text-[10px] uppercase tracking-wider text-gray-500">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-white tracking-tight">{value}</p>
     </div>
   );
 }
 
-function InfoItem({ label, value }: { label: string; value: string }) {
-  const isUrl = /^https?:\/\//i.test(value);
+import { Copy, Share2, MessageCircle } from "lucide-react";
+
+function InfoItem({ label, value, isReferral = false }: { label: string; value: string | null | undefined; isReferral?: boolean }) {
+  const isUrl = /^https?:\/\//i.test(value || "");
+  const isUserId = label === "User ID";
+  const [copied, setCopied] = useState(false);
+
+  const displayValue = value || "Not available";
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(displayValue);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  const shareOnWhatsApp = () => {
+    const message = `Check out CodeMaster! Join me using my referral link: ${displayValue}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+  };
+
+  const shareOnLinkedIn = () => {
+    const url = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(displayValue)}&title=${encodeURIComponent("Join me on CodeMaster!")}&summary=${encodeURIComponent("Code sharper. Compete smarter. Learn faster.")}`;
+    window.open(url, "_blank");
+  };
 
   return (
     <div className="min-w-0">
-      <p className="mb-1 text-xs text-gray-500">{label}</p>
-      {isUrl ? (
-        <a
-          href={value}
-          target="_blank"
-          rel="noreferrer"
-          className="block max-w-[200px] truncate text-sm text-white underline-offset-4 hover:underline"
-          title={value}
-        >
-          {value}
-        </a>
-      ) : (
-        <p className="max-w-[200px] truncate text-sm text-white" title={value}>
-          {value}
-        </p>
-      )}
+      <p className="mb-0.5 text-[10px] text-gray-500 uppercase tracking-tight">{label}</p>
+      <div className="flex items-center gap-1.5">
+        {isUrl && !isReferral ? (
+          <a
+            href={displayValue}
+            target="_blank"
+            rel="noreferrer"
+            className="block max-w-[180px] truncate text-xs text-white underline-offset-4 hover:underline"
+            title={displayValue}
+          >
+            {displayValue}
+          </a>
+        ) : (
+          <p className="max-w-[180px] truncate text-xs text-white" title={displayValue}>
+            {displayValue}
+          </p>
+        )}
+        {(isUserId || isReferral) && displayValue !== "Not available" && (
+          <>
+            <button
+              onClick={handleCopy}
+              className="text-gray-500 hover:text-white transition-colors relative"
+              title="Copy"
+            >
+              <Copy size={12} />
+              {copied && (
+                <span className="absolute -top-6 left-1/2 -translate-x-1/2 rounded bg-gray-800 px-1.5 py-0.5 text-[9px] text-white whitespace-nowrap shadow-xl">
+                  Copied!
+                </span>
+              )}
+            </button>
+            {isReferral && (
+              <>
+                <button
+                  onClick={shareOnWhatsApp}
+                  className="text-gray-500 hover:text-green-500 transition-colors"
+                  title="Share on WhatsApp"
+                >
+                  <MessageCircle size={12} />
+                </button>
+                <button
+                  onClick={shareOnLinkedIn}
+                  className="text-gray-500 hover:text-blue-500 transition-colors"
+                  title="Share on LinkedIn"
+                >
+                  <Share2 size={12} />
+                </button>
+              </>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -1078,21 +1182,21 @@ function ActivityItem({
   const isCompleted = status.toLowerCase() === "completed";
 
   return (
-    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-white">{title}</p>
-        <p className="mt-1 text-xs text-gray-500">{date || "Recent activity"}</p>
+        <p className="truncate text-xs font-medium text-white">{title}</p>
+        <p className="mt-0.5 text-[10px] text-gray-500">{date || "Recent"}</p>
       </div>
 
       <div className="ml-4 text-right">
         <p
-          className={`text-xs font-medium ${
-            isCompleted ? "text-green-400" : "text-yellow-400"
+          className={`text-[10px] font-bold ${
+            isCompleted ? "text-emerald-400" : "text-amber-400"
           }`}
         >
           {status}
         </p>
-        <p className="mt-1 text-xs text-gray-500">Score: {score}</p>
+        <p className="mt-0.5 text-[10px] text-gray-500">+{score} pts</p>
       </div>
     </div>
   );

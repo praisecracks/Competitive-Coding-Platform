@@ -23,8 +23,13 @@ func RegisterRoutes(r *gin.Engine) {
 	}
 
 	// Challenge routes
-	r.GET("/challenges", controllers.GetChallenges)
-	r.GET("/challenges/:id", controllers.GetChallengeByID)
+	challenges := r.Group("/challenges")
+	challenges.Use(middleware.OptionalAuthMiddleware())
+	{
+		challenges.GET("", controllers.GetChallenges)
+		challenges.GET("/:id", controllers.GetChallengeByID)
+		challenges.POST("/:id/open", middleware.AuthMiddleware(), controllers.MarkChallengeOpened)
+	}
 
 	// Protected routes
 	protected := r.Group("/")
@@ -37,6 +42,7 @@ func RegisterRoutes(r *gin.Engine) {
 		protected.PUT("/profile", controllers.UpdateProfile)
 		protected.POST("/profile/avatar", controllers.UploadAvatar)
 		protected.POST("/profile/change-password", controllers.ChangePassword)
+		protected.GET("/profile/referral-code", controllers.GetReferralCode)
 
 		// Admin routes
 		admin := protected.Group("/admin")
@@ -86,8 +92,15 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// Leaderboard and Search
 	r.GET("/leaderboard", controllers.GetLeaderboard)
-	r.GET("/search", controllers.GetSearch)
+
+	search := r.Group("/search")
+	search.Use(middleware.OptionalAuthMiddleware())
+	{
+		search.GET("", controllers.GetSearch)
+	}
+
 	r.GET("/search/user/:id", controllers.GetUserByID)
+	r.GET("/users/search", controllers.SearchUserByQuery)
 
 	// News Proxy
 	r.GET("/news-proxy", controllers.ProxyNews)

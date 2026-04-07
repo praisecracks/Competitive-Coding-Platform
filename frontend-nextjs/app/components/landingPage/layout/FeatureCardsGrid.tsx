@@ -1,0 +1,318 @@
+"use client";
+
+import React from "react";
+import { motion } from "framer-motion";
+import {
+  AcademicCapIcon,
+  ChartBarIcon,
+  ArrowPathRoundedSquareIcon,
+  TrophyIcon,
+  SparklesIcon,
+  ClockIcon,
+  ChartPieIcon,
+  FireIcon,
+} from "@heroicons/react/24/outline";
+
+const featureCards = [
+  {
+    title: "Guided Mastery",
+    label: "Learning System",
+    description:
+      "Structured missions, intelligent hints, and clear challenge flow help users build real coding confidence over time.",
+    icon: AcademicCapIcon,
+    accent: "from-cyan-500/15 to-blue-500/15",
+    border: "hover:border-cyan-400/25",
+    preview: "learning",
+  },
+  {
+    title: "Mission Reports",
+    label: "Performance Intel",
+    description:
+      "Post-challenge breakdowns highlight mistakes, strengths, and better paths for improvement after every mission.",
+    icon: ChartBarIcon,
+    accent: "from-pink-500/15 to-purple-500/15",
+    border: "hover:border-pink-500/25",
+    preview: "report",
+  },
+  {
+    title: "Replay System",
+    label: "Review Flow",
+    description:
+      "Revisit your mission step by step to understand how you solved, where you slowed down, and what to improve next.",
+    icon: ArrowPathRoundedSquareIcon,
+    accent: "from-amber-500/15 to-orange-500/15",
+    border: "hover:border-amber-400/25",
+    preview: "replay",
+  },
+  {
+    title: "Duel Mode",
+    label: "Competitive Layer",
+    description:
+      "Competitive coding sessions sharpen speed, confidence, and decision-making under pressure.",
+    icon: TrophyIcon,
+    accent: "from-emerald-500/15 to-teal-500/15",
+    border: "hover:border-emerald-400/25",
+    preview: "duel",
+  },
+];
+
+function LearningPreview() {
+  return (
+    <div className="rounded-[18px] border border-white/10 bg-black/25 p-3.5">
+      <div className="mb-2.5 flex items-center justify-between">
+        <span className="text-[9px] uppercase tracking-[0.18em] text-gray-500">
+          Progress Path
+        </span>
+        <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-[0.18em] text-cyan-300">
+          <SparklesIcon className="h-3 w-3" />
+          Guided
+        </span>
+      </div>
+
+      <div className="space-y-2.5">
+        {[
+          { name: "Arrays Basics", active: true },
+          { name: "Hash Map Patterns", active: true },
+          { name: "Pointer Logic", active: false },
+        ].map((item) => (
+          <div
+            key={item.name}
+            className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2"
+          >
+            <span className="text-[13px] text-gray-300">{item.name}</span>
+            <span
+              className={`text-[9px] font-semibold uppercase tracking-[0.16em] ${
+                item.active ? "text-emerald-300" : "text-gray-500"
+              }`}
+            >
+              {item.active ? "Unlocked" : "Queued"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReportPreview() {
+  return (
+    <div className="rounded-[18px] border border-white/10 bg-black/25 p-3.5">
+      <div className="mb-2.5 flex items-center justify-between">
+        <span className="text-[9px] uppercase tracking-[0.18em] text-gray-500">
+          Latest Report
+        </span>
+        <span className="text-[9px] uppercase tracking-[0.18em] text-pink-300">
+          Mission #24
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2.5">
+        {[
+          { label: "Accuracy", value: "94%" },
+          { label: "Runtime", value: "O(n)" },
+          { label: "Score", value: "+12" },
+          { label: "Mistakes", value: "2" },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5"
+          >
+            <p className="text-[9px] uppercase tracking-[0.16em] text-gray-500">
+              {item.label}
+            </p>
+            <p className="mt-1 text-[15px] font-black text-white">
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReplayPreview() {
+  return (
+    <div className="rounded-[18px] border border-white/10 bg-black/25 p-3.5">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[9px] uppercase tracking-[0.18em] text-gray-500">
+          Replay Timeline
+        </span>
+        <ClockIcon className="h-3.5 w-3.5 text-amber-300" />
+      </div>
+
+      <div className="space-y-2.5">
+        {[
+          { time: "00:12", label: "Brute-force attempt", active: false },
+          { time: "01:08", label: "Pattern recognized", active: true },
+          { time: "02:14", label: "Hash map switch", active: true },
+        ].map((item, index) => (
+          <div key={item.time} className="flex gap-2.5">
+            <div className="flex flex-col items-center">
+              <span
+                className={`mt-1 h-2 w-2 rounded-full ${
+                  item.active ? "bg-amber-300" : "bg-white/20"
+                }`}
+              />
+              {index !== 2 && <span className="mt-1 h-7 w-px bg-white/10" />}
+            </div>
+
+            <div className="flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] text-gray-300">{item.label}</span>
+                <span className="text-[9px] uppercase tracking-[0.16em] text-gray-500">
+                  {item.time}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DuelPreview() {
+  return (
+    <div className="rounded-[18px] border border-white/10 bg-black/25 p-3.5">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[9px] uppercase tracking-[0.18em] text-gray-500">
+          Live Match
+        </span>
+        <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-[0.16em] text-emerald-300">
+          <FireIcon className="h-3 w-3" />
+          Ranked
+        </span>
+      </div>
+
+      <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[13px] font-semibold text-white">You</p>
+            <p className="text-[9px] uppercase tracking-[0.14em] text-gray-500">
+              Current score
+            </p>
+          </div>
+          <p className="text-[16px] font-black text-emerald-300">128</p>
+        </div>
+
+        <div className="my-3 h-px bg-white/10" />
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[13px] font-semibold text-white">Opponent</p>
+            <p className="text-[9px] uppercase tracking-[0.14em] text-gray-500">
+              Match score
+            </p>
+          </div>
+          <p className="text-[16px] font-black text-white">121</p>
+        </div>
+
+        <div className="mt-3.5 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full w-[68%] rounded-full bg-gradient-to-r from-emerald-400 to-teal-400" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeaturePreview({ type }: { type: string }) {
+  switch (type) {
+    case "learning":
+      return <LearningPreview />;
+    case "report":
+      return <ReportPreview />;
+    case "replay":
+      return <ReplayPreview />;
+    case "duel":
+      return <DuelPreview />;
+    default:
+      return null;
+  }
+}
+
+export default function FeatureCardsGrid() {
+  return (
+    <div className="mx-auto mt-12 max-w-5xl">
+      <div className="mb-8 text-center">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-pink-400">
+          What the platform offers
+        </p>
+
+        <h3 className="text-[1.85rem] font-black tracking-[-0.05em] text-white sm:text-[2.15rem]">
+          Product features designed for
+          <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+            {" "}real coding progress
+          </span>
+        </h3>
+
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-400">
+          Every layer of CODEMASTER is designed to help users learn better,
+          review faster, and improve with more clarity.
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {featureCards.map((feature, index) => {
+          const Icon = feature.icon;
+
+          return (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.18 }}
+              transition={{ duration: 0.4, delay: index * 0.05 }}
+              whileHover={{ y: -3 }}
+              className={`group relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))] p-4 shadow-[0_12px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl transition-all duration-300 ${feature.border} hover:bg-white/[0.045] sm:p-5`}
+            >
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              <div
+                className={`absolute right-0 top-0 h-24 w-24 rounded-full bg-gradient-to-br ${feature.accent} blur-3xl opacity-80`}
+              />
+
+              <div className="relative z-10">
+                <div className="mb-3.5 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-pink-400">
+                      {feature.label}
+                    </p>
+
+                    <h4 className="text-[1.2rem] font-black tracking-tight text-white sm:text-[1.35rem]">
+                      {feature.title}
+                    </h4>
+                  </div>
+
+                  <div
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br ${feature.accent}`}
+                  >
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+
+                <p className="max-w-[30rem] text-sm leading-6 text-gray-400">
+                  {feature.description}
+                </p>
+
+                <div className="mt-5">
+                  <FeaturePreview type={feature.preview} />
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-3.5">
+                  <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-gray-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500" />
+                    Product layer active
+                  </div>
+
+                  <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-gray-400">
+                    <ChartPieIcon className="h-3.5 w-3.5 text-pink-300" />
+                    Live-ready UI
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
