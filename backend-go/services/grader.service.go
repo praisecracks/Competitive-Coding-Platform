@@ -307,7 +307,7 @@ func executeSubmissionAgainstChallenge(
 		}
 	}
 
-	status := normalizeSubmissionStatus(summary.Status, summary.PassedTests, summary.TotalTests)
+	status := normalizeSubmissionStatus(summary.Status, summary.PassedTests, summary.TotalTests, strings.TrimSpace(summary.Error))
 	if len(summary.Output) == 0 {
 		summary.Output = []string{
 			fmt.Sprintf("Passed %d/%d test cases.", summary.PassedTests, summary.TotalTests),
@@ -328,13 +328,32 @@ func executeSubmissionAgainstChallenge(
 	}
 }
 
-func normalizeSubmissionStatus(status string, passed int, total int) string {
+func normalizeSubmissionStatus(status string, passed int, total int, errorCode string) string {
 	normalized := strings.ToLower(strings.TrimSpace(status))
+	trimmedError := strings.TrimSpace(errorCode)
+
+	if trimmedError != "" {
+		switch trimmedError {
+		case "FUNCTION_NOT_FOUND":
+			return "runtime_error"
+		case "EXECUTION_TIMEOUT":
+			return "runtime_error"
+		case "EXECUTION_FAILED":
+			return "runtime_error"
+		case "GRADING_PARSE_FAILED":
+			return "runtime_error"
+		}
+	}
 
 	switch normalized {
 	case "accepted":
 		return "accepted"
+	case "partial":
+		return "partial"
 	case "rejected":
+		if total > 0 && passed > 0 && passed < total {
+			return "partial"
+		}
 		return "rejected"
 	case "runtime_error":
 		return "runtime_error"
@@ -348,6 +367,10 @@ func normalizeSubmissionStatus(status string, passed int, total int) string {
 		return "accepted"
 	}
 
+	if total > 0 && passed > 0 && passed < total {
+		return "partial"
+	}
+
 	return "rejected"
 }
 
@@ -356,7 +379,15 @@ func parseGenericTestCases(testCases []models.ChallengeTestCase) []genericTestCa
 
 	for _, tc := range testCases {
 		input := strings.TrimSpace(tc.InputJSON)
+		if input == "" {
+			input = strings.TrimSpace(tc.Input)
+		}
+
 		expected := strings.TrimSpace(tc.ExpectedOutputJSON)
+		if expected == "" {
+			expected = strings.TrimSpace(tc.ExpectedOutput)
+		}
+
 		if input == "" || expected == "" {
 			continue
 		}
@@ -507,20 +538,37 @@ function __compare(expectedRaw, actual) {
       return __compareIntArraysAnyOrder(expected, actual);
 
     case "exact":
-	default:
-	if (typeof expected === "number") {
-		return Number(actual) === Number(expected);
-	}
+    default:
+      if (typeof expected === "number") {
+        return Number(actual) === Number(expected);
+      }
 
-	if (typeof expected === "string") {
-		return String(actual).trim() === String(expected).trim();
-	}
+      if (typeof expected === "string") {
+        return String(actual).trim() === String(expected).trim();
+      }
 
-  return JSON.stringify(actual) === JSON.stringify(expected);
+      return JSON.stringify(actual) === JSON.stringify(expected);
   }
 }
 
-const __fn = globalThis[__FUNCTION_NAME];
+function __resolveFunction(name) {
+  if (typeof globalThis[name] === "function") {
+    return globalThis[name];
+  }
+
+  try {
+    const candidate = eval(name);
+    if (typeof candidate === "function") {
+      return candidate;
+    }
+  } catch {
+    //
+  }
+
+  return undefined;
+}
+
+const __fn = __resolveFunction(__FUNCTION_NAME);
 const __results = [];
 let __passed = 0;
 
@@ -551,10 +599,17 @@ if (typeof __fn !== "function") {
     }
   }
 
+  let __status = "rejected";
+  if (__passed === __TEST_CASES.length) {
+    __status = "accepted";
+  } else if (__passed > 0) {
+    __status = "partial";
+  }
+
   process.stdout.write(JSON.stringify({
     passedTests: __passed,
     totalTests: __TEST_CASES.length,
-    status: __passed === __TEST_CASES.length ? "accepted" : "rejected",
+    status: __status,
     output: __results
   }));
 }
@@ -670,7 +725,7 @@ else:
     summary = {
         "passedTests": __passed,
         "totalTests": len(__TEST_CASES),
-        "status": "accepted" if __passed == len(__TEST_CASES) else "rejected",
+        "status": "accepted" if __passed == len(__TEST_CASES) else ("partial" if __passed > 0 else "rejected"),
         "output": __results,
     }
     print(json.dumps(summary))
@@ -897,15 +952,18 @@ func main() {
 		}
 	}
 
+	status := "rejected"
+	if passed == len(cases) {
+		status = "accepted"
+	} else if passed > 0 {
+		status = "partial"
+	}
+
 	summary := __Summary{
 		PassedTests: passed,
 		TotalTests:  len(cases),
-		Status:      "rejected",
+		Status:      status,
 		Output:      results,
-	}
-
-	if passed == len(cases) {
-		summary.Status = "accepted"
 	}
 
 	encoder := json.NewEncoder(os.Stdout)

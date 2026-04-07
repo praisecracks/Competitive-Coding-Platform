@@ -30,26 +30,16 @@
       "go": "package main\n\nfunc solve(nums []int, target int) []int {\n\t// Write your solution here\n\treturn []int{}\n}"
     },
     "testCases": [
-      {
-        "inputJson": "[[2,7,11,15],9]",
-        "expectedOutputJson": "[0,1]",
-        "isHidden": false
-      },
-      {
-        "inputJson": "[[3,2,4],6]",
-        "expectedOutputJson": "[1,2]",
-        "isHidden": true
-      },
-      {
-        "inputJson": "[[3,3],6]",
-        "expectedOutputJson": "[0,1]",
-        "isHidden": true
-      },
-      {
-        "inputJson": "[[1,5,8,11],13]",
-        "expectedOutputJson": "[1,2]",
-        "isHidden": true
-      }
+      { "inputJson": "[[2,7,11,15],9]", "expectedOutputJson": "[0,1]", "isHidden": false },
+      { "inputJson": "[[3,2,4],6]", "expectedOutputJson": "[1,2]", "isHidden": false },
+      { "inputJson": "[[3,3],6]", "expectedOutputJson": "[0,1]", "isHidden": true },
+      { "inputJson": "[[1,5,8,11],13]", "expectedOutputJson": "[1,2]", "isHidden": true },
+      { "inputJson": "[[10,22,5,75,65,80],85]", "expectedOutputJson": "[0,2]", "isHidden": true },
+      { "inputJson": "[[-3,4,3,90],0]", "expectedOutputJson": "[0,2]", "isHidden": true },
+      { "inputJson": "[[0,4,3,0],0]", "expectedOutputJson": "[0,3]", "isHidden": true },
+      { "inputJson": "[[1,2,3,4,5],9]", "expectedOutputJson": "[3,4]", "isHidden": true },
+      { "inputJson": "[[2,5,5,11],10]", "expectedOutputJson": "[1,2]", "isHidden": true },
+      { "inputJson": "[[-1,-2,-3,-4,-5],-8]", "expectedOutputJson": "[2,4]", "isHidden": true }
     ]
   },
   {
@@ -86,26 +76,16 @@
       "go": "package main\n\nfunc solve(s string) bool {\n\t// Write your solution here\n\treturn false\n}"
     },
     "testCases": [
-      {
-        "inputJson": "\"()[]{}\"",
-        "expectedOutputJson": "true",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"(]\"",
-        "expectedOutputJson": "false",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"([{}])\"",
-        "expectedOutputJson": "true",
-        "isHidden": true
-      },
-      {
-        "inputJson": "\"(((\"",
-        "expectedOutputJson": "false",
-        "isHidden": true
-      }
+      { "inputJson": "\"()[]{}\"", "expectedOutputJson": "true", "isHidden": false },
+      { "inputJson": "\"(]\"", "expectedOutputJson": "false", "isHidden": false },
+      { "inputJson": "\"([{}])\"", "expectedOutputJson": "true", "isHidden": true },
+      { "inputJson": "\"(((\"", "expectedOutputJson": "false", "isHidden": true },
+      { "inputJson": "\"\"", "expectedOutputJson": "true", "isHidden": true },
+      { "inputJson": "\"{[]}\"", "expectedOutputJson": "true", "isHidden": true },
+      { "inputJson": "\"([)]\"", "expectedOutputJson": "false", "isHidden": true },
+      { "inputJson": "\"(([]){})\"", "expectedOutputJson": "true", "isHidden": true },
+      { "inputJson": "\"(()\"", "expectedOutputJson": "false", "isHidden": true },
+      { "inputJson": "\"[({})](]\"", "expectedOutputJson": "false", "isHidden": true }
     ]
   },
   {
@@ -142,26 +122,16 @@
       "go": "package main\n\nfunc solve(s string) int {\n\t// Write your solution here\n\treturn 0\n}"
     },
     "testCases": [
-      {
-        "inputJson": "\"abcabcbb\"",
-        "expectedOutputJson": "3",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"bbbbb\"",
-        "expectedOutputJson": "1",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"pwwkew\"",
-        "expectedOutputJson": "3",
-        "isHidden": true
-      },
-      {
-        "inputJson": "\"\"",
-        "expectedOutputJson": "0",
-        "isHidden": true
-      }
+      { "inputJson": "\"abcabcbb\"", "expectedOutputJson": "3", "isHidden": false },
+      { "inputJson": "\"bbbbb\"", "expectedOutputJson": "1", "isHidden": false },
+      { "inputJson": "\"pwwkew\"", "expectedOutputJson": "3", "isHidden": true },
+      { "inputJson": "\"\"", "expectedOutputJson": "0", "isHidden": true },
+      { "inputJson": "\"dvdf\"", "expectedOutputJson": "3", "isHidden": true },
+      { "inputJson": "\"anviaj\"", "expectedOutputJson": "5", "isHidden": true },
+      { "inputJson": "\"abba\"", "expectedOutputJson": "2", "isHidden": true },
+      { "inputJson": "\"abcdef\"", "expectedOutputJson": "6", "isHidden": true },
+      { "inputJson": "\"tmmzuxt\"", "expectedOutputJson": "5", "isHidden": true },
+      { "inputJson": "\"au\"", "expectedOutputJson": "2", "isHidden": true }
     ]
   },
   {
@@ -198,26 +168,16 @@
       "go": "package main\n\nfunc solve(s string) bool {\n\t// Write your solution here\n\treturn false\n}"
     },
     "testCases": [
-      {
-        "inputJson": "\"A man, a plan, a canal: Panama\"",
-        "expectedOutputJson": "true",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"race a car\"",
-        "expectedOutputJson": "false",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\" \"",
-        "expectedOutputJson": "true",
-        "isHidden": true
-      },
-      {
-        "inputJson": "\"0P\"",
-        "expectedOutputJson": "false",
-        "isHidden": true
-      }
+      { "inputJson": "\"A man, a plan, a canal: Panama\"", "expectedOutputJson": "true", "isHidden": false },
+      { "inputJson": "\"race a car\"", "expectedOutputJson": "false", "isHidden": false },
+      { "inputJson": "\" \"", "expectedOutputJson": "true", "isHidden": true },
+      { "inputJson": "\"0P\"", "expectedOutputJson": "false", "isHidden": true },
+      { "inputJson": "\"Madam\"", "expectedOutputJson": "true", "isHidden": true },
+      { "inputJson": "\"No lemon, no melon\"", "expectedOutputJson": "true", "isHidden": true },
+      { "inputJson": "\"hello\"", "expectedOutputJson": "false", "isHidden": true },
+      { "inputJson": "\"12321\"", "expectedOutputJson": "true", "isHidden": true },
+      { "inputJson": "\"ab_a\"", "expectedOutputJson": "true", "isHidden": true },
+      { "inputJson": "\"abc123321cba\"", "expectedOutputJson": "true", "isHidden": true }
     ]
   },
   {
@@ -255,26 +215,16 @@
       "go": "package main\n\nfunc solve(s string) int {\n\t// Write your solution here\n\treturn 0\n}"
     },
     "testCases": [
-      {
-        "inputJson": "\"Hello World\"",
-        "expectedOutputJson": "5",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"   fly me   to   the moon  \"",
-        "expectedOutputJson": "4",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"luffy is still joyboy\"",
-        "expectedOutputJson": "6",
-        "isHidden": true
-      },
-      {
-        "inputJson": "\"a\"",
-        "expectedOutputJson": "1",
-        "isHidden": true
-      }
+      { "inputJson": "\"Hello World\"", "expectedOutputJson": "5", "isHidden": false },
+      { "inputJson": "\"   fly me   to   the moon  \"", "expectedOutputJson": "4", "isHidden": false },
+      { "inputJson": "\"luffy is still joyboy\"", "expectedOutputJson": "6", "isHidden": true },
+      { "inputJson": "\"a\"", "expectedOutputJson": "1", "isHidden": true },
+      { "inputJson": "\"day\"", "expectedOutputJson": "3", "isHidden": true },
+      { "inputJson": "\"OpenAI creates tools\"", "expectedOutputJson": "5", "isHidden": true },
+      { "inputJson": "\"   trailing spaces   \"", "expectedOutputJson": "6", "isHidden": true },
+      { "inputJson": "\"single\"", "expectedOutputJson": "6", "isHidden": true },
+      { "inputJson": "\"two words\"", "expectedOutputJson": "5", "isHidden": true },
+      { "inputJson": "\"ends with x\"", "expectedOutputJson": "1", "isHidden": true }
     ]
   },
   {
@@ -311,26 +261,16 @@
       "go": "package main\n\nfunc solve(s string) string {\n\t// Write your solution here\n\treturn \"\"\n}"
     },
     "testCases": [
-      {
-        "inputJson": "\"babad\"",
-        "expectedOutputJson": "\"bab\"",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"cbbd\"",
-        "expectedOutputJson": "\"bb\"",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"a\"",
-        "expectedOutputJson": "\"a\"",
-        "isHidden": true
-      },
-      {
-        "inputJson": "\"forgeeksskeegfor\"",
-        "expectedOutputJson": "\"geeksskeeg\"",
-        "isHidden": true
-      }
+      { "inputJson": "\"cbbd\"", "expectedOutputJson": "\"bb\"", "isHidden": false },
+      { "inputJson": "\"a\"", "expectedOutputJson": "\"a\"", "isHidden": false },
+      { "inputJson": "\"forgeeksskeegfor\"", "expectedOutputJson": "\"geeksskeeg\"", "isHidden": true },
+      { "inputJson": "\"abba\"", "expectedOutputJson": "\"abba\"", "isHidden": true },
+      { "inputJson": "\"banana\"", "expectedOutputJson": "\"anana\"", "isHidden": true },
+      { "inputJson": "\"abaxyzzyxf\"", "expectedOutputJson": "\"xyzzyx\"", "isHidden": true },
+      { "inputJson": "\"abcddcbaxy\"", "expectedOutputJson": "\"abcddcba\"", "isHidden": true },
+      { "inputJson": "\"racecar\"", "expectedOutputJson": "\"racecar\"", "isHidden": true },
+      { "inputJson": "\"noonabbad\"", "expectedOutputJson": "\"noon\"", "isHidden": true },
+      { "inputJson": "\"abcdedcbaq\"", "expectedOutputJson": "\"abcdedcba\"", "isHidden": true }
     ]
   },
   {
@@ -363,26 +303,16 @@
       "go": "package main\n\nfunc solve(s string) int {\n\t// Write your solution here\n\treturn 0\n}"
     },
     "testCases": [
-      {
-        "inputJson": "\"[1,8,6,2,5,4,8,3,7]\"",
-        "expectedOutputJson": "49",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"[1,1]\"",
-        "expectedOutputJson": "1",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"[4,3,2,1,4]\"",
-        "expectedOutputJson": "16",
-        "isHidden": true
-      },
-      {
-        "inputJson": "\"[1,2,1]\"",
-        "expectedOutputJson": "2",
-        "isHidden": true
-      }
+      { "inputJson": "\"[1,8,6,2,5,4,8,3,7]\"", "expectedOutputJson": "49", "isHidden": false },
+      { "inputJson": "\"[1,1]\"", "expectedOutputJson": "1", "isHidden": false },
+      { "inputJson": "\"[4,3,2,1,4]\"", "expectedOutputJson": "16", "isHidden": true },
+      { "inputJson": "\"[1,2,1]\"", "expectedOutputJson": "2", "isHidden": true },
+      { "inputJson": "\"[2,3,4,5,18,17,6]\"", "expectedOutputJson": "17", "isHidden": true },
+      { "inputJson": "\"[1,3,2,5,25,24,5]\"", "expectedOutputJson": "24", "isHidden": true },
+      { "inputJson": "\"[2,2,2,2]\"", "expectedOutputJson": "6", "isHidden": true },
+      { "inputJson": "\"[1,8,100,2,100,4]\"", "expectedOutputJson": "200", "isHidden": true },
+      { "inputJson": "\"[6,9,3,4,5,8]\"", "expectedOutputJson": "32", "isHidden": true },
+      { "inputJson": "\"[1,2,4,3]\"", "expectedOutputJson": "4", "isHidden": true }
     ]
   },
   {
@@ -415,26 +345,16 @@
       "go": "package main\n\nfunc solve(s string) int {\n\t// Write your solution here\n\treturn 0\n}"
     },
     "testCases": [
-      {
-        "inputJson": "\"[0,1,0,2,1,0,1,3,2,1,2,1]\"",
-        "expectedOutputJson": "6",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"[4,2,0,3,2,5]\"",
-        "expectedOutputJson": "9",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"[2,0,2]\"",
-        "expectedOutputJson": "2",
-        "isHidden": true
-      },
-      {
-        "inputJson": "\"[3,0,1,3,0,5]\"",
-        "expectedOutputJson": "8",
-        "isHidden": true
-      }
+      { "inputJson": "\"[0,1,0,2,1,0,1,3,2,1,2,1]\"", "expectedOutputJson": "6", "isHidden": false },
+      { "inputJson": "\"[4,2,0,3,2,5]\"", "expectedOutputJson": "9", "isHidden": false },
+      { "inputJson": "\"[2,0,2]\"", "expectedOutputJson": "2", "isHidden": true },
+      { "inputJson": "\"[3,0,1,3,0,5]\"", "expectedOutputJson": "8", "isHidden": true },
+      { "inputJson": "\"[5,4,1,2]\"", "expectedOutputJson": "1", "isHidden": true },
+      { "inputJson": "\"[1,0,1]\"", "expectedOutputJson": "1", "isHidden": true },
+      { "inputJson": "\"[2,1,0,1,3]\"", "expectedOutputJson": "4", "isHidden": true },
+      { "inputJson": "\"[0,2,0]\"", "expectedOutputJson": "0", "isHidden": true },
+      { "inputJson": "\"[5,2,1,2,1,5]\"", "expectedOutputJson": "14", "isHidden": true },
+      { "inputJson": "\"[4,1,3,1,5]\"", "expectedOutputJson": "7", "isHidden": true }
     ]
   },
   {
@@ -466,26 +386,16 @@
       "go": "package main\n\nfunc solve(s string) string {\n\t// Write your solution here\n\treturn \"\"\n}"
     },
     "testCases": [
-      {
-        "inputJson": "\"{\\\"s\\\":\\\"ADOBECODEBANC\\\",\\\"t\\\":\\\"ABC\\\"}\"",
-        "expectedOutputJson": "\"BANC\"",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"{\\\"s\\\":\\\"a\\\",\\\"t\\\":\\\"a\\\"}\"",
-        "expectedOutputJson": "\"a\"",
-        "isHidden": false
-      },
-      {
-        "inputJson": "\"{\\\"s\\\":\\\"a\\\",\\\"t\\\":\\\"aa\\\"}\"",
-        "expectedOutputJson": "\"\"",
-        "isHidden": true
-      },
-      {
-        "inputJson": "\"{\\\"s\\\":\\\"aa\\\",\\\"t\\\":\\\"aa\\\"}\"",
-        "expectedOutputJson": "\"aa\"",
-        "isHidden": true
-      }
+      { "inputJson": "\"{\\\"s\\\":\\\"ADOBECODEBANC\\\",\\\"t\\\":\\\"ABC\\\"}\"", "expectedOutputJson": "\"BANC\"", "isHidden": false },
+      { "inputJson": "\"{\\\"s\\\":\\\"a\\\",\\\"t\\\":\\\"a\\\"}\"", "expectedOutputJson": "\"a\"", "isHidden": false },
+      { "inputJson": "\"{\\\"s\\\":\\\"a\\\",\\\"t\\\":\\\"aa\\\"}\"", "expectedOutputJson": "\"\"", "isHidden": true },
+      { "inputJson": "\"{\\\"s\\\":\\\"aa\\\",\\\"t\\\":\\\"aa\\\"}\"", "expectedOutputJson": "\"aa\"", "isHidden": true },
+      { "inputJson": "\"{\\\"s\\\":\\\"thisisateststring\\\",\\\"t\\\":\\\"tist\\\"}\"", "expectedOutputJson": "\"tstri\"", "isHidden": true },
+      { "inputJson": "\"{\\\"s\\\":\\\"geeksforgeeks\\\",\\\"t\\\":\\\"ork\\\"}\"", "expectedOutputJson": "\"ksfor\"", "isHidden": true },
+      { "inputJson": "\"{\\\"s\\\":\\\"figehaeci\\\",\\\"t\\\":\\\"aei\\\"}\"", "expectedOutputJson": "\"aeci\"", "isHidden": true },
+      { "inputJson": "\"{\\\"s\\\":\\\"ab\\\",\\\"t\\\":\\\"b\\\"}\"", "expectedOutputJson": "\"b\"", "isHidden": true },
+      { "inputJson": "\"{\\\"s\\\":\\\"abc\\\",\\\"t\\\":\\\"d\\\"}\"", "expectedOutputJson": "\"\"", "isHidden": true },
+      { "inputJson": "\"{\\\"s\\\":\\\"cabwefgewcwaefgcf\\\",\\\"t\\\":\\\"cae\\\"}\"", "expectedOutputJson": "\"cwae\"", "isHidden": true }
     ]
   }
 ]

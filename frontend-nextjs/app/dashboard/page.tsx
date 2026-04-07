@@ -191,7 +191,25 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <WelcomeSection userName={userName || "Developer"} />
+      <WelcomeSection
+  userName={userName || "Developer"}
+  actionTitle={
+    data.recentSubmissions.length > 0
+      ? `Continue: ${data.recentSubmissions[0].title}`
+      : "Start your next challenge"
+  }
+  actionSubtitle={
+    data.recentSubmissions.length > 0
+      ? "Jump back into your most recent learning activity and keep the momentum going."
+      : "Explore challenges and begin building your progress with a focused first step."
+  }
+  actionButtonLabel={
+    data.recentSubmissions.length > 0 ? "Continue Learning" : "Start Learning"
+  }
+  secondaryButtonLabel="Explore Challenges"
+  onActionClick={() => router.push("/dashboard/challenges")}
+  onSecondaryActionClick={() => router.push("/dashboard/challenges")}
+/>
 
       {statsError && (
         <div className="rounded-lg border border-pink-500/20 bg-pink-500/10 px-4 py-3">

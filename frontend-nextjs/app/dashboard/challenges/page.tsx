@@ -212,20 +212,20 @@ export default function DashboardChallengesPage() {
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none rounded-xl border border-white/10 bg-[#0d0d12] px-4 py-3 pr-10 text-sm text-gray-200 outline-none transition hover:border-white/15 focus:border-pink-500/30"
+          className="w-full appearance-none rounded-2xl border border-white/10 bg-[#0c0c10] px-4 py-3 pr-10 text-sm text-gray-200 outline-none transition duration-200 hover:border-white/15 focus:border-pink-500/30 focus:bg-[#101017]"
         >
           {options.map((option) => (
             <option
               key={option}
               value={option}
-              className="bg-[#0d0d12] text-gray-200"
+              className="bg-[#0c0c10] text-gray-200"
             >
               {option === "All" ? allLabel : option}
             </option>
           ))}
         </select>
 
-        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs text-gray-500">
+        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[11px] text-gray-500">
           ▼
         </span>
       </div>
@@ -241,15 +241,17 @@ export default function DashboardChallengesPage() {
     return (
       <article
         key={challenge.id}
-        className={`group rounded-2xl border p-4 transition duration-300 ${
+        className={`group relative overflow-hidden rounded-[24px] border p-4 transition duration-300 ${
           isContinue
-            ? "border-purple-500/20 bg-[linear-gradient(180deg,rgba(168,85,247,0.08),rgba(10,10,10,0.95))] hover:border-purple-400/30"
-            : "border-white/10 bg-[#0a0a0a] hover:border-pink-500/20 hover:bg-[#0c0c11]"
+            ? "border-purple-500/20 bg-[linear-gradient(180deg,rgba(91,33,182,0.14),rgba(9,9,11,0.98))] hover:border-purple-400/30 hover:shadow-[0_0_0_1px_rgba(168,85,247,0.06),0_18px_50px_rgba(88,28,135,0.18)]"
+            : "border-white/10 bg-[#09090c] hover:border-pink-500/20 hover:shadow-[0_0_0_1px_rgba(236,72,153,0.04),0_18px_50px_rgba(0,0,0,0.24)]"
         }`}
       >
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-60" />
+
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] text-gray-400">
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] text-gray-400">
               #{String(challenge.id).padStart(3, "0")}
             </span>
 
@@ -269,11 +271,11 @@ export default function DashboardChallengesPage() {
           </span>
         </div>
 
-        <h3 className="text-lg font-semibold tracking-tight text-white transition group-hover:text-pink-200">
+        <h3 className="text-[1.15rem] font-semibold leading-tight tracking-tight text-white transition group-hover:text-pink-100">
           {challenge.title}
         </h3>
 
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1.5 text-xs text-gray-500">
           {challenge.category} • {challenge.duration} min
         </p>
 
@@ -297,14 +299,14 @@ export default function DashboardChallengesPage() {
         <div className="mt-5 flex items-center gap-2.5">
           <button
             onClick={() => openChallengeModal(challenge)}
-            className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
+            className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2.5 text-sm font-medium text-white transition duration-200 hover:opacity-95"
           >
             {challenge.opened ? "Continue" : "Preview"}
           </button>
 
           <button
             onClick={() => handleViewDetails(challenge.id)}
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white transition hover:bg-white/[0.08]"
+            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white transition duration-200 hover:bg-white/[0.08]"
           >
             Details
           </button>
@@ -342,10 +344,10 @@ export default function DashboardChallengesPage() {
       <section className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-gray-500">
+            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-gray-500">
               {eyebrow}
             </p>
-            <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-white sm:text-2xl">
+            <h2 className="mt-1.5 text-[1.85rem] font-semibold leading-tight tracking-tight text-white">
               {title}
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
@@ -359,7 +361,7 @@ export default function DashboardChallengesPage() {
         </div>
 
         {items.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] px-6 py-10 text-center">
+          <div className="rounded-[24px] border border-white/10 bg-[#09090c] px-6 py-10 text-center">
             <p className="text-sm font-medium text-white">{emptyTitle}</p>
             <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-400">
               {emptyMessage}
@@ -375,7 +377,7 @@ export default function DashboardChallengesPage() {
               <div className="flex justify-center pt-1">
                 <button
                   onClick={onLoadMore}
-                  className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-2.5 text-sm text-white transition hover:bg-white/[0.08]"
+                  className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-2.5 text-sm text-white transition duration-200 hover:bg-white/[0.08]"
                 >
                   Load More
                 </button>
@@ -396,16 +398,16 @@ export default function DashboardChallengesPage() {
             onClick={closeChallengeModal}
           />
 
-          <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-[#0b0b10] shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
+          <div className="relative w-full max-w-md overflow-hidden rounded-[26px] border border-white/10 bg-[#0b0b10] shadow-[0_25px_100px_rgba(0,0,0,0.45)]">
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
 
-            <div className="p-5 sm:p-6">
+            <div className="p-5">
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.22em] text-pink-300">
                     Challenge Preview
                   </p>
-                  <h3 className="mt-2 text-xl font-semibold tracking-tight text-white">
+                  <h3 className="mt-2 text-lg font-semibold leading-tight tracking-tight text-white">
                     {selectedChallenge.title}
                   </h3>
                 </div>
@@ -479,24 +481,29 @@ export default function DashboardChallengesPage() {
         </div>
       )}
 
-      <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] px-5 py-5 sm:px-6 sm:py-6">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.10),transparent_28%),radial-gradient(circle_at_left,rgba(236,72,153,0.08),transparent_24%)]" />
+      <section className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#09090c] px-5 py-5 sm:px-6 sm:py-6">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_26%),radial-gradient(circle_at_left,rgba(236,72,153,0.08),transparent_24%)]" />
+        <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:28px_28px]" />
+
         <div className="relative">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl">
-              <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-pink-300">
-                Learning Workspace
-              </p>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              <span className="inline-flex items-center rounded-full border border-pink-500/20 bg-pink-500/[0.08] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-pink-200">
+                Learning workspace
+              </span>
+
+              <h1 className="mt-4 text-[2rem] font-semibold leading-tight tracking-tight text-white sm:text-[2.35rem]">
                 Sharpen your coding mastery with focused practice
               </h1>
+
               <p className="mt-3 max-w-xl text-sm leading-6 text-gray-400">
-                Continue challenges you already opened and discover your next best learning recommendations.
+                Continue opened challenges and move into the next set of learning
+                recommendations with a cleaner, more focused workflow.
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              <div className="min-w-[92px] rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 backdrop-blur-sm">
+            <div className="flex flex-wrap gap-2.5 lg:max-w-[360px] lg:justify-end">
+              <div className="min-w-[96px] rounded-2xl border border-white/10 bg-white/[0.03] px-3.5 py-3 backdrop-blur-sm">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
                   Total
                 </p>
@@ -505,7 +512,7 @@ export default function DashboardChallengesPage() {
                 </h3>
               </div>
 
-              <div className="min-w-[92px] rounded-2xl border border-purple-500/20 bg-purple-500/[0.06] px-3 py-3 backdrop-blur-sm">
+              <div className="min-w-[96px] rounded-2xl border border-purple-500/20 bg-purple-500/[0.07] px-3.5 py-3 backdrop-blur-sm">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-purple-200/80">
                   Opened
                 </p>
@@ -514,7 +521,7 @@ export default function DashboardChallengesPage() {
                 </h3>
               </div>
 
-              <div className="min-w-[92px] rounded-2xl border border-pink-500/20 bg-pink-500/[0.06] px-3 py-3 backdrop-blur-sm">
+              <div className="min-w-[96px] rounded-2xl border border-pink-500/20 bg-pink-500/[0.07] px-3.5 py-3 backdrop-blur-sm">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-pink-200/80">
                   Next
                 </p>
@@ -527,9 +534,9 @@ export default function DashboardChallengesPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-4">
-        <div className="grid gap-3 lg:grid-cols-[1.25fr_0.45fr_0.45fr]">
-          <div className="flex items-center rounded-xl border border-white/10 bg-[#0d0d12] px-4 py-3 transition hover:border-white/15">
+      <section className="rounded-[26px] border border-white/10 bg-[#09090c] p-3 sm:p-4">
+        <div className="grid gap-3 lg:grid-cols-[1.35fr_0.42fr_0.42fr]">
+          <div className="flex items-center rounded-2xl border border-white/10 bg-[#0c0c10] px-4 py-3 transition duration-200 hover:border-white/15 focus-within:border-pink-500/25">
             <span className="mr-3 text-sm text-pink-300">Search</span>
             <input
               type="text"
@@ -557,11 +564,11 @@ export default function DashboardChallengesPage() {
       </section>
 
       {loading ? (
-        <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] py-20 text-center">
+        <div className="rounded-[24px] border border-white/10 bg-[#09090c] py-20 text-center">
           <p className="text-sm text-gray-500">Loading your learning challenges...</p>
         </div>
       ) : errorMessage ? (
-        <div className="rounded-2xl border border-pink-500/15 bg-pink-500/[0.04] px-6 py-12 text-center">
+        <div className="rounded-[24px] border border-pink-500/15 bg-pink-500/[0.04] px-6 py-12 text-center">
           <p className="text-sm font-medium text-pink-200">Unable to load</p>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-300">
             {errorMessage}
@@ -569,6 +576,7 @@ export default function DashboardChallengesPage() {
         </div>
       ) : (
         <>
+        
           {renderSection({
             eyebrow: "Continue Learning",
             title: "Return to your opened challenges",
