@@ -3,9 +3,27 @@
 import CodeEditor, { type Language } from "./CodeEditor";
 import SubmissionPanel from "./SubmissionPanel";
 import TerminalConsole from "./TerminalConsole";
-import type { Challenge } from "@/app/challenges/[id]/types";
 
 type MissionState = "active" | "submitted" | "completed" | "timeout";
+
+type ChallengeExample = {
+  input: string;
+  output: string;
+  explanation?: string;
+};
+
+type Challenge = {
+  id: number;
+  title: string;
+  description: string;
+  difficulty: string;
+  category: string;
+  duration: number;
+  tags: string[];
+  examples?: ChallengeExample[];
+  starterCode?: string | Partial<Record<Language, string>>;
+  constraints?: string[];
+};
 
 type Props = {
   challenge: Challenge;
@@ -116,6 +134,16 @@ export default function ChallengeWorkspace({
   const fallbackConstraints = buildFallbackConstraints(challenge);
 
   const renderInfoPanel = () => {
+    const constraintList: string[] =
+      Array.isArray(challenge.constraints) && challenge.constraints.length > 0
+        ? challenge.constraints
+        : fallbackConstraints;
+
+    const exampleList: ChallengeExample[] =
+      Array.isArray(challenge.examples) && challenge.examples.length > 0
+        ? challenge.examples
+        : [];
+
     const tabContent =
       activeTab === "problem" ? (
         <div className="space-y-3 sm:space-y-4">
@@ -134,9 +162,9 @@ export default function ChallengeWorkspace({
             </p>
           </div>
 
-          {challenge.tags?.length > 0 && (
+          {Array.isArray(challenge.tags) && challenge.tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {challenge.tags.map((tag) => (
+              {challenge.tags.map((tag: string) => (
                 <span
                   key={tag}
                   className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-gray-300"
@@ -158,9 +186,9 @@ export default function ChallengeWorkspace({
             </p>
           </div>
 
-          {challenge.examples?.length ? (
+          {exampleList.length > 0 ? (
             <div className="space-y-4">
-              {challenge.examples.map((example, index) => (
+              {exampleList.map((example: ChallengeExample, index: number) => (
                 <div
                   key={`${example.input}-${index}`}
                   className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"
@@ -204,7 +232,7 @@ export default function ChallengeWorkspace({
             </div>
           ) : (
             <div className="space-y-3">
-              {fallbackExamples.map((item, index) => (
+              {fallbackExamples.map((item: GuidanceCard, index: number) => (
                 <div
                   key={`${item.title}-${index}`}
                   className="rounded-2xl border border-yellow-500/15 bg-yellow-500/[0.05] p-3 sm:p-4"
@@ -231,10 +259,7 @@ export default function ChallengeWorkspace({
             </p>
           </div>
 
-          {(challenge.constraints?.length
-            ? challenge.constraints
-            : fallbackConstraints
-          ).map((constraint) => (
+          {constraintList.map((constraint: string) => (
             <div
               key={constraint}
               className="break-words rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-7 text-gray-300"

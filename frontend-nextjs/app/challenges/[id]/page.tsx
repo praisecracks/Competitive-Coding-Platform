@@ -1,24 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  Suspense,
+} from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ChallengeWorkspace from "@/app/components/dashboard/challenges/ChallengeWorkspace";
 import ChallengeHeader from "@/app/components/dashboard/challenges/ChallengeHeader";
 import type { Language } from "@/app/components/dashboard/challenges/CodeEditor";
 
-type ChallengeExample = {
-  input: string;
-  output: string;
-  explanation?: string;
-};
-
-type StarterCodeMap = {
+export type StarterCodeMap = {
   javascript?: string;
   python?: string;
   go?: string;
 };
 
-type Challenge = {
+export type ChallengeExample = {
+  input: string;
+  output: string;
+  explanation?: string;
+};
+
+export type Challenge = {
   id: number;
   title: string;
   description: string;
@@ -78,13 +85,12 @@ type ResultModalState = {
   totalTests: number;
   title: string;
   description: string;
+  errorCode?: string;
 };
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 const DEFAULT_LANGUAGE: Language = "javascript";
-const LEADERBOARD_ROUTE = "/dashboard/leaderboard";
 
 const DEFAULT_CODE: Record<Language, string> = {
   javascript: `function solve(input) {
@@ -265,7 +271,8 @@ function buildResultModal(
   status: ResultStatus,
   score: number,
   passedTests: number,
-  totalTests: number
+  totalTests: number,
+  errorCode?: string
 ): ResultModalState {
   if (status === "accepted") {
     return {
@@ -274,6 +281,7 @@ function buildResultModal(
       score,
       passedTests,
       totalTests,
+      errorCode,
       title: "Challenge Accepted",
       description:
         "Your submission passed all required test cases. Mission completed successfully.",
@@ -287,9 +295,24 @@ function buildResultModal(
       score,
       passedTests,
       totalTests,
+      errorCode,
       title: "Time Expired",
       description:
         "The mission timer reached zero. The editor has been locked for this attempt.",
+    };
+  }
+
+  if (errorCode === "MISSING_TEST_CASES") {
+    return {
+      open: true,
+      status,
+      score,
+      passedTests,
+      totalTests,
+      errorCode,
+      title: "Missing Test Cases",
+      description:
+        "This challenge has no test cases configured yet, so the system cannot score your submission. Add backend test cases for this challenge before using submit.",
     };
   }
 
@@ -299,13 +322,129 @@ function buildResultModal(
     score,
     passedTests,
     totalTests,
+    errorCode,
     title: "Challenge Failed",
     description:
       "Your submission was evaluated, but it did not pass all required test cases.",
   };
 }
 
-export default function ChallengeDetailPage() {
+function ResultModal({
+  modal,
+  onClose,
+  onRetry,
+  onLeave,
+}: {
+  modal: ResultModalState;
+  onClose: () => void;
+  onRetry: () => void;
+  onLeave: () => void;
+}) {
+  if (!modal.open) return null;
+
+  const toneClass =
+    modal.status === "accepted"
+      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+      : modal.status === "timeout"
+      ? "border-red-500/20 bg-red-500/10 text-red-300"
+      : "border-yellow-500/20 bg-yellow-500/10 text-yellow-200";
+
+  const primaryButtonLabel =
+    modal.status === "accepted" ? "Leave Challenge" : "Retry Mission";
+
+  const primaryButtonAction =
+    modal.status === "accepted" ? onLeave : onRetry;
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm">
+      <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-[#0a0a0a] p-5 shadow-[0_25px_80px_rgba(0,0,0,0.5)] sm:p-6">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-4 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white transition hover:bg-white/[0.08]"
+        >
+          Close
+        </button>
+
+        <div className="pr-16">
+          <span
+            className={`inline-flex rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.16em] ${toneClass}`}
+          >
+            {modal.status}
+          </span>
+
+          <h2 className="mt-4 text-2xl font-semibold text-white">
+            {modal.title}
+          </h2>
+
+          <p className="mt-2 text-sm leading-7 text-gray-400">
+            {modal.description}
+          </p>
+        </div>
+
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-center">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-gray-500">
+              Score
+            </p>
+            <p className="mt-1 text-lg font-semibold text-white">
+              {modal.score}%
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-center">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-gray-500">
+              Passed
+            </p>
+            <p className="mt-1 text-lg font-semibold text-white">
+              {modal.passedTests}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-center">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-gray-500">
+              Total
+            </p>
+            <p className="mt-1 text-lg font-semibold text-white">
+              {modal.totalTests}
+            </p>
+          </div>
+        </div>
+
+        {modal.errorCode && (
+          <div className="mt-4 rounded-2xl border border-white/10 bg-[#08080c] px-4 py-3">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500">
+              Error Code
+            </p>
+            <p className="mt-1 text-sm font-medium text-white">
+              {modal.errorCode}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={primaryButtonAction}
+            className="rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-3 text-sm font-medium text-white transition hover:opacity-95"
+          >
+            {primaryButtonLabel}
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white transition hover:bg-white/[0.08]"
+          >
+            Back to Workspace
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChallengeDetail() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -332,6 +471,7 @@ export default function ChallengeDetailPage() {
     totalTests: 0,
     title: "",
     description: "",
+    errorCode: undefined,
   });
 
   const languageInitializedRef = useRef(false);
@@ -348,7 +488,6 @@ export default function ChallengeDetailPage() {
         const token = localStorage.getItem("terminal_token");
         if (!token) return;
 
-        // Use relative /api path to ensure proxy works correctly
         await fetch(`/api/challenges/${challengeId}/open`, {
           method: "POST",
           headers: {
@@ -808,6 +947,7 @@ export default function ChallengeDetailPage() {
     try {
       setSubmitting(true);
       setErrorMessage("");
+      setResultModal((prev) => ({ ...prev, open: false }));
       addTerminalLine(
         `Submitting ${language} solution for challenge #${challenge.id}...`
       );
@@ -835,6 +975,10 @@ export default function ChallengeDetailPage() {
 
         console.error("Submission failed:", res.status, errorText);
         addTerminalLine(`Submission failed: ${message}`);
+
+        setResultModal(
+          buildResultModal("failed", 0, 0, 0, message)
+        );
         return;
       }
 
@@ -846,6 +990,11 @@ export default function ChallengeDetailPage() {
           : null;
 
       const normalized = normalizeSubmissionResult(data);
+      const errorCode =
+        typeof data.error === "string" && data.error.trim() !== ""
+          ? data.error.trim()
+          : undefined;
+
       setLastScore(normalized.score);
 
       if (outputLines.length > 0) {
@@ -874,7 +1023,8 @@ export default function ChallengeDetailPage() {
             "accepted",
             normalized.score,
             normalized.passedTests,
-            normalized.totalTests
+            normalized.totalTests,
+            errorCode
           )
         );
 
@@ -897,12 +1047,16 @@ export default function ChallengeDetailPage() {
           "failed",
           normalized.score,
           normalized.passedTests,
-          normalized.totalTests
+          normalized.totalTests,
+          errorCode
         )
       );
     } catch (error) {
       console.error("Submission error:", error);
       addTerminalLine("Submission failed due to a network error.");
+      setResultModal(
+        buildResultModal("failed", 0, 0, 0, "NETWORK_ERROR")
+      );
     } finally {
       setSubmitting(false);
     }
@@ -999,113 +1153,60 @@ export default function ChallengeDetailPage() {
           challenge={challenge}
           activeTab={workspaceTab}
           code={code}
-          onCodeChange={setCode}
-          onRun={handleRunCode}
-          onReset={handleResetCode}
-          onSubmit={handleSubmitCode}
-          onReplay={() => resetMission({ resetCode: false })}
-          terminalHistory={terminalHistory}
-          submitting={submitting}
-          running={running}
-          lastScore={lastScore}
           language={language}
-          onLanguageChange={setLanguage}
-          starterCodeMap={starterCodeMap}
-          missionState={missionState}
+          terminalHistory={terminalHistory}
+          running={running}
+          submitting={submitting}
           isEditorLocked={editorLocked}
           editorLockMessage={editorLockMessage}
           timeLeftLabel={countdownLabel}
+          missionState={missionState}
+          lastScore={lastScore}
+          starterCodeMap={starterCodeMap}
+          onCodeChange={setCode}
+          onLanguageChange={setLanguage}
+          onRun={handleRunCode}
+          onSubmit={handleSubmitCode}
+          onReset={handleResetCode}
+          onReplay={() => resetMission({ resetCode: true })}
+        />
+
+        <ResultModal
+          modal={resultModal}
+          onClose={() =>
+            setResultModal((prev) => ({
+              ...prev,
+              open: false,
+            }))
+          }
+          onRetry={() => {
+            setResultModal((prev) => ({ ...prev, open: false }));
+            resetMission({ resetCode: true });
+          }}
+          onLeave={() => {
+            setResultModal((prev) => ({ ...prev, open: false }));
+            router.push("/dashboard/challenges");
+          }}
         />
       </div>
+    </div>
+  );
+}
 
-      {resultModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-[28px] border border-white/10 bg-[#0a0a0f] p-6 shadow-[0_25px_80px_rgba(0,0,0,0.45)] sm:p-7">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <span
-                  className={`inline-flex rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.16em] ${
-                    resultModal.status === "accepted"
-                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                      : resultModal.status === "timeout"
-                      ? "border-red-500/20 bg-red-500/10 text-red-200"
-                      : "border-yellow-500/20 bg-yellow-500/10 text-yellow-200"
-                  }`}
-                >
-                  {resultModal.status}
-                </span>
-
-                <h2 className="mt-4 text-xl font-semibold text-white">
-                  {resultModal.title}
-                </h2>
-
-                <p className="mt-2 text-sm leading-7 text-gray-400">
-                  {resultModal.description}
-                </p>
-              </div>
-
-              <button
-                onClick={() =>
-                  setResultModal((prev) => ({ ...prev, open: false }))
-                }
-                className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-gray-300 transition hover:bg-white/[0.06]"
-                type="button"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.15em] text-gray-500">
-                  Score
-                </p>
-                <p className="mt-1 text-xl font-semibold text-white">
-                  {resultModal.score}%
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.15em] text-gray-500">
-                  Passed
-                </p>
-                <p className="mt-1 text-xl font-semibold text-white">
-                  {resultModal.passedTests}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.15em] text-gray-500">
-                  Total Tests
-                </p>
-                <p className="mt-1 text-xl font-semibold text-white">
-                  {resultModal.totalTests}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <button
-                onClick={() => resetMission({ resetCode: false })}
-                className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-medium text-white transition hover:bg-white/[0.08]"
-                type="button"
-              >
-                Retry Mission
-              </button>
-
-              {resultModal.status === "accepted" ? (
-                <button
-                  onClick={() => router.push(LEADERBOARD_ROUTE)}
-                  className="w-full rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 px-5 py-3 text-sm font-medium text-white transition hover:opacity-95"
-                  type="button"
-                >
-                  Go to Leaderboard
-                </button>
-              ) : null}
+export default function ChallengeDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#050507] px-4 py-6 text-white sm:px-6 sm:py-10">
+          <div className="mx-auto max-w-7xl">
+            <div className="rounded-3xl border border-white/10 bg-[#0a0a0a] px-6 py-20 text-center sm:px-10 sm:py-24">
+              <p className="text-sm text-gray-500">Loading challenge workspace...</p>
             </div>
           </div>
         </div>
-      )}
-    </div>
+      }
+    >
+      <ChallengeDetail />
+    </Suspense>
   );
 }

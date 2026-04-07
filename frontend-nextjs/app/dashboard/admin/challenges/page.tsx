@@ -1,27 +1,20 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Code, 
   Plus, 
   Search, 
-  Filter, 
   Trash2, 
   Edit3, 
-  ArrowLeft, 
   ChevronRight, 
   Clock, 
   Tag, 
   Layers, 
   AlertCircle,
-  X,
-  CheckCircle2,
-  ChevronDown,
-  LayoutGrid,
-  Zap
+  X
 } from "lucide-react";
 
 interface Challenge {
@@ -36,7 +29,7 @@ interface Challenge {
   problem_statement?: string;
 }
 
-export default function ManageChallenges() {
+function ManageChallengesContent() {
   const searchParams = useSearchParams();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,413 +102,451 @@ export default function ManageChallenges() {
 
   useEffect(() => {
     fetchChallenges();
-    const action = searchParams.get("action");
-    if (action === "create") {
-      openCreateModal();
-    }
-  }, [searchParams]);
+  }, []);
 
   return (
-    <div className="min-h-screen space-y-6 pb-20">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-2.5">
-          <Link 
-            href="/dashboard/admin"
-            className="inline-flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-widest group"
-          >
-            <ArrowLeft className="h-3 w-3 group-hover:-translate-x-1 transition-transform" />
-            Back to Dashboard
-          </Link>
+    <div className="min-h-screen bg-[#020202] text-white/90">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <header className="mb-12 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight text-white lg:text-3xl">Challenge Repository</h1>
-            <p className="text-gray-400 text-xs font-medium">Curate and manage high-performance tasks for the coding library.</p>
+            <div className="flex items-center gap-2 text-sm font-medium text-white/40">
+              <Link href="/dashboard/admin" className="hover:text-fuchsia-400 transition-colors">Admin Center</Link>
+              <ChevronRight className="h-4 w-4" />
+              <span className="text-white/60">Challenges</span>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Challenge Library</h1>
+            <p className="text-white/40">Manage your platform's coding content and difficulty levels.</p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button 
+          
+          <button
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 rounded-lg bg-white text-black px-5 py-2.5 text-xs font-bold transition hover:bg-gray-200 active:scale-95 shadow-lg shadow-white/5"
+            className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl bg-white px-6 py-3.5 text-sm font-semibold text-black transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
+            <div className="absolute inset-0 bg-gradient-to-tr from-fuchsia-500/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
             <Plus className="h-4 w-4" />
             Create Challenge
           </button>
-        </div>
-      </header>
+        </header>
 
-      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full lg:w-80 group">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 group-focus-within:text-pink-500 transition-colors" />
-          <input 
-            type="text" 
-            placeholder="Search tasks, categories..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-white/5 bg-white/[0.03] py-2.5 pl-10 pr-4 text-xs text-white placeholder:text-gray-600 focus:border-pink-500/30 focus:bg-white/[0.05] focus:outline-none transition-all shadow-sm"
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5 p-1 rounded-lg border border-white/5 bg-white/[0.03] backdrop-blur-sm overflow-x-auto no-scrollbar w-full lg:w-auto">
-          {["All", "Easy", "Medium", "Hard"].map((diff) => (
-            <button
-              key={diff}
-              onClick={() => setFilterDifficulty(diff)}
-              className={`px-4 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest transition-all ${
-                filterDifficulty === diff 
-                ? "bg-white text-black shadow-lg" 
-                : "text-gray-500 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              {diff}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {error && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-lg bg-rose-500/10 border border-rose-500/20 p-3 text-rose-400 text-xs font-bold flex items-center gap-2"
-        >
-          <AlertCircle className="h-4 w-4" />
-          {error}
-        </motion.div>
-      )}
-
-      {loading ? (
-        <div className="grid gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-20 w-full rounded-lg bg-white/[0.02] animate-pulse border border-white/5" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {filteredChallenges.length > 0 ? (
-            filteredChallenges.map((challenge) => (
-              <motion.div 
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                key={challenge.id} 
-                className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg border border-white/5 bg-white/[0.02] p-4 transition-all hover:bg-white/[0.04] hover:border-white/10 hover:shadow-lg hover:shadow-pink-500/5"
+        {/* Filters & Search */}
+        <div className="mb-8 grid gap-4 md:grid-cols-[1fr_auto]">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20 transition-colors group-focus-within:text-fuchsia-400" />
+            <input
+              type="text"
+              placeholder="Search by title or category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.03] pl-11 pr-4 text-sm outline-none transition-all focus:border-fuchsia-500/30 focus:bg-white/[0.05] focus:ring-4 focus:ring-fuchsia-500/5"
+            />
+          </div>
+          
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
+            {["All", "Easy", "Medium", "Hard"].map((level) => (
+              <button
+                key={level}
+                onClick={() => setFilterDifficulty(level)}
+                className={`h-12 whitespace-nowrap rounded-2xl px-6 text-sm font-medium transition-all ${
+                  filterDifficulty === level
+                    ? "bg-white text-black"
+                    : "border border-white/10 bg-white/[0.03] text-white/60 hover:border-white/20 hover:bg-white/[0.05]"
+                }`}
               >
-                <div className="flex items-center gap-4">
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center text-xs font-bold border transition-transform group-hover:scale-110 ${
-                    challenge.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                    challenge.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                    'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                  }`}>
-                    {challenge.difficulty[0]}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-bold text-white tracking-tight group-hover:text-pink-400 transition-colors truncate">{challenge.title}</h3>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
-                      <div className="flex items-center gap-1 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-                        <Layers className="h-2.5 w-2.5 text-pink-500/50" />
-                        {challenge.category}
+                {level}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="relative min-h-[400px]">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+              <div className="relative h-12 w-12">
+                <div className="absolute inset-0 animate-ping rounded-full bg-fuchsia-500/20" />
+                <div className="relative flex h-full w-full items-center justify-center rounded-full border border-fuchsia-500/50 bg-black">
+                  <Layers className="h-5 w-5 text-fuchsia-400 animate-pulse" />
+                </div>
+              </div>
+              <p className="text-sm font-medium text-white/40 uppercase tracking-widest">Indexing Library...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-red-500/10 bg-red-500/[0.02] py-20">
+              <AlertCircle className="mb-4 h-10 w-10 text-red-400/50" />
+              <p className="text-red-400">{error}</p>
+              <button onClick={fetchChallenges} className="mt-4 text-sm font-medium text-white/40 hover:text-white underline decoration-white/20 underline-offset-4">Try again</button>
+            </div>
+          ) : filteredChallenges.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-white/5 bg-white/[0.01] py-24">
+              <div className="mb-6 rounded-2xl bg-white/5 p-4">
+                <Search className="h-8 w-8 text-white/20" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">No challenges found</h3>
+              <p className="mt-1 text-sm text-white/40">Try adjusting your search or filters.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <AnimatePresence mode="popLayout">
+                {filteredChallenges.map((challenge) => (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    key={challenge.id}
+                    className="group relative flex flex-col rounded-3xl border border-white/10 bg-white/[0.02] p-6 transition-all hover:border-fuchsia-500/30 hover:bg-white/[0.04]"
+                  >
+                    <div className="mb-4 flex items-start justify-between">
+                      <div className={`rounded-xl px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
+                        challenge.difficulty === "Easy" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
+                        challenge.difficulty === "Medium" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
+                        "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                      }`}>
+                        {challenge.difficulty}
                       </div>
-                      <div className="flex items-center gap-1 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-                        <Clock className="h-2.5 w-2.5 text-purple-500/50" />
-                        {challenge.duration}m
-                      </div>
-                      <div className="flex gap-1.5">
-                        {challenge.tags?.slice(0, 3).map(tag => (
-                          <span key={tag} className="text-[8px] font-bold text-gray-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/5 group-hover:border-white/10 transition-colors">#{tag}</span>
-                        ))}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEditModal(challenge)}
+                          className="rounded-lg bg-white/5 p-2 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+                          title="Edit"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(challenge)}
+                          className="rounded-lg bg-white/5 p-2 text-white/40 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                  <button 
-                    onClick={() => openEditModal(challenge)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-white/5 hover:border-white/10"
-                    title="Edit Challenge"
-                  >
-                    <Edit3 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setConfirmDelete(challenge)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/5 text-rose-500/40 hover:text-rose-500 hover:bg-rose-500/10 transition-all active:scale-95 border border-transparent hover:border-rose-500/20"
-                    title="Delete Challenge"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                  <div className="ml-1.5 h-6 w-px bg-white/5 hidden sm:block" />
-                  <ChevronRight className="h-4 w-4 text-gray-700 group-hover:text-pink-500 group-hover:translate-x-1 transition-all hidden sm:block" />
-                </div>
-              </motion.div>
-            ))
-          ) : (
-            <div className="py-20 flex flex-col items-center justify-center text-center">
-              <div className="h-16 w-16 rounded-xl bg-white/[0.03] flex items-center justify-center text-gray-600 mb-4 border border-white/5">
-                <Code className="h-8 w-8" />
-              </div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Repository Empty</h3>
-              <p className="text-gray-500 mt-1.5 max-w-sm mx-auto font-medium text-xs">No challenges found matching your filters. Start by creating a new challenge or adjust your search.</p>
-              <button 
-                onClick={() => { setSearchTerm(''); setFilterDifficulty('All'); }}
-                className="mt-6 text-xs font-bold text-pink-500 hover:text-pink-400 transition-colors underline underline-offset-4"
-              >
-                Clear all filters
-              </button>
+
+                    <h3 className="mb-2 text-lg font-bold text-white group-hover:text-fuchsia-400 transition-colors line-clamp-1">
+                      {challenge.title}
+                    </h3>
+                    <p className="mb-6 text-sm leading-relaxed text-white/40 line-clamp-2">
+                      {challenge.description}
+                    </p>
+
+                    <div className="mt-auto flex flex-wrap gap-2">
+                      <div className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-medium text-white/60">
+                        <Clock className="h-3 w-3" />
+                        {challenge.duration}m
+                      </div>
+                      <div className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-medium text-white/60">
+                        <Tag className="h-3 w-3" />
+                        {challenge.category}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           )}
         </div>
-      )}
-
-      {/* Challenge Modal */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <ChallengeModal 
-            challenge={editingChallenge} 
-            onClose={() => setIsModalOpen(false)} 
-            onSuccess={() => {
-              setIsModalOpen(false);
-              fetchChallenges();
-            }}
-          />
-        )}
-      </AnimatePresence>
+      </div>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {confirmDelete && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
               onClick={() => setConfirmDelete(null)}
-              className="absolute inset-0 bg-[#020202]/90 backdrop-blur-xl"
             />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 shadow-2xl"
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm rounded-[32px] border border-white/10 bg-[#0d0d0d] p-8 shadow-2xl"
             >
-              <div className="mx-auto h-12 w-12 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4">
-                <Trash2 className="h-6 w-6" />
+              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10">
+                <AlertCircle className="h-7 w-7 text-red-500" />
               </div>
-              <h3 className="text-lg font-bold text-white text-center tracking-tight uppercase">Confirm Deletion</h3>
-              <p className="mt-2.5 text-gray-400 text-xs text-center leading-relaxed font-medium">
-                Are you sure you want to remove <strong className="text-white">{confirmDelete.title}</strong>? All associated submission records will be permanently erased.
+              <h2 className="mb-2 text-xl font-bold text-white">Delete Challenge?</h2>
+              <p className="mb-8 text-sm leading-relaxed text-white/40">
+                Are you sure you want to delete <span className="text-white font-medium">"{confirmDelete.title}"</span>? This action is permanent and cannot be undone.
               </p>
-              <div className="mt-6 space-y-2">
+              <div className="flex gap-3">
                 <button
-                  onClick={() => handleDelete(confirmDelete.id)}
-                  disabled={!!deleting}
-                  className="w-full rounded-lg bg-rose-500 py-2.5 text-xs font-bold text-white shadow-lg shadow-rose-500/20 hover:bg-rose-600 transition-all active:scale-95 disabled:opacity-50 uppercase tracking-widest"
-                >
-                  {deleting ? (
-                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white mx-auto" />
-                  ) : "Delete Permanently"}
-                </button>
-                <button 
-                  onClick={() => setConfirmDelete(null)} 
-                  className="w-full py-2 text-xs font-bold text-gray-500 hover:text-white transition-colors"
+                  onClick={() => setConfirmDelete(null)}
+                  className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
                 >
                   Cancel
+                </button>
+                <button
+                  onClick={() => handleDelete(confirmDelete.id)}
+                  disabled={deleting !== null}
+                  className="flex-1 rounded-2xl bg-red-500 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  {deleting === confirmDelete.id ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* Create/Edit Modal */}
+      <ChallengeModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          fetchChallenges();
+        }}
+        challenge={editingChallenge}
+      />
     </div>
   );
 }
 
-function ChallengeModal({ challenge, onClose, onSuccess }: { challenge: Challenge | null, onClose: () => void, onSuccess: () => void }) {
-  const isEdit = !!challenge;
-  const [loading, setLoading] = useState(false);
+// Modal Component
+function ChallengeModal({ isOpen, onClose, onSuccess, challenge }: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSuccess: () => void;
+  challenge: Challenge | null;
+}) {
+  const [formData, setFormData] = useState<Partial<Challenge>>({
+    title: "",
+    description: "",
+    difficulty: "Easy",
+    category: "General",
+    duration: 30,
+    tags: [],
+    constraints: [],
+    problem_statement: ""
+  });
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const [formData, setFormData] = useState({
-    title: challenge?.title || "",
-    description: challenge?.description || "",
-    difficulty: challenge?.difficulty || "Easy",
-    category: challenge?.category || "Algorithms",
-    duration: challenge?.duration || 30,
-    tags: challenge?.tags?.join(", ") || "",
-    problem_statement: challenge?.problem_statement || "",
-  });
+  useEffect(() => {
+    if (challenge) {
+      setFormData(challenge);
+    } else {
+      setFormData({
+        title: "",
+        description: "",
+        difficulty: "Easy",
+        category: "General",
+        duration: 30,
+        tags: [],
+        constraints: [],
+        problem_statement: ""
+      });
+    }
+    setError("");
+  }, [challenge, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
     setError("");
 
     try {
       const token = localStorage.getItem("terminal_token");
-      const url = isEdit ? `/api/admin/challenges/${challenge.id}` : "/api/admin/challenges";
-      const method = isEdit ? "PUT" : "POST";
+      const url = challenge ? `/api/admin/challenges/${challenge.id}` : "/api/admin/challenges";
+      const method = challenge ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          ...formData,
-          tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
-          duration: Number(formData.duration),
-        }),
+        body: JSON.stringify(formData)
       });
 
-      if (res.ok) {
-        onSuccess();
-      } else {
+      if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Operation failed");
+        throw new Error(data.error || "Save failed");
       }
+      
+      onSuccess();
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-      <motion.div 
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/90 backdrop-blur-md"
         onClick={onClose}
-        className="absolute inset-0 bg-[#020202]/90 backdrop-blur-xl"
       />
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }} 
-        animate={{ opacity: 1, scale: 1, y: 0 }} 
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 shadow-2xl custom-scrollbar"
+        className="relative flex h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[40px] border border-white/10 bg-[#0d0d0d] shadow-2xl"
       >
-        <div className="flex items-center justify-between mb-6">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between border-b border-white/5 px-8 py-6">
           <div>
-            <h2 className="text-xl font-bold text-white tracking-tight uppercase">
-              {isEdit ? "Refine Challenge" : "Forge New Challenge"}
+            <h2 className="text-2xl font-bold text-white">
+              {challenge ? "Edit Challenge" : "Create Challenge"}
             </h2>
-            <p className="text-gray-500 text-[10px] font-bold mt-0.5 uppercase tracking-widest flex items-center gap-1.5">
-              <Zap className="h-3 w-3 text-pink-500" />
-              {isEdit ? `Synchronizing ID: ${challenge.id}` : "Initialize core task parameters"}
-            </p>
+            <p className="text-sm text-white/40">Define your coding problem details below.</p>
           </div>
-          <button 
-            onClick={onClose} 
-            className="h-9 w-9 flex items-center justify-center rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all active:scale-95"
+          <button
+            onClick={onClose}
+            className="rounded-2xl bg-white/5 p-3 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {error && (
-          <div className="mb-6 rounded-lg bg-rose-500/10 border border-rose-500/20 p-3 text-rose-400 text-xs font-bold flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.15em] ml-1">Title</label>
-              <input
-                type="text" required value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full rounded-lg border border-white/5 bg-white/[0.03] px-3.5 py-2.5 text-xs text-white focus:border-pink-500/30 focus:bg-white/[0.05] focus:outline-none transition-all"
-                placeholder="e.g. Memory Matrix"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.15em] ml-1">Difficulty</label>
-              <div className="relative">
-                <select
-                  value={formData.difficulty}
-                  onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-                  className="w-full rounded-lg border border-white/5 bg-white/[0.03] px-3.5 py-2.5 text-xs text-white focus:border-pink-500/30 focus:bg-white/[0.05] focus:outline-none transition-all appearance-none cursor-pointer"
-                >
-                  <option value="Easy" className="bg-[#0a0a0a] text-emerald-400">🟢 Easy</option>
-                  <option value="Medium" className="bg-[#0a0a0a] text-amber-400">🟡 Medium</option>
-                  <option value="Hard" className="bg-[#0a0a0a] text-rose-400">🔴 Hard</option>
-                </select>
-                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500 pointer-events-none" />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.15em] ml-1">Category</label>
-              <input
-                type="text" required value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full rounded-lg border border-white/5 bg-white/[0.03] px-3.5 py-2.5 text-xs text-white focus:border-pink-500/30 focus:bg-white/[0.05] focus:outline-none transition-all"
-                placeholder="e.g. Data Structures"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.15em] ml-1">Limit (Minutes)</label>
-              <div className="relative">
-                <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
+        {/* Modal Body */}
+        <div className="flex-1 overflow-y-auto px-8 py-8">
+          <form id="challenge-form" onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-2">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-white/40">Title</label>
                 <input
-                  type="number" required value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
-                  className="w-full rounded-lg border border-white/5 bg-white/[0.03] px-10 py-2.5 text-xs text-white focus:border-pink-500/30 focus:bg-white/[0.05] focus:outline-none transition-all"
+                  type="text"
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="e.g. Array Summation"
+                  className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 text-sm text-white outline-none transition-all focus:border-fuchsia-500/30 focus:bg-white/[0.05]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-white/40">Difficulty</label>
+                  <select
+                    value={formData.difficulty}
+                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                    className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 text-sm text-white outline-none transition-all focus:border-fuchsia-500/30 focus:bg-white/[0.05] appearance-none"
+                  >
+                    <option value="Easy" className="bg-[#0d0d0d]">Easy</option>
+                    <option value="Medium" className="bg-[#0d0d0d]">Medium</option>
+                    <option value="Hard" className="bg-[#0d0d0d]">Hard</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-white/40">Duration (Mins)</label>
+                  <input
+                    type="number"
+                    required
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                    className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 text-sm text-white outline-none transition-all focus:border-fuchsia-500/30 focus:bg-white/[0.05]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-white/40">Category</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  placeholder="e.g. Data Structures"
+                  className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 text-sm text-white outline-none transition-all focus:border-fuchsia-500/30 focus:bg-white/[0.05]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-white/40">Summary</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Briefly explain the challenge goal..."
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-white outline-none transition-all focus:border-fuchsia-500/30 focus:bg-white/[0.05] resize-none"
                 />
               </div>
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.15em] ml-1 flex items-center gap-1.5">
-              <Tag className="h-3 w-3" />
-              Tags
-            </label>
-            <input
-              type="text" value={formData.tags}
-              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              className="w-full rounded-lg border border-white/5 bg-white/[0.03] px-3.5 py-2.5 text-xs text-white focus:border-pink-500/30 focus:bg-white/[0.05] focus:outline-none transition-all"
-              placeholder="array, sorting, optimization..."
-            />
-          </div>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-white/40">Problem Statement (Full)</label>
+                <textarea
+                  required
+                  rows={8}
+                  value={formData.problem_statement}
+                  onChange={(e) => setFormData({ ...formData, problem_statement: e.target.value })}
+                  placeholder="Detailed explanation, input/output formats, etc..."
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-white outline-none transition-all focus:border-fuchsia-500/30 focus:bg-white/[0.05] resize-none"
+                />
+              </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.15em] ml-1">Brief Overview</label>
-            <textarea
-              rows={2} required value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full rounded-lg border border-white/5 bg-white/[0.03] px-3.5 py-2.5 text-xs text-white focus:border-pink-500/30 focus:bg-white/[0.05] focus:outline-none transition-all resize-none"
-              placeholder="Summarize the core problem in 1-2 sentences..."
-            />
-          </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-white/40">Tags (Comma separated)</label>
+                <input
+                  type="text"
+                  value={formData.tags?.join(", ")}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+                  placeholder="arrays, math, algorithms"
+                  className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 text-sm text-white outline-none transition-all focus:border-fuchsia-500/30 focus:bg-white/[0.05]"
+                />
+              </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.15em] ml-1 flex items-center gap-1.5">
-              <LayoutGrid className="h-3 w-3" />
-              Full Specification (Markdown)
-            </label>
-            <textarea
-              rows={6} required value={formData.problem_statement}
-              onChange={(e) => setFormData({ ...formData, problem_statement: e.target.value })}
-              className="w-full rounded-lg border border-white/5 bg-white/[0.03] px-3.5 py-2.5 text-xs text-white focus:border-pink-500/30 focus:bg-white/[0.05] focus:outline-none transition-all resize-none font-mono custom-scrollbar"
-              placeholder="Detailed instructions, input/output format, examples..."
-            />
-          </div>
+              {error && (
+                <div className="flex items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-xs font-medium text-red-400">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
+            </div>
+          </form>
+        </div>
 
+        {/* Modal Footer */}
+        <div className="flex items-center justify-end gap-3 border-t border-white/5 px-8 py-6">
           <button
-            type="submit" disabled={loading}
-            className="w-full mt-4 rounded-lg bg-white text-black py-2.5 text-xs font-bold transition hover:bg-gray-200 disabled:opacity-50 active:scale-[0.98] uppercase tracking-widest shadow-lg shadow-white/5 flex items-center justify-center gap-2"
+            onClick={onClose}
+            className="rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
           >
-            {loading ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black" />
-            ) : (
-              <>
-                <CheckCircle2 className="h-4 w-4" />
-                {isEdit ? "Update Challenge" : "Deploy Challenge"}
-              </>
-            )}
+            Cancel
           </button>
-        </form>
+          <button
+            form="challenge-form"
+            type="submit"
+            disabled={saving}
+            className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl bg-white px-8 py-3 text-sm font-semibold text-black transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+          >
+            <div className="absolute inset-0 bg-gradient-to-tr from-fuchsia-500/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+            <span className="relative z-10">{saving ? "Saving..." : "Save Challenge"}</span>
+          </button>
+        </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function ManageChallenges() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#020202] text-white/90">
+          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+              <div className="h-12 w-12 animate-spin rounded-full border-2 border-fuchsia-500 border-t-transparent" />
+              <p className="text-sm font-medium text-white/40 uppercase tracking-widest">Loading challenges...</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <ManageChallengesContent />
+    </Suspense>
   );
 }

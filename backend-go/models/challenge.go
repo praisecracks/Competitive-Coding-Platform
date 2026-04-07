@@ -17,8 +17,10 @@ type StarterCodeMap struct {
 }
 
 type ChallengeTestCase struct {
-	InputJSON          string `json:"inputJson" bson:"inputJson"`
-	ExpectedOutputJSON string `json:"expectedOutputJson" bson:"expectedOutputJson"`
+	Input              string `json:"input,omitempty" bson:"input,omitempty"`
+	ExpectedOutput     string `json:"expectedOutput,omitempty" bson:"expectedOutput,omitempty"`
+	InputJSON          string `json:"inputJson,omitempty" bson:"inputJson,omitempty"`
+	ExpectedOutputJSON string `json:"expectedOutputJson,omitempty" bson:"expectedOutputJson,omitempty"`
 	IsHidden           bool   `json:"isHidden,omitempty" bson:"isHidden,omitempty"`
 }
 

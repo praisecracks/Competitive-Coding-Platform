@@ -1,13 +1,11 @@
 "use client";
 
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import GuestGuard from "../../app/components/GuestGuard";
+import GuestGuard from "../components/GuestGuard";
 import {
   isAuthenticated,
   persistUserSession,
@@ -27,8 +25,7 @@ type LoginResponse = {
   error?: string;
 };
 
-function Login() {
-  const searchParams = useSearchParams();
+function LoginForm() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,17 +33,21 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<Status>("IDLE");
   const [errorMsg, setErrorMsg] = useState("");
+  const [redirect, setRedirect] = useState("/dashboard");
+  const [message, setMessage] = useState("");
 
   const router = useRouter();
 
-  const redirect = useMemo(
-    () => sanitizeRedirect(searchParams.get("redirect")),
-    [searchParams]
-  );
-
-  const message = useMemo(() => searchParams.get("message") || "", [searchParams]);
-
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const redirectParam = searchParams.get("redirect");
+    const messageParam = searchParams.get("message") || "";
+    
+    setRedirect(sanitizeRedirect(redirectParam));
+    setMessage(messageParam);
+
     const tokenFromQuery = searchParams.get("token");
     const usernameFromQuery = searchParams.get("username");
     const emailFromQuery = searchParams.get("email");
@@ -64,7 +65,7 @@ function Login() {
         role: roleFromQuery || "user",
       });
 
-      router.replace(redirect);
+      router.replace(sanitizeRedirect(redirectParam));
       return;
     }
 
@@ -74,7 +75,7 @@ function Login() {
     }
 
     setCheckingSession(false);
-  }, [router, searchParams, redirect]);
+  }, [router]);
 
   const resetFeedback = () => {
     if (status !== "IDLE") {
@@ -420,14 +421,6 @@ function Login() {
   );
 }
 
-import { Suspense } from 'react';
-
-const LoginPageComponent = () => {
-  return (
-    <Suspense>
-      <Login />
-    </Suspense>
-  );
-};
-
-export default LoginPageComponent;
+export default function LoginPage() {
+  return <LoginForm />;
+}

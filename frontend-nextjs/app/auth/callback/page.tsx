@@ -60,7 +60,7 @@ export default function AuthCallbackPage() {
         <div className="flex min-h-screen items-center justify-center bg-[#050505]">
           <div className="text-center">
             <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-2 border-fuchsia-500 border-t-transparent"></div>
-            <p className="text-sm text-white/50">Completing authentication...</p>
+            <p className="text-sm text-white/50">Loading authentication...</p>
           </div>
         </div>
       }

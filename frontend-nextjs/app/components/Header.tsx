@@ -6,9 +6,22 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import logo from "../../assets/CodeMaster_Logo.png";
 import SearchBar from "./SearchBar";
+import {
+  AUTH_EMAIL_KEY,
+  AUTH_TOKEN_KEY,
+  AUTH_USERNAME_KEY,
+  clearUserSession,
+  getStoredUser,
+} from "@/lib/auth";
 
 interface HeaderProps {
   onMenuClick?: () => void;
+}
+
+interface HeaderUser {
+  name: string;
+  email: string;
+  avatar: string | null;
 }
 
 export default function Header({ onMenuClick }: HeaderProps) {
@@ -20,7 +33,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const [username, setUsername] = useState("");
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<HeaderUser | null>(null);
 
   const isDashboard = pathname?.startsWith("/dashboard");
   const isAuthPage =
@@ -34,19 +47,24 @@ export default function Header({ onMenuClick }: HeaderProps) {
     window.addEventListener("scroll", handleScroll);
 
     const checkAuth = () => {
-      const token = localStorage.getItem("terminal_token");
-      const savedUser = localStorage.getItem("user_name");
-      const savedPic = localStorage.getItem("user_pic");
-      const savedEmail = localStorage.getItem("user_email");
+      const token = localStorage.getItem(AUTH_TOKEN_KEY);
+      const savedUserName = localStorage.getItem(AUTH_USERNAME_KEY);
+      const savedEmail = localStorage.getItem(AUTH_EMAIL_KEY);
+      const storedUser = getStoredUser();
 
-      if (token && savedUser) {
+      const resolvedUsername =
+        storedUser?.username || savedUserName || "";
+      const resolvedEmail = storedUser?.email || savedEmail || "";
+      const resolvedProfilePic = storedUser?.profile_pic || "";
+
+      if (token && resolvedUsername) {
         setIsLoggedIn(true);
-        setUsername(savedUser);
-        setProfilePic(savedPic);
+        setUsername(resolvedUsername);
+        setProfilePic(resolvedProfilePic || null);
         setUserData({
-          name: savedUser,
-          email: savedEmail,
-          avatar: savedPic,
+          name: resolvedUsername,
+          email: resolvedEmail,
+          avatar: resolvedProfilePic || null,
         });
       } else {
         setIsLoggedIn(false);
@@ -66,12 +84,10 @@ export default function Header({ onMenuClick }: HeaderProps) {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("terminal_token");
-    localStorage.removeItem("user_name");
-    localStorage.removeItem("user_pic");
-    localStorage.removeItem("user_email");
-
+    clearUserSession();
     setIsLoggedIn(false);
+    setUsername("");
+    setProfilePic(null);
     setUserData(null);
     setMenuOpen(false);
 
@@ -138,7 +154,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             href={isLoggedIn ? "/dashboard" : "/signup"}
             className="group flex items-center gap-3"
           >
-            <div className="flex h-11 w-11 items-center rounded-full justify-center overflow-hidden  bg-white/[0.05] shadow-[0_8px_30px_rgba(217,70,239,0.10)] transition-all duration-300 group-hover:border-fuchsia-400/30 group-hover:bg-white/[0.08]">
+            <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-white/[0.05] shadow-[0_8px_30px_rgba(217,70,239,0.10)] transition-all duration-300 group-hover:border-fuchsia-400/30 group-hover:bg-white/[0.08]">
               <Image
                 src={logo}
                 alt="CodeMaster Logo"
@@ -205,7 +221,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </Link>
             <Link
               href="/signup"
-              className="rounded-full border border-white/10 bg-purple-700 text-white px-5 py-2.5 text-sm font-semibold text-black transition/90"
+              className="rounded-full border border-white/10 bg-purple-700 px-5 py-2.5 text-sm font-semibold text-white transition/90"
             >
               Get Started
             </Link>
@@ -362,7 +378,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <Link
                 href="/signup"
                 onClick={() => setMenuOpen(false)}
-                className="rounded-2xl bg-purple-700 text-white px-4 py-3 text-center text-sm font-semibold transition hover:bg-purple/80"
+                className="rounded-2xl bg-purple-700 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-purple/80"
               >
                 Get Started
               </Link>

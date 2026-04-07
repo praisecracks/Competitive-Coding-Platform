@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -48,7 +48,7 @@ function resolveAssetUrl(path?: string | null) {
   return `/api/${cleanPath}`;
 }
 
-export default function DuoCreatePage() {
+function DuoCreateForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const challengeId = searchParams.get("challengeId");
@@ -190,7 +190,7 @@ export default function DuoCreatePage() {
     } catch (err) {
       console.error("Polling status error:", err);
     }
-  }, [activeDuelId, duelCountdown, router]);
+  }, [activeDuelId, duelCountdown]);
 
   // Handle the 5-second countdown for both users
   useEffect(() => {
@@ -429,5 +429,19 @@ export default function DuoCreatePage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function DuoCreatePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#050507] flex items-center justify-center text-white">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
+        </div>
+      }
+    >
+      <DuoCreateForm />
+    </Suspense>
   );
 }

@@ -172,169 +172,6 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="w-full max-w-md">
-      <div className="mb-6 text-center lg:text-left">
-        <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-white/30">
-          Secure Reset
-        </p>
-        <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          Create new password
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-white/45">
-          Enter your new password below.
-        </p>
-      </div>
-
-      {requestState === "SUCCESS" ? (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-4">
-            <p className="text-sm font-medium text-emerald-300">Success!</p>
-            <p className="mt-2 text-sm leading-7 text-emerald-100/80">
-              {feedbackMessage}
-            </p>
-          </div>
-          <p className="text-center text-sm text-white/50">
-            Redirecting to login...
-          </p>
-        </div>
-      ) : (
-        <form onSubmit={handleReset} className="space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-white/72">
-              New Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  resetFeedback();
-                }}
-                placeholder="Enter new password"
-                required
-                className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white outline-none transition-all placeholder:text-white/25 focus:border-fuchsia-400/50 focus:bg-white/[0.06] focus:ring-4 focus:ring-fuchsia-500/10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-white/40 transition-colors hover:text-white/80"
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-white/72">
-              Confirm Password
-            </label>
-            <input
-              type={showPassword ? "text" : "password"}
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                resetFeedback();
-              }}
-              placeholder="Confirm new password"
-              required
-              className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white outline-none transition-all placeholder:text-white/25 focus:border-fuchsia-400/50 focus:bg-white/[0.06] focus:ring-4 focus:ring-fuchsia-500/10"
-            />
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-            <p className="mb-3 text-xs font-medium text-white/70">
-              Password requirements
-            </p>
-            <ul className="space-y-2 text-xs">
-              <li
-                className={`flex items-center gap-2 ${
-                  passwordChecks.length ? "text-emerald-400" : "text-white/40"
-                }`}
-              >
-                <div
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    passwordChecks.length ? "bg-emerald-400" : "bg-white/20"
-                  }`}
-                />
-                At least 8 characters
-              </li>
-              <li
-                className={`flex items-center gap-2 ${
-                  passwordChecks.uppercase ? "text-emerald-400" : "text-white/40"
-                }`}
-              >
-                <div
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    passwordChecks.uppercase ? "bg-emerald-400" : "bg-white/20"
-                  }`}
-                />
-                One uppercase letter
-              </li>
-              <li
-                className={`flex items-center gap-2 ${
-                  passwordChecks.number ? "text-emerald-400" : "text-white/40"
-                }`}
-              >
-                <div
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    passwordChecks.number ? "bg-emerald-400" : "bg-white/20"
-                  }`}
-                />
-                One number
-              </li>
-              <li
-                className={`flex items-center gap-2 ${
-                  passwordChecks.special ? "text-emerald-400" : "text-white/40"
-                }`}
-              >
-                <div
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    passwordChecks.special ? "bg-emerald-400" : "bg-white/20"
-                  }`}
-                />
-                One special character
-              </li>
-              <li
-                className={`flex items-center gap-2 ${
-                  password && password === confirmPassword
-                    ? "text-emerald-400"
-                    : "text-white/40"
-                }`}
-              >
-                <div
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    password && password === confirmPassword
-                      ? "bg-emerald-400"
-                      : "bg-white/20"
-                  }`}
-                />
-                Passwords match
-              </li>
-            </ul>
-          </div>
-
-          <button
-            type="submit"
-            disabled={requestState === "LOADING" || !isPasswordValid}
-            className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-white text-sm font-semibold text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {requestState === "LOADING" ? "Resetting..." : "Reset Password"}
-          </button>
-        </form>
-      )}
-
-      {requestState === "ERROR" && feedbackMessage && (
-        <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3">
-          <p className="text-sm text-red-300">{feedbackMessage}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function ResetPasswordPage() {
-  return (
     <GuestGuard>
       <div className="min-h-screen bg-[#050505] text-white selection:bg-fuchsia-500/20 selection:text-white">
         <Header />
@@ -371,9 +208,164 @@ export default function ResetPasswordPage() {
             <div className="overflow-hidden rounded-[28px] border border-white/10 bg-black/70 shadow-[0_20px_70px_rgba(0,0,0,0.40)] backdrop-blur-2xl">
               <div className="grid lg:grid-cols-[1.05fr_0.95fr]">
                 <section className="relative flex items-center justify-center border-b border-white/8 bg-black px-5 py-8 sm:px-8 lg:border-b-0 lg:border-r lg:border-white/8 xl:px-12">
-                  <Suspense fallback={<div className="text-white/50">Loading...</div>}>
-                    <ResetPasswordForm />
-                  </Suspense>
+                  <div className="w-full max-w-md">
+                    <div className="mb-6 text-center lg:text-left">
+                      <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-white/30">
+                        Secure Reset
+                      </p>
+                      <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                        Create new password
+                      </h2>
+                      <p className="mt-2 text-sm leading-6 text-white/45">
+                        Enter your new password below.
+                      </p>
+                    </div>
+
+                    {requestState === "SUCCESS" ? (
+                      <div className="space-y-4">
+                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-4">
+                          <p className="text-sm font-medium text-emerald-300">Success!</p>
+                          <p className="mt-2 text-sm leading-7 text-emerald-100/80">
+                            {feedbackMessage}
+                          </p>
+                        </div>
+                        <p className="text-center text-sm text-white/50">
+                          Redirecting to login...
+                        </p>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleReset} className="space-y-4">
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-white/72">
+                            New Password
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showPassword ? "text" : "password"}
+                              value={password}
+                              onChange={(e) => {
+                                setPassword(e.target.value);
+                                resetFeedback();
+                              }}
+                              placeholder="Enter new password"
+                              required
+                              className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white outline-none transition-all placeholder:text-white/25 focus:border-fuchsia-400/50 focus:bg-white/[0.06] focus:ring-4 focus:ring-fuchsia-500/10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-white/40 transition-colors hover:text-white/80"
+                            >
+                              {showPassword ? "Hide" : "Show"}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-white/72">
+                            Confirm Password
+                          </label>
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            value={confirmPassword}
+                            onChange={(e) => {
+                              setConfirmPassword(e.target.value);
+                              resetFeedback();
+                            }}
+                            placeholder="Confirm new password"
+                            required
+                            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white outline-none transition-all placeholder:text-white/25 focus:border-fuchsia-400/50 focus:bg-white/[0.06] focus:ring-4 focus:ring-fuchsia-500/10"
+                          />
+                        </div>
+
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                          <p className="mb-3 text-xs font-medium text-white/70">
+                            Password requirements
+                          </p>
+                          <ul className="space-y-2 text-xs">
+                            <li
+                              className={`flex items-center gap-2 ${
+                                passwordChecks.length ? "text-emerald-400" : "text-white/40"
+                              }`}
+                            >
+                              <div
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  passwordChecks.length ? "bg-emerald-400" : "bg-white/20"
+                                }`}
+                              />
+                              At least 8 characters
+                            </li>
+                            <li
+                              className={`flex items-center gap-2 ${
+                                passwordChecks.uppercase ? "text-emerald-400" : "text-white/40"
+                              }`}
+                            >
+                              <div
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  passwordChecks.uppercase ? "bg-emerald-400" : "bg-white/20"
+                                }`}
+                              />
+                              One uppercase letter
+                            </li>
+                            <li
+                              className={`flex items-center gap-2 ${
+                                passwordChecks.number ? "text-emerald-400" : "text-white/40"
+                              }`}
+                            >
+                              <div
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  passwordChecks.number ? "bg-emerald-400" : "bg-white/20"
+                                }`}
+                              />
+                              One number
+                            </li>
+                            <li
+                              className={`flex items-center gap-2 ${
+                                passwordChecks.special ? "text-emerald-400" : "text-white/40"
+                              }`}
+                            >
+                              <div
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  passwordChecks.special ? "bg-emerald-400" : "bg-white/20"
+                                }`}
+                              />
+                              One special character
+                            </li>
+                            <li
+                              className={`flex items-center gap-2 ${
+                                password && password === confirmPassword
+                                  ? "text-emerald-400"
+                                  : "text-white/40"
+                              }`}
+                            >
+                              <div
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  password && password === confirmPassword
+                                    ? "bg-emerald-400"
+                                    : "bg-white/20"
+                                }`}
+                              />
+                              Passwords match
+                            </li>
+                          </ul>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={requestState === "LOADING" || !isPasswordValid}
+                          className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-white text-sm font-semibold text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {requestState === "LOADING" ? "Resetting..." : "Reset Password"}
+                        </button>
+                      </form>
+                    )}
+
+                    {requestState === "ERROR" && feedbackMessage && (
+                      <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3">
+                        <p className="text-sm text-red-300">{feedbackMessage}</p>
+                      </div>
+                    )}
+                  </div>
                 </section>
 
                 <section className="relative overflow-hidden bg-[linear-gradient(180deg,#0d0d0d_0%,#111111_100%)] px-6 py-8 sm:px-8 xl:px-10">
@@ -422,5 +414,24 @@ export default function ResetPasswordPage() {
         <Footer variant="minimal" />
       </div>
     </GuestGuard>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
+          <div className="space-y-3 text-center">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-fuchsia-400" />
+            <p className="text-xs uppercase tracking-[0.35em] text-white/45">
+              Verifying secure link...
+            </p>
+          </div>
+        </div>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

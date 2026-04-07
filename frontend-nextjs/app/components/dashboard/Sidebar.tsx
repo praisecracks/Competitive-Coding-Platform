@@ -4,6 +4,12 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import {
+  AUTH_EMAIL_KEY,
+  AUTH_USERNAME_KEY,
+  getStoredUser,
+  normalizeProfileImageUrl,
+} from "@/lib/auth";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,7 +23,7 @@ interface NavItem {
   icon: React.ReactNode;
   activeIcon?: React.ReactNode;
   badge?: string;
-  roles?: string[]; // Added roles field
+  roles?: string[];
 }
 
 interface SidebarUser {
@@ -25,39 +31,37 @@ interface SidebarUser {
   email: string;
   profile_pic: string | null;
   rank: string;
-  role: string; // Added role field
+  role: string;
   totalSolved: number;
   currentStreak: number;
   duelsWon: number;
   winRate: number;
 }
 
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const API_BASE_URL = "/api";
 
 function resolveAssetUrl(path?: string | null) {
   if (!path) return null;
 
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    const productionDomain = "codemaster-q9oo.onrender.com";
-    if (path.includes(productionDomain)) {
-      if (IS_PRODUCTION) {
-        return path;
-      }
-      const url = new URL(path);
-      return `/api${url.pathname}`;
-    }
-    return path;
-  }
-  
-  let cleanPath = path.trim().replace(/\/+/g, "/");
-  if (cleanPath.startsWith("/")) cleanPath = cleanPath.substring(1);
+  const normalized = normalizeProfileImageUrl(path);
+  if (!normalized) return null;
 
-  if (!cleanPath.includes("/")) {
-    return `/api/uploads/profiles/${cleanPath}`;
+  if (
+    normalized.startsWith("http://") ||
+    normalized.startsWith("https://")
+  ) {
+    return normalized;
   }
 
-  return `/api/${cleanPath}`;
+  if (normalized.startsWith("/uploads/")) {
+    return normalized;
+  }
+
+  if (normalized.startsWith("uploads/")) {
+    return `/${normalized}`;
+  }
+
+  return normalized;
 }
 
 function getInitials(name?: string) {
@@ -72,68 +76,29 @@ function getInitials(name?: string) {
 }
 
 function readCachedSidebarUser(): SidebarUser {
-  const savedName = localStorage.getItem("user_name") || "Developer";
-  const savedEmail = localStorage.getItem("user_email") || "";
-  const savedProfilePic = localStorage.getItem("profile_pic");
-  const savedUser = localStorage.getItem("user");
-
-  let parsedRank = "Beginner";
-  let parsedRole = "user"; // Default role
-  let parsedSolved = 0;
-  let parsedStreak = 0;
-  let parsedDuelsWon = 0;
-  let parsedWinRate = 0;
-  let parsedProfilePic = savedProfilePic || null;
-  let parsedName = savedName;
-  let parsedEmail = savedEmail;
-
-  if (savedUser) {
-    try {
-      const parsed = JSON.parse(savedUser);
-
-      parsedName = parsed?.username || parsedName;
-      parsedEmail = parsed?.email || parsedEmail;
-      parsedRank = parsed?.rank || parsedRank;
-      parsedRole = parsed?.role || parsedRole; // Parse role from cache
-      parsedSolved =
-        typeof parsed?.totalSolved === "number" ? parsed.totalSolved : parsedSolved;
-      parsedStreak =
-        typeof parsed?.currentStreak === "number"
-          ? parsed.currentStreak
-          : parsedStreak;
-      parsedDuelsWon =
-        typeof parsed?.duelsWon === "number" ? parsed.duelsWon : 0;
-      parsedWinRate =
-        typeof parsed?.winRate === "number" ? parsed.winRate : 0;
-      parsedProfilePic =
-        parsed?.profile_pic || parsed?.profilePic || parsedProfilePic;
-    } catch {
-      // ignore malformed local storage
-    }
-  }
+  const savedName = localStorage.getItem(AUTH_USERNAME_KEY) || "Developer";
+  const savedEmail = localStorage.getItem(AUTH_EMAIL_KEY) || "";
+  const savedUser = getStoredUser();
 
   return {
-    name: parsedName,
-    email: parsedEmail,
-    profile_pic: parsedProfilePic,
-    rank: parsedRank,
-    role: parsedRole,
-    totalSolved: parsedSolved,
-    currentStreak: parsedStreak,
-    duelsWon: parsedDuelsWon,
-    winRate: parsedWinRate,
+    name: savedUser?.username || savedName,
+    email: savedUser?.email || savedEmail,
+    profile_pic: savedUser?.profile_pic || null,
+    rank: (savedUser as any)?.rank || "Beginner",
+    role: savedUser?.role || "user",
+    totalSolved: typeof (savedUser as any)?.totalSolved === "number" ? (savedUser as any).totalSolved : 0,
+    currentStreak:
+      typeof (savedUser as any)?.currentStreak === "number"
+        ? (savedUser as any).currentStreak
+        : 0,
+    duelsWon: typeof (savedUser as any)?.duelsWon === "number" ? (savedUser as any).duelsWon : 0,
+    winRate: typeof (savedUser as any)?.winRate === "number" ? (savedUser as any).winRate : 0,
   };
 }
 
 function persistSidebarUser(user: SidebarUser) {
-  localStorage.setItem("user_name", user.name || "Developer");
-  localStorage.setItem("user_email", user.email || "");
-
-  if (user.profile_pic) {
-    localStorage.setItem("profile_pic", user.profile_pic);
-  } else {
-    localStorage.removeItem("profile_pic");
-  }
+  localStorage.setItem(AUTH_USERNAME_KEY, user.name || "Developer");
+  localStorage.setItem(AUTH_EMAIL_KEY, user.email || "");
 
   const rawUser = localStorage.getItem("user");
 
@@ -152,11 +117,13 @@ function persistSidebarUser(user: SidebarUser) {
       ...existing,
       username: user.name,
       email: user.email,
-      profile_pic: user.profile_pic,
+      profile_pic: normalizeProfileImageUrl(user.profile_pic || ""),
       rank: user.rank,
       role: user.role,
       totalSolved: user.totalSolved,
       currentStreak: user.currentStreak,
+      duelsWon: user.duelsWon,
+      winRate: user.winRate,
     })
   );
 }
@@ -206,7 +173,6 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
       ]);
 
       const cached = readCachedSidebarUser();
-
       let nextUser: SidebarUser = { ...cached };
 
       if (profileRes.ok) {
@@ -216,9 +182,11 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
           ...nextUser,
           name: profile.username || cached.name || "Developer",
           email: profile.email || cached.email || "",
-          profile_pic: profile.profile_pic || cached.profile_pic || null,
+          profile_pic: normalizeProfileImageUrl(
+            profile.profile_pic || cached.profile_pic || ""
+          ) || null,
           rank: profile.rank || cached.rank || "Beginner",
-          role: profile.role || cached.role || "user", // Sync role from profile
+          role: profile.role || cached.role || "user",
         };
       }
 
@@ -235,7 +203,15 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             typeof stats.currentStreak === "number"
               ? stats.currentStreak
               : nextUser.currentStreak,
-          rank: 
+          duelsWon:
+            typeof stats.duelsWon === "number"
+              ? stats.duelsWon
+              : nextUser.duelsWon,
+          winRate:
+            typeof stats.winRate === "number"
+              ? stats.winRate
+              : nextUser.winRate,
+          rank:
             typeof stats.rank === "number" && stats.rank > 0
               ? `#${stats.rank}`
               : nextUser.rank,
@@ -276,7 +252,10 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
 
     window.addEventListener("storage", handleStorage);
     window.addEventListener("focus", handleFocus);
-    window.addEventListener("user-profile-updated", handleProfileRefresh as EventListener);
+    window.addEventListener(
+      "user-profile-updated",
+      handleProfileRefresh as EventListener
+    );
 
     return () => {
       window.removeEventListener("storage", handleStorage);
@@ -466,7 +445,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
     {
       name: "Admin Center",
       href: "/dashboard/admin",
-      roles: ["super_admin", "sub_admin"], // Admin only
+      roles: ["super_admin", "sub_admin"],
       icon: (
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -481,7 +460,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
     {
       name: "Users",
       href: "/dashboard/admin/users",
-      roles: ["super_admin"], // Super Admin only
+      roles: ["super_admin"],
       icon: (
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -491,10 +470,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   ];
 
   const filteredNavItems = useMemo(() => {
-    return navItems.filter(item => {
-      // If no roles specified, everyone can see it
+    return navItems.filter((item) => {
       if (!item.roles) return true;
-      // Check if user's role is in the allowed roles
       return item.roles.includes(userData.role);
     });
   }, [userData.role]);
@@ -535,38 +512,43 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
           </div>
         </div>
 
-        {/* Battle Stats - Player Card Style */}
         <div className="mt-6 rounded-[20px] border border-white/5 bg-white/[0.02] p-4 shadow-inner">
           <div className="mb-3 flex items-center justify-between px-1">
-            <p className="text-[10px] font-semibold text-pink-500/80 uppercase tracking-wider">Battle Stats</p>
-            <div className="h-1 w-1 rounded-full bg-pink-500 animate-pulse" />
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-pink-500/80">
+              Battle Stats
+            </p>
+            <div className="h-1 w-1 animate-pulse rounded-full bg-pink-500" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="group relative">
-              <p className="text-[10px] text-gray-500 group-hover:text-gray-400 transition-colors">Victories</p>
+              <p className="text-[10px] text-gray-500 transition-colors group-hover:text-gray-400">
+                Victories
+              </p>
               <div className="mt-1 flex items-baseline gap-1.5">
                 <p className="text-xl font-bold text-white">{userData.duelsWon}</p>
                 <span className="text-[10px]">🏆</span>
               </div>
             </div>
             <div className="group relative">
-              <p className="text-[10px] text-gray-500 group-hover:text-gray-400 transition-colors">Win Rate</p>
+              <p className="text-[10px] text-gray-500 transition-colors group-hover:text-gray-400">
+                Win Rate
+              </p>
               <div className="mt-1 flex items-baseline gap-1.5">
                 <p className="text-xl font-bold text-white">{userData.winRate}%</p>
               </div>
             </div>
           </div>
-          
-          <div className="mt-4 pt-3 border-t border-white/5">
+
+          <div className="mt-4 border-t border-white/5 pt-3">
             <div className="flex items-center justify-between text-[10px]">
               <span className="text-gray-500">Current Rank</span>
-              <span className="text-pink-400 font-medium">{userData.rank}</span>
+              <span className="font-medium text-pink-400">{userData.rank}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-6 no-scrollbar">
+      <nav className="no-scrollbar flex-1 overflow-y-auto py-6">
         {filteredNavItems.map((item) => {
           const active = isActive(item.href);
 
@@ -581,7 +563,6 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                   : "text-gray-500 hover:bg-white/[0.02] hover:text-gray-200"
               }`}
             >
-              {/* Active Glow Indicator */}
               {active && (
                 <motion.div
                   layoutId="active-pill"
@@ -591,15 +572,19 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
 
               <span
                 className={`transition-all duration-300 ${
-                  active 
-                    ? "text-pink-500 scale-110 drop-shadow-[0_0_8px_rgba(236,72,153,0.4)]" 
-                    : "group-hover:text-white group-hover:scale-105"
+                  active
+                    ? "scale-110 text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.4)]"
+                    : "group-hover:scale-105 group-hover:text-white"
                 }`}
               >
                 {active ? item.activeIcon || item.icon : item.icon}
               </span>
 
-              <span className={`text-sm font-medium transition-all duration-300 ${active ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`}>
+              <span
+                className={`text-sm font-medium transition-all duration-300 ${
+                  active ? "opacity-100" : "opacity-70 group-hover:opacity-100"
+                }`}
+              >
                 {item.name}
               </span>
 
@@ -646,7 +631,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
         transition={{ duration: 0.22, ease: "easeInOut" }}
         className="fixed bottom-0 left-0 top-16 z-40 overflow-hidden border-r border-white/10 bg-[#0a0a0a]"
       >
-        <div className="h-full overflow-y-auto no-scrollbar">
+        <div className="no-scrollbar h-full overflow-y-auto">
           {isOpen ? (
             sidebarContent
           ) : (

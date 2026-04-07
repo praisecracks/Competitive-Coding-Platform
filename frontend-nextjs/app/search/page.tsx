@@ -1,13 +1,13 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Header from "../components/dashboard/header";
 import AppFooter from "../components/dashboard/footer";
 import { fetchSearchResults, SearchResults } from "@/lib/search";
 import Link from "next/link";
 
-function Search() {
+function SearchResultsContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
 
@@ -240,8 +240,21 @@ function Search() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}> 
-      <Search />
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen flex-col bg-[#020202] text-white">
+          <Header onMenuClick={() => {}} />
+          <main className="flex-1 pt-20">
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-500/30 border-t-pink-500"></div>
+              <p className="mt-4 text-sm text-gray-400">Loading search...</p>
+            </div>
+          </main>
+          <AppFooter />
+        </div>
+      }
+    >
+      <SearchResultsContent />
     </Suspense>
   );
 }
