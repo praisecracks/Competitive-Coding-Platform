@@ -75,7 +75,13 @@ type SubmitResponse = {
 };
 
 type MissionState = "active" | "submitted" | "completed" | "timeout";
-type ResultStatus = "accepted" | "failed" | "timeout";
+type ResultStatus =
+  | "accepted"
+  | "passed"
+  | "failed"
+  | "timeout"
+  | "submission_error"
+  | "runtime_error";
 
 type ResultModalState = {
   open: boolean;
@@ -250,20 +256,72 @@ function normalizeSubmissionResult(data: SubmitResponse) {
       ? Math.round((passedTests / totalTests) * 100)
       : 0;
 
-  const isAccepted =
+  const errorCode =
+    typeof data.error === "string" && data.error.trim() !== ""
+      ? data.error.trim()
+      : undefined;
+
+  if (
+    errorCode === "FUNCTION_NOT_FOUND" ||
+    errorCode === "NETWORK_ERROR"
+  ) {
+    return {
+      status: "submission_error" as ResultStatus,
+      score: derivedScore,
+      passedTests,
+      totalTests,
+      errorCode,
+    };
+  }
+
+  if (
+    rawStatus === "runtime_error" ||
+    rawStatus === "compilation_error" ||
+    errorCode === "EXECUTION_TIMEOUT" ||
+    errorCode === "EXECUTION_FAILED" ||
+    errorCode === "GRADING_PARSE_FAILED"
+  ) {
+    return {
+      status: "runtime_error" as ResultStatus,
+      score: derivedScore,
+      passedTests,
+      totalTests,
+      errorCode,
+    };
+  }
+
+  if (
     rawStatus === "accepted" ||
     rawStatus === "passed" ||
     rawStatus === "success" ||
     rawStatus === "completed" ||
-    (totalTests > 0 && passedTests === totalTests);
+    (totalTests > 0 && passedTests === totalTests)
+  ) {
+    return {
+      status: "accepted" as ResultStatus,
+      score: derivedScore,
+      passedTests,
+      totalTests,
+      errorCode,
+    };
+  }
 
-  const status: ResultStatus = isAccepted ? "accepted" : "failed";
+  if (derivedScore >= 50) {
+    return {
+      status: "passed" as ResultStatus,
+      score: derivedScore,
+      passedTests,
+      totalTests,
+      errorCode,
+    };
+  }
 
   return {
-    status,
+    status: "failed" as ResultStatus,
     score: derivedScore,
     passedTests,
     totalTests,
+    errorCode,
   };
 }
 
@@ -288,6 +346,20 @@ function buildResultModal(
     };
   }
 
+  if (status === "passed") {
+    return {
+      open: true,
+      status,
+      score,
+      passedTests,
+      totalTests,
+      errorCode,
+      title: "Good Attempt",
+      description:
+        "Nice work. You passed enough test cases to count as a pass, but you can still improve toward 100%.",
+    };
+  }
+
   if (status === "timeout") {
     return {
       open: true,
@@ -305,14 +377,42 @@ function buildResultModal(
   if (errorCode === "MISSING_TEST_CASES") {
     return {
       open: true,
-      status,
+      status: "submission_error",
       score,
       passedTests,
       totalTests,
       errorCode,
       title: "Missing Test Cases",
       description:
-        "This challenge has no test cases configured yet, so the system cannot score your submission. Add backend test cases for this challenge before using submit.",
+        "This challenge has no test cases configured yet, so the system cannot score your submission.",
+    };
+  }
+
+  if (status === "submission_error") {
+    return {
+      open: true,
+      status,
+      score,
+      passedTests,
+      totalTests,
+      errorCode,
+      title: "Submission Error",
+      description:
+        "Your code could not be evaluated in the expected submission format. Check the required function signature and try again.",
+    };
+  }
+
+  if (status === "runtime_error") {
+    return {
+      open: true,
+      status,
+      score,
+      passedTests,
+      totalTests,
+      errorCode,
+      title: "Runtime Error",
+      description:
+        "Your code ran into an execution problem before completing evaluation properly.",
     };
   }
 
@@ -325,7 +425,7 @@ function buildResultModal(
     errorCode,
     title: "Challenge Failed",
     description:
-      "Your submission was evaluated, but it did not pass all required test cases.",
+      "Your submission was evaluated, but it did not pass enough test cases.",
   };
 }
 
@@ -345,7 +445,11 @@ function ResultModal({
   const toneClass =
     modal.status === "accepted"
       ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-      : modal.status === "timeout"
+      : modal.status === "passed"
+      ? "border-cyan-500/20 bg-cyan-500/10 text-cyan-200"
+      : modal.status === "timeout" ||
+        modal.status === "runtime_error" ||
+        modal.status === "submission_error"
       ? "border-red-500/20 bg-red-500/10 text-red-300"
       : "border-yellow-500/20 bg-yellow-500/10 text-yellow-200";
 
@@ -976,9 +1080,7 @@ function ChallengeDetail() {
         console.error("Submission failed:", res.status, errorText);
         addTerminalLine(`Submission failed: ${message}`);
 
-        setResultModal(
-          buildResultModal("failed", 0, 0, 0, message)
-        );
+        setResultModal(buildResultModal("submission_error", 0, 0, 0, message));
         return;
       }
 
@@ -990,10 +1092,6 @@ function ChallengeDetail() {
           : null;
 
       const normalized = normalizeSubmissionResult(data);
-      const errorCode =
-        typeof data.error === "string" && data.error.trim() !== ""
-          ? data.error.trim()
-          : undefined;
 
       setLastScore(normalized.score);
 
@@ -1020,11 +1118,11 @@ function ChallengeDetail() {
 
         setResultModal(
           buildResultModal(
-            "accepted",
+            normalized.status,
             normalized.score,
             normalized.passedTests,
             normalized.totalTests,
-            errorCode
+            normalized.errorCode
           )
         );
 
@@ -1040,22 +1138,31 @@ function ChallengeDetail() {
       }
 
       setMissionState("submitted");
-      addTerminalLine("Challenge failed. Review feedback and retry the mission.");
+
+      if (normalized.status === "passed") {
+        addTerminalLine("Good attempt. You passed enough test cases to count as a pass.");
+      } else if (normalized.status === "submission_error") {
+        addTerminalLine("Submission format issue detected. Review the error and retry.");
+      } else if (normalized.status === "runtime_error") {
+        addTerminalLine("Runtime issue detected during submission.");
+      } else {
+        addTerminalLine("Challenge failed. Review feedback and retry the mission.");
+      }
 
       setResultModal(
         buildResultModal(
-          "failed",
+          normalized.status,
           normalized.score,
           normalized.passedTests,
           normalized.totalTests,
-          errorCode
+          normalized.errorCode
         )
       );
     } catch (error) {
       console.error("Submission error:", error);
       addTerminalLine("Submission failed due to a network error.");
       setResultModal(
-        buildResultModal("failed", 0, 0, 0, "NETWORK_ERROR")
+        buildResultModal("submission_error", 0, 0, 0, "NETWORK_ERROR")
       );
     } finally {
       setSubmitting(false);

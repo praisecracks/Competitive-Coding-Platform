@@ -1,4 +1,3 @@
-// backend-go/controllers/profile.controller.go
 package controllers
 
 import (
@@ -47,7 +46,6 @@ func GetReferralCode(c *gin.Context) {
 		return
 	}
 
-	// Generate a new referral code
 	newReferralCode := uuid.New().String()
 
 	update := bson.M{
@@ -70,7 +68,6 @@ func GetReferralCode(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"referralCode": newReferralCode})
 }
 
-// helper to get userID from middleware
 func getUserID(c *gin.Context) (primitive.ObjectID, bool) {
 	userIDRaw, exists := c.Get("user_id")
 	if !exists {
@@ -127,7 +124,6 @@ func normalizeStoredFilePath(path string) string {
 		return path
 	}
 
-	// If it's just a filename without any path segments, assume it's in uploads/profiles
 	if !strings.Contains(path, "/") {
 		path = "/uploads/profiles/" + path
 	}
@@ -432,11 +428,16 @@ func GetDashboardStats(c *gin.Context) {
 	}
 
 	solvedMap := make(map[int]bool)
-	acceptedCount := 0
+	passedSubmissionCount := 0
+	perfectSubmissionCount := 0
+
 	for _, sub := range submissions {
-		if sub.Status == "accepted" {
+		if isPassingSubmission(sub) {
 			solvedMap[sub.ChallengeID] = true
-			acceptedCount++
+			passedSubmissionCount++
+		}
+		if isPerfectSubmission(sub) {
+			perfectSubmissionCount++
 		}
 	}
 
@@ -473,7 +474,7 @@ func GetDashboardStats(c *gin.Context) {
 		recentSubmissions = append(recentSubmissions, gin.H{
 			"id":     sub.ChallengeID,
 			"title":  title,
-			"status": strings.Title(sub.Status),
+			"status": displaySubmissionStatus(sub),
 			"score":  sub.Score,
 			"date":   humanizeTime(sub.CreatedAt),
 		})
@@ -492,11 +493,18 @@ func GetDashboardStats(c *gin.Context) {
 		}
 	}
 
+	passRate := 0.0
+	if len(submissions) > 0 {
+		passRate = (float64(passedSubmissionCount) / float64(len(submissions))) * 100
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"totalSolved":       len(solvedMap),
 		"currentStreak":     calculateCurrentStreak(submissions),
-		"challengesWon":     acceptedCount,
+		"challengesWon":     passedSubmissionCount,
+		"perfectChallenges": perfectSubmissionCount,
 		"challengesPlayed":  len(submissions),
+		"passRate":          passRate,
 		"rank":              rank,
 		"totalPoints":       totalPoints,
 		"easySolved":        easySolved,
@@ -560,13 +568,20 @@ func GetAnalytics(c *gin.Context) {
 	}
 
 	solvedMap := make(map[int]bool)
-	acceptedCount := 0
+	passedCount := 0
+	perfectCount := 0
 	totalScore := 0
+
 	for _, sub := range submissions {
-		if sub.Status == "accepted" {
+		totalScore += sub.Score
+
+		if isPassingSubmission(sub) {
 			solvedMap[sub.ChallengeID] = true
-			acceptedCount++
-			totalScore += sub.Score
+			passedCount++
+		}
+
+		if isPerfectSubmission(sub) {
+			perfectCount++
 		}
 	}
 
@@ -658,7 +673,7 @@ func GetAnalytics(c *gin.Context) {
 			"title":      title,
 			"category":   category,
 			"difficulty": difficulty,
-			"status":     strings.Title(sub.Status),
+			"status":     displaySubmissionStatus(sub),
 			"score":      sub.Score,
 			"date":       humanizeTime(sub.CreatedAt),
 		})
@@ -677,14 +692,19 @@ func GetAnalytics(c *gin.Context) {
 		}
 	}
 
+	passRate := 0.0
+	if len(submissions) > 0 {
+		passRate = (float64(passedCount) / float64(len(submissions))) * 100
+	}
+
 	acceptanceRate := 0.0
 	if len(submissions) > 0 {
-		acceptanceRate = (float64(acceptedCount) / float64(len(submissions))) * 100
+		acceptanceRate = (float64(perfectCount) / float64(len(submissions))) * 100
 	}
 
 	averageScore := 0
-	if acceptedCount > 0 {
-		averageScore = totalScore / acceptedCount
+	if len(submissions) > 0 {
+		averageScore = totalScore / len(submissions)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -699,11 +719,14 @@ func GetAnalytics(c *gin.Context) {
 		"stats": gin.H{
 			"totalPoints":    totalPoints,
 			"acceptanceRate": acceptanceRate,
+			"passRate":       passRate,
 			"currentStreak":  calculateCurrentStreak(submissions),
 			"totalSolved":    len(solvedMap),
 			"totalAttempts":  len(submissions),
 			"averageScore":   averageScore,
 			"rank":           rank,
+			"passedCount":    passedCount,
+			"perfectCount":   perfectCount,
 		},
 	})
 }
@@ -726,6 +749,48 @@ func ResetStats(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "STATS_RESET_SUCCESSFUL"})
 }
 
+func isPerfectSubmission(submission models.SubmissionRecord) bool {
+	normalized := strings.ToLower(strings.TrimSpace(submission.Status))
+	return normalized == "accepted" || submission.Score == 100
+}
+
+func isPassingSubmission(submission models.SubmissionRecord) bool {
+	normalized := strings.ToLower(strings.TrimSpace(submission.Status))
+
+	if normalized == "accepted" || normalized == "passed" {
+		return true
+	}
+
+	if normalized == "partial" && submission.Score >= 50 {
+		return true
+	}
+
+	return submission.Score >= 50
+}
+
+func displaySubmissionStatus(submission models.SubmissionRecord) string {
+	if isPerfectSubmission(submission) {
+		return "Accepted"
+	}
+
+	if isPassingSubmission(submission) {
+		return "Passed"
+	}
+
+	switch strings.ToLower(strings.TrimSpace(submission.Status)) {
+	case "runtime_error":
+		return "Runtime Error"
+	case "compilation_error":
+		return "Compilation Error"
+	case "internal_error":
+		return "Internal Error"
+	case "pending":
+		return "Pending"
+	default:
+		return "Failed"
+	}
+}
+
 // Stats helpers
 func getUserProfileStats(ctx context.Context, submissionsCollection *mongo.Collection, userID string) (int, int) {
 	var submissions []models.SubmissionRecord
@@ -740,16 +805,16 @@ func getUserProfileStats(ctx context.Context, submissionsCollection *mongo.Colle
 		return 0, 0
 	}
 
-	acceptedSet := map[int]bool{}
+	passedSet := map[int]bool{}
 	for _, submission := range submissions {
-		if submission.Status == "accepted" {
-			acceptedSet[submission.ChallengeID] = true
+		if isPassingSubmission(submission) {
+			passedSet[submission.ChallengeID] = true
 		}
 	}
 
 	currentStreak := calculateCurrentStreak(submissions)
 
-	return len(acceptedSet), currentStreak
+	return len(passedSet), currentStreak
 }
 
 func calculateCurrentStreak(submissions []models.SubmissionRecord) int {
@@ -759,7 +824,7 @@ func calculateCurrentStreak(submissions []models.SubmissionRecord) int {
 
 	daySet := map[string]bool{}
 	for _, submission := range submissions {
-		if submission.Status != "accepted" {
+		if !isPassingSubmission(submission) {
 			continue
 		}
 		dayKey := submission.CreatedAt.UTC().Format("2006-01-02")

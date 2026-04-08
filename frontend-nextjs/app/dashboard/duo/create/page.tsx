@@ -25,7 +25,7 @@ const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 function resolveAssetUrl(path?: string | null) {
   if (!path) return null;
-  
+
   if (path.startsWith("http://") || path.startsWith("https://")) {
     const productionDomain = "codemaster-q9oo.onrender.com";
     if (path.includes(productionDomain)) {
@@ -37,7 +37,7 @@ function resolveAssetUrl(path?: string | null) {
     }
     return path;
   }
-  
+
   let cleanPath = path.trim().replace(/\/+/g, "/");
   if (cleanPath.startsWith("/")) cleanPath = cleanPath.substring(1);
 
@@ -61,11 +61,11 @@ function DuoCreateForm() {
   const [error, setError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [inviteState, setInviteState] = useState<"idle" | "waiting" | "declined" | "expired">("idle");
-  const [countdown, setCountdown] = useState(120); // 2 minutes
+  const [countdown, setCountdown] = useState(120);
   const [activeDuelId, setActiveDuelId] = useState<string | null>(null);
   const [duelCountdown, setDuelCountdown] = useState<number | null>(null);
 
-  const pollInterval = 1000; // Poll every 1 second for ultra-fast detection
+  const pollInterval = 1000;
 
   useEffect(() => {
     if (!challengeId) {
@@ -98,7 +98,6 @@ function DuoCreateForm() {
 
     try {
       const token = localStorage.getItem("terminal_token");
-      // Use relative /api path to ensure proxy works correctly
       const res = await fetch(`/api/users/search?q=${searchId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -138,11 +137,19 @@ function DuoCreateForm() {
 
       if (res.ok) {
         const data = await res.json();
-        setActiveDuelId(data.duel_id);
+        const duelId = data.duel_id || data.id;
+
+        if (!duelId) {
+          setError("Invite was sent, but duel ID was not returned.");
+          return;
+        }
+
+        setActiveDuelId(duelId);
         setInviteState("waiting");
         setCountdown(120);
+        setDuelCountdown(null);
       } else {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         setError(data.error || "Failed to send invitation.");
       }
     } catch (err) {
@@ -154,6 +161,7 @@ function DuoCreateForm() {
     setInviteState("idle");
     setCountdown(120);
     setActiveDuelId(null);
+    setDuelCountdown(null);
   };
 
   const checkDuelStatus = useCallback(async () => {
@@ -167,56 +175,64 @@ function DuoCreateForm() {
         },
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === "accepted") {
-          // Calculate synchronized countdown based on accepted_at
-          const acceptedAt = data.accepted_at ? new Date(data.accepted_at).getTime() : Date.now();
-          const now = Date.now();
-          const elapsedSeconds = Math.floor((now - acceptedAt) / 1000);
-          const remainingSeconds = Math.max(0, 5 - elapsedSeconds);
+      if (!res.ok) return;
 
-          if (duelCountdown === null) {
-            setDuelCountdown(remainingSeconds);
-          }
-        } else if (data.status === "declined") {
-          setInviteState("declined");
-          setActiveDuelId(null);
-        } else if (data.status === "expired") {
-          setInviteState("expired");
-          setActiveDuelId(null);
-        }
+      const data = await res.json();
+
+      if (data.status === "accepted") {
+        const acceptedAt = data.accepted_at
+          ? new Date(data.accepted_at).getTime()
+          : Date.now();
+
+        const now = Date.now();
+        const elapsedSeconds = Math.floor((now - acceptedAt) / 1000);
+        const remainingSeconds = Math.max(0, 5 - elapsedSeconds);
+
+        setDuelCountdown(remainingSeconds);
+      } else if (data.status === "declined") {
+        setInviteState("declined");
+        setActiveDuelId(null);
+        setDuelCountdown(null);
+      } else if (data.status === "expired") {
+        setInviteState("expired");
+        setActiveDuelId(null);
+        setDuelCountdown(null);
       }
     } catch (err) {
       console.error("Polling status error:", err);
     }
-  }, [activeDuelId, duelCountdown]);
+  }, [activeDuelId]);
 
-  // Handle the 5-second countdown for both users
   useEffect(() => {
     if (duelCountdown === null) return;
 
     if (duelCountdown > 0) {
       const timer = setTimeout(() => setDuelCountdown(duelCountdown - 1), 1000);
       return () => clearTimeout(timer);
-    } else {
-      // Countdown finished, enter the duel room
-      router.push(`/dashboard/duo/${activeDuelId}`);
     }
+
+    router.push(`/dashboard/duo/${activeDuelId}`);
   }, [duelCountdown, activeDuelId, router]);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: NodeJS.Timeout | undefined;
+
     if (inviteState === "waiting" && countdown > 0 && duelCountdown === null) {
       timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
+        setCountdown((prev) => {
+          if (prev <= 1) return 0;
+          return prev - 1;
+        });
         checkDuelStatus();
       }, pollInterval);
     } else if (countdown === 0 && inviteState === "waiting" && duelCountdown === null) {
       setInviteState("expired");
       setActiveDuelId(null);
     }
-    return () => clearInterval(timer);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
   }, [inviteState, countdown, duelCountdown, checkDuelStatus]);
 
   const formatTime = (seconds: number) => {
@@ -239,41 +255,58 @@ function DuoCreateForm() {
         <header className="mb-10 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-black tracking-tight uppercase">Duo Duel Setup</h1>
-            <p className="mt-1 text-xs text-gray-500 font-black uppercase tracking-widest">Prepare for a real-time coding battle</p>
+            <p className="mt-1 text-xs text-gray-500 font-black uppercase tracking-widest">
+              Prepare for a real-time coding battle
+            </p>
           </div>
-          <Link href={`/dashboard/challenges/${challengeId}`} className="text-[10px] font-black text-gray-500 hover:text-white transition-all uppercase tracking-[0.2em] px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+          <Link
+            href={`/dashboard/challenges/${challengeId}`}
+            className="text-[10px] font-black text-gray-500 hover:text-white transition-all uppercase tracking-[0.2em] px-4 py-2 rounded-xl bg-white/5 border border-white/10"
+          >
             Cancel
           </Link>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-2">
-          {/* Left Side: Challenge Info & Rules */}
           <div className="space-y-6">
             <section className="rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl">
-              <h2 className="text-sm font-black text-pink-400 uppercase tracking-widest mb-6">Target Challenge</h2>
+              <h2 className="text-sm font-black text-pink-400 uppercase tracking-widest mb-6">
+                Target Challenge
+              </h2>
               <div className="flex items-center gap-5">
-                <div className="h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center text-2xl border border-white/10">🏆</div>
+                <div className="h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center text-2xl border border-white/10">
+                  🏆
+                </div>
                 <div>
                   <h3 className="text-xl font-black text-white">{challenge?.title}</h3>
                   <div className="flex items-center gap-3 mt-1.5">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">{challenge?.difficulty}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                      {challenge?.difficulty}
+                    </span>
                     <span className="h-1 w-1 rounded-full bg-white/10" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{challenge?.duration} Mins</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                      {challenge?.duration} Mins
+                    </span>
                   </div>
                 </div>
               </div>
             </section>
 
             <section className="rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl">
-              <h2 className="text-sm font-black text-purple-400 uppercase tracking-widest mb-6">Duel Rules</h2>
+              <h2 className="text-sm font-black text-purple-400 uppercase tracking-widest mb-6">
+                Duel Rules
+              </h2>
               <ul className="space-y-4">
                 {[
                   "Real-time synchronized start.",
                   "First to pass all test cases wins.",
-                  "If neither passes, time remaining determines winner.",
-                  "Invitation expires after 2 minutes of no response."
+                  "If neither passes, higher score wins.",
+                  "Invitation expires after 2 minutes of no response.",
                 ].map((rule, i) => (
-                  <li key={i} className="flex gap-3 text-xs text-gray-400 font-medium leading-relaxed">
+                  <li
+                    key={i}
+                    className="flex gap-3 text-xs text-gray-400 font-medium leading-relaxed"
+                  >
                     <span className="text-purple-500 font-black">•</span>
                     {rule}
                   </li>
@@ -282,11 +315,12 @@ function DuoCreateForm() {
             </section>
           </div>
 
-          {/* Right Side: Search & Invite */}
           <div className="space-y-6">
             <section className="rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl h-full">
-              <h2 className="text-sm font-black text-blue-400 uppercase tracking-widest mb-6">Find Opponent</h2>
-              
+              <h2 className="text-sm font-black text-blue-400 uppercase tracking-widest mb-6">
+                Find Opponent
+              </h2>
+
               {inviteState === "idle" || inviteState === "declined" || inviteState === "expired" ? (
                 <>
                   {inviteState === "declined" && (
@@ -328,11 +362,21 @@ function DuoCreateForm() {
                     >
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-white/10 to-transparent border border-white/10 flex items-center justify-center text-xl">
-                          {foundUser.profilePic ? <img src={resolveAssetUrl(foundUser.profilePic) || ""} alt="" className="h-full w-full object-cover rounded-2xl" /> : "👤"}
+                          {foundUser.profilePic ? (
+                            <img
+                              src={resolveAssetUrl(foundUser.profilePic) || ""}
+                              alt=""
+                              className="h-full w-full object-cover rounded-2xl"
+                            />
+                          ) : (
+                            "👤"
+                          )}
                         </div>
                         <div>
                           <p className="text-sm font-black text-white">{foundUser.username}</p>
-                          <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{foundUser.rank || "Challenger"}</p>
+                          <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
+                            {foundUser.rank || "Challenger"}
+                          </p>
                         </div>
                       </div>
                       <button
@@ -349,13 +393,21 @@ function DuoCreateForm() {
                   <div className="relative mx-auto h-24 w-24 mb-8">
                     <svg className="h-full w-full rotate-[-90deg]">
                       <circle
-                        cx="48" cy="48" r="45"
-                        fill="none" stroke="currentColor" strokeWidth="4"
+                        cx="48"
+                        cy="48"
+                        r="45"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
                         className="text-white/5"
                       />
                       <circle
-                        cx="48" cy="48" r="45"
-                        fill="none" stroke="currentColor" strokeWidth="4"
+                        cx="48"
+                        cy="48"
+                        r="45"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
                         strokeDasharray={283}
                         strokeDashoffset={283 - (283 * countdown) / 120}
                         className="text-blue-500 transition-all duration-1000"
@@ -368,13 +420,15 @@ function DuoCreateForm() {
                   <h3 className="text-lg font-black text-white uppercase tracking-wider mb-2">
                     {duelCountdown !== null ? "Match Starting!" : "Waiting for response"}
                   </h3>
-                  
+
                   {duelCountdown !== null ? (
                     <div className="flex flex-col items-center">
                       <div className="text-6xl font-black text-pink-500 animate-bounce mb-4">
                         {duelCountdown}
                       </div>
-                      <p className="text-xs text-gray-400 font-black uppercase tracking-[0.3em]">Prepare for Battle</p>
+                      <p className="text-xs text-gray-400 font-black uppercase tracking-[0.3em]">
+                        Prepare for Battle
+                      </p>
                     </div>
                   ) : (
                     <>
@@ -396,12 +450,11 @@ function DuoCreateForm() {
         </div>
       </div>
 
-      {/* Invite Confirmation Modal */}
       <AnimatePresence>
         {showConfirmModal && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-            <div 
-              className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+            <div
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
               onClick={() => setShowConfirmModal(false)}
             />
             <motion.div
@@ -410,8 +463,12 @@ function DuoCreateForm() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-[#0d0d0d] p-8 text-center shadow-2xl"
             >
-              <div className="h-16 w-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-2xl mx-auto mb-6">⚔️</div>
-              <h3 className="text-xl font-black text-white tracking-tight uppercase">Confirm Duel</h3>
+              <div className="h-16 w-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-2xl mx-auto mb-6">
+                ⚔️
+              </div>
+              <h3 className="text-xl font-black text-white tracking-tight uppercase">
+                Confirm Duel
+              </h3>
               <p className="mt-3 text-xs text-gray-500 leading-relaxed font-medium">
                 Are you sure you want to invite <strong className="text-white">{foundUser?.username}</strong> to a duel?
               </p>
@@ -422,7 +479,12 @@ function DuoCreateForm() {
                 >
                   Send Invitation
                 </button>
-                <button onClick={() => setShowConfirmModal(false)} className="w-full py-2 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Cancel</button>
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="w-full py-2 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
             </motion.div>
           </div>

@@ -17,6 +17,7 @@ type leaderboardSubmission struct {
 	UserID      string    `bson:"user_id"`
 	ChallengeID int       `bson:"challenge_id"`
 	Status      string    `bson:"status"`
+	Score       int       `bson:"score"`
 	CreatedAt   time.Time `bson:"created_at"`
 }
 
@@ -48,14 +49,26 @@ func getPointsForDifficulty(difficulty string) int {
 	}
 }
 
+func isPassingLeaderboardSubmission(sub leaderboardSubmission) bool {
+	normalized := strings.ToLower(strings.TrimSpace(sub.Status))
+
+	if normalized == "accepted" || normalized == "passed" {
+		return true
+	}
+
+	if normalized == "partial" && sub.Score >= 50 {
+		return true
+	}
+
+	return sub.Score >= 50
+}
+
 func BuildLeaderboard(
 	ctx context.Context,
 	usersCollection *mongo.Collection,
 	submissionsCollection *mongo.Collection,
 	challengesCollection *mongo.Collection,
 ) ([]LeaderboardEntry, error) {
-
-	// --- USERS ---
 	var users []models.User
 	userCursor, err := usersCollection.Find(ctx, bson.M{})
 	if err != nil {
@@ -78,11 +91,8 @@ func BuildLeaderboard(
 		userMap[user.ID.Hex()] = user
 	}
 
-	// --- ACCEPTED SUBMISSIONS ONLY ---
 	var submissions []leaderboardSubmission
-	submissionCursor, err := submissionsCollection.Find(ctx, bson.M{
-		"status": "accepted",
-	})
+	submissionCursor, err := submissionsCollection.Find(ctx, bson.M{})
 	if err != nil {
 		fmt.Printf(">>> ERROR: Failed to find submissions: %v\n", err)
 		return nil, err
@@ -98,7 +108,6 @@ func BuildLeaderboard(
 		submissions = append(submissions, submission)
 	}
 
-	// --- CHALLENGES ---
 	var challenges []models.Challenge
 	challengeCursor, err := challengesCollection.Find(ctx, bson.M{})
 	if err != nil {
@@ -121,11 +130,11 @@ func BuildLeaderboard(
 		challengeMap[challenge.ID] = challenge
 	}
 
-	// --- TRACKING STRUCTURES ---
 	fmt.Printf(">>> LEADERBOARD: Starting aggregation (Users: %d, Submissions: %d, Challenges: %d)\n", len(userMap), len(submissions), len(challengeMap))
+
 	userSolvedChallenges := make(map[string]map[int]bool)
-	userAcceptedDays := make(map[string]map[string]bool)
-	userLastAcceptedAt := make(map[string]time.Time)
+	userPassedDays := make(map[string]map[string]bool)
+	userLastPassedAt := make(map[string]time.Time)
 
 	for _, submission := range submissions {
 		userID := strings.TrimSpace(submission.UserID)
@@ -137,24 +146,25 @@ func BuildLeaderboard(
 			continue
 		}
 
+		if !isPassingLeaderboardSubmission(submission) {
+			continue
+		}
+
 		if _, exists := userSolvedChallenges[userID]; !exists {
 			userSolvedChallenges[userID] = make(map[int]bool)
 		}
 
-		// ✅ Count each challenge only once
 		userSolvedChallenges[userID][submission.ChallengeID] = true
 
-		// --- Streak tracking ---
-		if _, exists := userAcceptedDays[userID]; !exists {
-			userAcceptedDays[userID] = make(map[string]bool)
+		if _, exists := userPassedDays[userID]; !exists {
+			userPassedDays[userID] = make(map[string]bool)
 		}
 
 		dayKey := submission.CreatedAt.UTC().Format("2006-01-02")
-		userAcceptedDays[userID][dayKey] = true
+		userPassedDays[userID][dayKey] = true
 
-		// --- Last Active ---
-		if submission.CreatedAt.After(userLastAcceptedAt[userID]) {
-			userLastAcceptedAt[userID] = submission.CreatedAt
+		if submission.CreatedAt.After(userLastPassedAt[userID]) {
+			userLastPassedAt[userID] = submission.CreatedAt
 		}
 	}
 
@@ -190,12 +200,11 @@ func BuildLeaderboard(
 			}
 		}
 
-		// ✅ CRITICAL RULE: only show real competitors
 		if totalSolved == 0 {
 			continue
 		}
 
-		currentStreak := calculateAcceptedStreak(userAcceptedDays[userID])
+		currentStreak := calculateAcceptedStreak(userPassedDays[userID])
 
 		entries = append(entries, LeaderboardEntry{
 			UserID:         userID,
@@ -208,12 +217,12 @@ func BuildLeaderboard(
 			EasySolved:     easySolved,
 			MediumSolved:   mediumSolved,
 			HardSolved:     hardSolved,
-			LastAcceptedAt: userLastAcceptedAt[userID],
+			LastAcceptedAt: userLastPassedAt[userID],
 		})
 	}
 
 	fmt.Printf(">>> LEADERBOARD: Sorting %d entries\n", len(entries))
-	// --- SORTING ---
+
 	sort.Slice(entries, func(i, j int) bool {
 		if entries[i].TotalPoints != entries[j].TotalPoints {
 			return entries[i].TotalPoints > entries[j].TotalPoints
@@ -230,7 +239,6 @@ func BuildLeaderboard(
 		return strings.ToLower(entries[i].Username) < strings.ToLower(entries[j].Username)
 	})
 
-	// --- RANKING ---
 	for i := range entries {
 		entries[i].Rank = i + 1
 	}

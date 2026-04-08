@@ -28,6 +28,11 @@ export default function SubmissionPanel({
   const hasCode = code.trim() !== "";
   const missionActive = missionState === "active";
 
+  const isAccepted = lastScore === 100;
+  const isPassing = lastScore !== null && lastScore >= 50 && lastScore < 100;
+  const isLowScore = lastScore !== null && lastScore > 0 && lastScore < 50;
+  const isZeroScore = lastScore === 0;
+
   const qualityLabel = useMemo(() => {
     if (!hasCode) return "Empty";
     if (lineCount < 5) return "Draft";
@@ -47,11 +52,23 @@ export default function SubmissionPanel({
   }, [hasCode, lineCount]);
 
   const missionBadgeClass = useMemo(() => {
-    if (missionState === "completed") {
+    if (missionState === "completed" || isAccepted) {
       return "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
     }
 
     if (missionState === "timeout") {
+      return "border-red-500/20 bg-red-500/10 text-red-200";
+    }
+
+    if (missionState === "submitted" && isPassing) {
+      return "border-cyan-500/20 bg-cyan-500/10 text-cyan-200";
+    }
+
+    if (missionState === "submitted" && isLowScore) {
+      return "border-yellow-500/20 bg-yellow-500/10 text-yellow-200";
+    }
+
+    if (missionState === "submitted" && isZeroScore) {
       return "border-red-500/20 bg-red-500/10 text-red-200";
     }
 
@@ -60,7 +77,7 @@ export default function SubmissionPanel({
     }
 
     return "border-cyan-500/20 bg-cyan-500/10 text-cyan-200";
-  }, [missionState]);
+  }, [missionState, isAccepted, isPassing, isLowScore, isZeroScore]);
 
   const submissionText = useMemo(() => {
     if (submitting) {
@@ -71,12 +88,24 @@ export default function SubmissionPanel({
       return "Time is up. This attempt has ended and the editor is locked.";
     }
 
-    if (missionState === "completed") {
+    if (missionState === "completed" || isAccepted) {
       return "Challenge completed successfully.";
     }
 
+    if (missionState === "submitted" && isPassing) {
+      return "Good attempt. You passed enough test cases, but there is still room to improve toward 100%.";
+    }
+
+    if (missionState === "submitted" && isLowScore) {
+      return "Your solution passed some test cases, but it still needs improvement.";
+    }
+
+    if (missionState === "submitted" && isZeroScore) {
+      return "Your last attempt did not pass any test cases. Review the result and retry.";
+    }
+
     if (missionState === "submitted") {
-      return "Your last attempt failed. Retry the mission to improve your result.";
+      return "Your last attempt has been recorded. Retry the mission to improve your result.";
     }
 
     if (hasCode) {
@@ -84,27 +113,58 @@ export default function SubmissionPanel({
     }
 
     return "Write some code before submitting your solution.";
-  }, [submitting, missionState, hasCode]);
+  }, [
+    submitting,
+    missionState,
+    hasCode,
+    isAccepted,
+    isPassing,
+    isLowScore,
+    isZeroScore,
+  ]);
 
   const badgeText = useMemo(() => {
     if (submitting) return "Submitting";
-    if (missionState === "completed") return "Accepted";
+    if (missionState === "completed" || isAccepted) return "Accepted";
     if (missionState === "timeout") return "Timed Out";
-    if (missionState === "submitted") return "Failed";
+    if (missionState === "submitted" && isPassing) return "Passed";
+    if (missionState === "submitted" && isLowScore) return "Needs Work";
+    if (missionState === "submitted" && isZeroScore) return "Failed";
+    if (missionState === "submitted") return "Reviewed";
     if (hasCode) return "Ready";
     return "Waiting";
-  }, [submitting, missionState, hasCode]);
+  }, [
+    submitting,
+    missionState,
+    hasCode,
+    isAccepted,
+    isPassing,
+    isLowScore,
+    isZeroScore,
+  ]);
 
   const badgeClasses = useMemo(() => {
     if (submitting) {
       return "border-purple-500/20 bg-purple-500/10 text-purple-200";
     }
 
-    if (missionState === "completed") {
+    if (missionState === "completed" || isAccepted) {
       return "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
     }
 
     if (missionState === "timeout") {
+      return "border-red-500/20 bg-red-500/10 text-red-200";
+    }
+
+    if (missionState === "submitted" && isPassing) {
+      return "border-cyan-500/20 bg-cyan-500/10 text-cyan-200";
+    }
+
+    if (missionState === "submitted" && isLowScore) {
+      return "border-yellow-500/20 bg-yellow-500/10 text-yellow-200";
+    }
+
+    if (missionState === "submitted" && isZeroScore) {
       return "border-red-500/20 bg-red-500/10 text-red-200";
     }
 
@@ -117,7 +177,25 @@ export default function SubmissionPanel({
     }
 
     return "border-white/10 bg-white/[0.03] text-gray-400";
-  }, [submitting, missionState, hasCode]);
+  }, [
+    submitting,
+    missionState,
+    hasCode,
+    isAccepted,
+    isPassing,
+    isLowScore,
+    isZeroScore,
+  ]);
+
+  const missionLabel = useMemo(() => {
+    if (missionState === "completed" || isAccepted) return "Completed";
+    if (missionState === "timeout") return "Timed Out";
+    if (missionState === "submitted" && isPassing) return "Passed";
+    if (missionState === "submitted" && isLowScore) return "Partial";
+    if (missionState === "submitted" && isZeroScore) return "Failed";
+    if (missionState === "submitted") return "Reviewed";
+    return "Active";
+  }, [missionState, isAccepted, isPassing, isLowScore, isZeroScore]);
 
   const submitDisabled = submitting || !hasCode || !missionActive;
 
@@ -197,7 +275,7 @@ export default function SubmissionPanel({
               Mission
             </p>
             <p className="mt-1 text-sm font-semibold capitalize leading-none">
-              {missionState}
+              {missionLabel}
             </p>
           </div>
         </div>

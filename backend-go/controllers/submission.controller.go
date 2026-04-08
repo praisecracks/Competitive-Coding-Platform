@@ -39,6 +39,8 @@ type EnrichedSubmission struct {
 type SubmissionMetrics struct {
 	TotalSubmissions int     `json:"total_submissions"`
 	Accepted         int     `json:"accepted"`
+	Passed           int     `json:"passed"`
+	Partial          int     `json:"partial"`
 	Rejected         int     `json:"rejected"`
 	Pending          int     `json:"pending"`
 	Errors           int     `json:"errors"`
@@ -60,10 +62,17 @@ func normalizeSubmissionInput(req *SubmitRequest) {
 	}
 }
 
-func normalizeSubmissionStatus(status string) string {
+func normalizeSubmissionStatus(status string, score int) string {
 	switch strings.ToLower(strings.TrimSpace(status)) {
 	case "accepted":
 		return "accepted"
+	case "passed":
+		return "passed"
+	case "partial":
+		if score >= 50 {
+			return "passed"
+		}
+		return "partial"
 	case "rejected":
 		return "rejected"
 	case "pending":
@@ -75,6 +84,15 @@ func normalizeSubmissionStatus(status string) string {
 	case "internal_error":
 		return "internal_error"
 	default:
+		if score == 100 {
+			return "accepted"
+		}
+		if score >= 50 {
+			return "passed"
+		}
+		if score > 0 {
+			return "partial"
+		}
 		return "rejected"
 	}
 }
@@ -137,12 +155,13 @@ func SubmitCode(c *gin.Context) {
 	}
 
 	result := services.ExecuteSubmissionAgainstChallenge(req.Language, req.Code, challenge, 5*time.Second)
-	result.Status = normalizeSubmissionStatus(result.Status)
 
 	score := 0
 	if result.TotalTests > 0 {
 		score = (result.PassedTests * 100) / result.TotalTests
 	}
+
+	normalizedStatus := normalizeSubmissionStatus(result.Status, score)
 
 	submission := models.SubmissionRecord{
 		UserID:        userID,
@@ -151,7 +170,7 @@ func SubmitCode(c *gin.Context) {
 		Language:      req.Language,
 		Code:          req.Code,
 		Score:         score,
-		Status:        result.Status,
+		Status:        normalizedStatus,
 		PassedTests:   result.PassedTests,
 		TotalTests:    result.TotalTests,
 		Output:        result.Output,
@@ -170,7 +189,7 @@ func SubmitCode(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":        result.Status,
+		"status":        normalizedStatus,
 		"output":        result.Output,
 		"error":         result.Error,
 		"passedTests":   result.PassedTests,
@@ -225,21 +244,27 @@ func GetSubmissionsAudit(c *gin.Context) {
 	totalScore := 0
 
 	for _, sub := range submissions {
+		normalizedStatus := normalizeSubmissionStatus(sub.Status, sub.Score)
+
 		enrichedSub := EnrichedSubmission{
 			ID:            sub.UserID + "_" + strconv.Itoa(sub.ChallengeID),
 			Username:      sub.Username,
 			ChallengeID:   sub.ChallengeID,
 			ChallengeName: challengeMap[sub.ChallengeID],
 			Language:      sub.Language,
-			Status:        normalizeSubmissionStatus(sub.Status),
+			Status:        normalizedStatus,
 			Score:         sub.Score,
 			SubmittedAt:   sub.CreatedAt,
 		}
 		enrichedSubmissions = append(enrichedSubmissions, enrichedSub)
 
-		switch normalizeSubmissionStatus(sub.Status) {
+		switch normalizedStatus {
 		case "accepted":
 			metrics.Accepted++
+		case "passed":
+			metrics.Passed++
+		case "partial":
+			metrics.Partial++
 		case "rejected":
 			metrics.Rejected++
 		case "pending":

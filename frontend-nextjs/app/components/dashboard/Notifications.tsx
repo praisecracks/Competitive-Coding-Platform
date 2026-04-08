@@ -1,4 +1,3 @@
-// app/components/dashboard/Notifications.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -23,7 +22,6 @@ export default function Notifications() {
     emailNotifications: true,
   });
 
-  // Load preferences from API
   useEffect(() => {
     const fetchPrefs = async () => {
       try {
@@ -46,7 +44,6 @@ export default function Notifications() {
     fetchPrefs();
   }, []);
 
-  // Load notifications from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem("dashboard_notifications");
     if (saved) {
@@ -59,24 +56,21 @@ export default function Notifications() {
     }
   }, []);
 
-  // Save notifications to localStorage
   useEffect(() => {
     localStorage.setItem("dashboard_notifications", JSON.stringify(notifications));
   }, [notifications]);
 
-  // Fetch notifications and duel invites
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
         const token = localStorage.getItem("terminal_token");
         if (!token) return;
         const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
-        
-        // Fetch real notifications
+
         const notifRes = await fetch(`${API_BASE_URL}/notifications`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         let fetchedNotifications: Notification[] = [];
         if (notifRes.ok) {
           const data = await notifRes.json();
@@ -88,24 +82,21 @@ export default function Notifications() {
               message: n.message,
               timestamp: new Date(n.created_at),
               read: n.read,
-              data: n.data,
             }));
           }
         }
 
-        // Fetch duel invites (existing logic)
-        const url = `${API_BASE_URL}/duo/pending-invites`;
-        const res = await fetch(url, {
+        const res = await fetch(`${API_BASE_URL}/duo/pending-invites`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         if (res.ok) {
           const invites = await res.json();
           if (!invites || !Array.isArray(invites)) {
             setNotifications(fetchedNotifications.slice(0, 20));
             return;
           }
-          
+
           const duelInvites: Notification[] = invites.map((invite: any) => ({
             id: `invite-${invite.id}`,
             type: "duel_invite",
@@ -128,7 +119,7 @@ export default function Notifications() {
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 2000); // Poll every 2 seconds for invitations
+    const interval = setInterval(fetchNotifications, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -144,8 +135,7 @@ export default function Notifications() {
 
       if (res.ok) {
         if (action === "accept") {
-          // Immediately start countdown for receiver
-          setCountdown(prev => ({ ...prev, [duelId]: 5 }));
+          setCountdown((prev) => ({ ...prev, [duelId]: 5 }));
         } else {
           removeNotification(`invite-${duelId}`);
         }
@@ -155,57 +145,63 @@ export default function Notifications() {
     }
   };
 
-  // Effect to handle countdowns
   useEffect(() => {
     const activeDuelIds = Object.keys(countdown);
     if (activeDuelIds.length === 0) return;
 
-    const timers = activeDuelIds.map(duelId => {
+    const timers = activeDuelIds.map((duelId) => {
       if (countdown[duelId] > 0) {
         return setTimeout(() => {
-          setCountdown(prev => ({ ...prev, [duelId]: prev[duelId] - 1 }));
+          setCountdown((prev) => ({ ...prev, [duelId]: prev[duelId] - 1 }));
         }, 1000);
       } else {
-        // Redirect once finished
         window.location.href = `/dashboard/duo/${duelId}`;
         return null;
       }
     });
 
-    return () => timers.forEach(t => t && clearTimeout(t));
+    return () => timers.forEach((t) => t && clearTimeout(t));
   }, [countdown]);
 
   const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, read: true } : n))
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
   const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case "duel_invite": return "⚔️";
-      case "duel_result": return "🏆";
-      case "system": return "⚙️";
-      default: return "🔔";
+      case "duel_invite":
+        return "⚔️";
+      case "duel_result":
+        return "🏆";
+      case "system":
+        return "⚙️";
+      default:
+        return "🔔";
     }
   };
 
   const getTypeStyles = (type: string) => {
     switch (type) {
-      case "duel_invite": return "bg-purple-500/20 text-purple-400";
-      case "duel_result": return "bg-emerald-500/20 text-emerald-400";
-      case "system": return "bg-blue-500/20 text-blue-400";
-      default: return "bg-gray-500/20 text-gray-400";
+      case "duel_invite":
+        return "bg-purple-500/20 text-purple-400";
+      case "duel_result":
+        return "bg-emerald-500/20 text-emerald-400";
+      case "system":
+        return "bg-blue-500/20 text-blue-400";
+      default:
+        return "bg-gray-500/20 text-gray-400";
     }
   };
 
@@ -217,7 +213,12 @@ export default function Notifications() {
         aria-label="Notifications"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+          />
         </svg>
         {unreadCount > 0 && (
           <span className="absolute top-0 right-0 w-2 h-2 bg-pink-500 rounded-full animate-pulse" />
@@ -233,7 +234,6 @@ export default function Notifications() {
             transition={{ duration: 0.2 }}
             className="fixed right-2 mt-2 w-80 sm:absolute sm:right-0 sm:mt-2 sm:w-96 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
           >
-            {/* Header */}
             <div className="flex justify-between items-center p-4 border-b border-white/10">
               <h3 className="text-sm font-semibold text-white">Notifications</h3>
               <div className="flex gap-2">
@@ -254,13 +254,14 @@ export default function Notifications() {
               </div>
             </div>
 
-            {/* Notification List */}
             <div className="max-h-96 overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="p-8 text-center">
                   <div className="text-4xl mb-2">🔔</div>
                   <p className="text-sm text-gray-500">No notifications yet</p>
-                  <p className="text-xs text-gray-600 mt-1">We'll notify you when something important happens</p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    We'll notify you when something important happens
+                  </p>
                 </div>
               ) : (
                 notifications.map((notification) => (
@@ -274,12 +275,18 @@ export default function Notifications() {
                     onClick={() => markAsRead(notification.id)}
                   >
                     <div className="flex gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getTypeStyles(notification.type)}`}>
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${getTypeStyles(
+                          notification.type
+                        )}`}
+                      >
                         <span className="text-sm">{getTypeIcon(notification.type)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
-                          <p className="text-sm font-medium text-white truncate">{notification.title}</p>
+                          <p className="text-sm font-medium text-white truncate">
+                            {notification.title}
+                          </p>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -291,13 +298,17 @@ export default function Notifications() {
                           </button>
                         </div>
                         <p className="text-xs text-gray-400 mt-1">{notification.message}</p>
-                        
+
                         {notification.type === "duel_invite" && notification.duelId && (
                           <div className="mt-3">
                             {countdown[notification.duelId] !== undefined ? (
                               <div className="flex flex-col items-center bg-pink-500/10 rounded-xl p-3 border border-pink-500/20">
-                                <span className="text-2xl font-black text-pink-500 mb-1">{countdown[notification.duelId]}</span>
-                                <span className="text-[8px] font-black uppercase tracking-widest text-pink-400">Match Starting...</span>
+                                <span className="text-2xl font-black text-pink-500 mb-1">
+                                  {countdown[notification.duelId]}
+                                </span>
+                                <span className="text-[8px] font-black uppercase tracking-widest text-pink-400">
+                                  Match Starting...
+                                </span>
                               </div>
                             ) : (
                               <div className="flex gap-2">
@@ -325,8 +336,11 @@ export default function Notifications() {
                         )}
 
                         <p className="text-[10px] text-gray-500 mt-2">
-                          {notification.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          {' • '}
+                          {notification.timestamp.toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                          {" • "}
                           {notification.timestamp.toLocaleDateString()}
                         </p>
                       </div>
@@ -336,7 +350,6 @@ export default function Notifications() {
               )}
             </div>
 
-            {/* Footer */}
             {notifications.length > 0 && (
               <div className="p-3 border-t border-white/10 text-center">
                 <button
