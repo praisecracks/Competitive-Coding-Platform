@@ -26,7 +26,7 @@ export default function LearningHero({ path }: LearningHeroProps) {
       : 0;
 
   return (
-    <section className="relative overflow-hidden border-b border-white/10 bg-[#0a0a0a] min-h-[46vh] sm:min-h-0">
+    <section className="relative overflow-hidden border-b border-white/10 bg-[#242424] min-h-[46vh] sm:min-h-0">
       {/* Background */}
       <div className="absolute inset-0">
         <img

@@ -377,6 +377,54 @@ func UploadAvatar(c *gin.Context) {
 	})
 }
 
+// DeleteAvatar removes the user's profile picture
+func DeleteAvatar(c *gin.Context) {
+	userID, ok := getUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "UNAUTHORIZED"})
+		return
+	}
+
+	usersCollection := database.GetCollection("users")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// First get the current user to find the old profile pic path
+	var user models.User
+	err := usersCollection.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "USER_NOT_FOUND"})
+		return
+	}
+
+	// If user has a profile picture, try to delete the old file
+	if user.ProfilePic != "" {
+		// Try to delete the old file if it exists in uploads
+		normalizedPath := normalizeStoredFilePath(user.ProfilePic)
+		if strings.HasPrefix(normalizedPath, "/uploads/") {
+			filePath := strings.TrimPrefix(normalizedPath, "/")
+			if _, err := os.Stat(filePath); err == nil {
+				os.Remove(filePath)
+			}
+		}
+	}
+
+	// Clear the profile_pic in the database
+	_, err = usersCollection.UpdateOne(ctx, bson.M{"_id": userID}, bson.M{
+		"$set": bson.M{
+			"profile_pic": "",
+			"updated_at":  time.Now().UTC(),
+		},
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "AVATAR_DELETE_FAILED"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "AVATAR_DELETED"})
+}
+
 // GetDashboardStats returns stats for the dashboard
 func GetDashboardStats(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)

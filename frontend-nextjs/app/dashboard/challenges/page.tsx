@@ -16,6 +16,7 @@ type Challenge = {
 };
 
 const difficultyOrder = ["Easy", "Medium", "Hard"];
+const statusOptions = ["All", "Opened", "Recommended"];
 const INITIAL_SECTION_LIMIT = 6;
 const LOAD_MORE_STEP = 6;
 
@@ -27,12 +28,12 @@ export default function DashboardChallengesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeDifficulty, setActiveDifficulty] = useState("All");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [activeStatus, setActiveStatus] = useState("All");
   const [errorMessage, setErrorMessage] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
 
-  const [continueVisibleCount, setContinueVisibleCount] = useState(INITIAL_SECTION_LIMIT);
-  const [recommendedVisibleCount, setRecommendedVisibleCount] = useState(INITIAL_SECTION_LIMIT);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_SECTION_LIMIT);
 
   const truncateText = (text: string, maxLength: number) => {
     if (!text) return "";
@@ -82,9 +83,8 @@ export default function DashboardChallengesPage() {
   }, [fetchChallenges]);
 
   useEffect(() => {
-    setContinueVisibleCount(INITIAL_SECTION_LIMIT);
-    setRecommendedVisibleCount(INITIAL_SECTION_LIMIT);
-  }, [searchQuery, activeDifficulty, activeCategory]);
+    setVisibleCount(INITIAL_SECTION_LIMIT);
+  }, [searchQuery, activeDifficulty, activeCategory, activeStatus]);
 
   const categories = useMemo(() => {
     const unique = [...new Set(challenges.map((item) => item.category).filter(Boolean))];
@@ -131,34 +131,26 @@ export default function DashboardChallengesPage() {
       const matchesCategory =
         activeCategory === "All" || challenge.category === activeCategory;
 
-      return matchesSearch && matchesDifficulty && matchesCategory;
+      const matchesStatus =
+        activeStatus === "All" ||
+        (activeStatus === "Opened" && challenge.opened) ||
+        (activeStatus === "Recommended" && !challenge.opened);
+
+      return matchesSearch && matchesDifficulty && matchesCategory && matchesStatus;
     });
-  }, [sortedChallenges, searchQuery, activeDifficulty, activeCategory]);
+  }, [sortedChallenges, searchQuery, activeDifficulty, activeCategory, activeStatus]);
 
-  const continueLearningChallenges = useMemo(() => {
-    return filteredChallenges.filter((challenge) => challenge.opened);
-  }, [filteredChallenges]);
-
-  const recommendedChallenges = useMemo(() => {
-    return filteredChallenges.filter((challenge) => !challenge.opened);
-  }, [filteredChallenges]);
-
-  const visibleContinueLearningChallenges = useMemo(() => {
-    return continueLearningChallenges.slice(0, continueVisibleCount);
-  }, [continueLearningChallenges, continueVisibleCount]);
-
-  const visibleRecommendedChallenges = useMemo(() => {
-    return recommendedChallenges.slice(0, recommendedVisibleCount);
-  }, [recommendedChallenges, recommendedVisibleCount]);
+  const visibleChallenges = useMemo(() => {
+    return filteredChallenges.slice(0, visibleCount);
+  }, [filteredChallenges, visibleCount]);
 
   const learningStats = useMemo(() => {
     const openedCount = challenges.filter((challenge) => challenge.opened).length;
-    const notOpenedCount = challenges.length - openedCount;
 
     return {
       total: challenges.length,
       opened: openedCount,
-      recommended: notOpenedCount,
+      recommended: challenges.length - openedCount,
     };
   }, [challenges]);
 
@@ -232,20 +224,11 @@ export default function DashboardChallengesPage() {
     );
   };
 
-  const renderChallengeCard = (
-    challenge: Challenge,
-    variant: "continue" | "recommended" = "recommended"
-  ) => {
-    const isContinue = variant === "continue";
-
+  const renderChallengeCard = (challenge: Challenge) => {
     return (
       <article
         key={challenge.id}
-        className={`group relative overflow-hidden rounded-[24px] border p-4 transition duration-300 ${
-          isContinue
-            ? "border-purple-500/20 bg-[linear-gradient(180deg,rgba(91,33,182,0.14),rgba(9,9,11,0.98))] hover:border-purple-400/30 hover:shadow-[0_0_0_1px_rgba(168,85,247,0.06),0_18px_50px_rgba(88,28,135,0.18)]"
-            : "border-white/10 bg-[#09090c] hover:border-pink-500/20 hover:shadow-[0_0_0_1px_rgba(236,72,153,0.04),0_18px_50px_rgba(0,0,0,0.24)]"
-        }`}
+        className="group relative overflow-hidden rounded-[24px] border border-white/10 bg-[#09090c] p-4 transition duration-300 hover:border-pink-500/20 hover:shadow-[0_0_0_1px_rgba(236,72,153,0.04),0_18px_50px_rgba(0,0,0,0.24)]"
       >
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-60" />
 
@@ -316,27 +299,19 @@ export default function DashboardChallengesPage() {
   };
 
   const renderSection = ({
-    eyebrow,
     title,
     subtitle,
     items,
     totalCount,
     visibleCount,
     onLoadMore,
-    variant,
-    emptyTitle,
-    emptyMessage,
   }: {
-    eyebrow: string;
     title: string;
     subtitle: string;
     items: Challenge[];
     totalCount: number;
     visibleCount: number;
     onLoadMore: () => void;
-    variant: "continue" | "recommended";
-    emptyTitle: string;
-    emptyMessage: string;
   }) => {
     const hasMore = visibleCount < totalCount;
 
@@ -344,10 +319,7 @@ export default function DashboardChallengesPage() {
       <section className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-gray-500">
-              {eyebrow}
-            </p>
-            <h2 className="mt-1.5 text-[1.85rem] font-semibold leading-tight tracking-tight text-white">
+            <h2 className="text-[1.85rem] font-semibold leading-tight tracking-tight text-white">
               {title}
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
@@ -362,15 +334,15 @@ export default function DashboardChallengesPage() {
 
         {items.length === 0 ? (
           <div className="rounded-[24px] border border-white/10 bg-[#09090c] px-6 py-10 text-center">
-            <p className="text-sm font-medium text-white">{emptyTitle}</p>
+            <p className="text-sm font-medium text-white">No challenges found</p>
             <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-400">
-              {emptyMessage}
+              Try adjusting your search or filter options.
             </p>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {items.map((challenge) => renderChallengeCard(challenge, variant))}
+              {items.map((challenge) => renderChallengeCard(challenge))}
             </div>
 
             {hasMore && (
@@ -535,7 +507,7 @@ export default function DashboardChallengesPage() {
       </section>
 
       <section className="rounded-[26px] border border-white/10 bg-[#09090c] p-3 sm:p-4">
-        <div className="grid gap-3 lg:grid-cols-[1.35fr_0.42fr_0.42fr]">
+        <div className="grid gap-3 lg:grid-cols-[1.35fr_0.28fr_0.28fr_0.28fr]">
           <div className="flex items-center rounded-2xl border border-white/10 bg-[#0c0c10] px-4 py-3 transition duration-200 hover:border-white/15 focus-within:border-pink-500/25">
             <span className="mr-3 text-sm text-pink-300">Search</span>
             <input
@@ -546,6 +518,13 @@ export default function DashboardChallengesPage() {
               className="w-full bg-transparent text-sm text-white outline-none placeholder:text-gray-600"
             />
           </div>
+
+          <CustomSelect
+            value={activeStatus}
+            onChange={setActiveStatus}
+            options={statusOptions}
+            allLabel="All status"
+          />
 
           <CustomSelect
             value={activeDifficulty}
@@ -575,40 +554,14 @@ export default function DashboardChallengesPage() {
           </p>
         </div>
       ) : (
-        <>
-        
-          {renderSection({
-            eyebrow: "Continue Learning",
-            title: "Return to your opened challenges",
-            subtitle:
-              "Resume the challenges you already started without breaking your learning flow.",
-            items: visibleContinueLearningChallenges,
-            totalCount: continueLearningChallenges.length,
-            visibleCount: continueVisibleCount,
-            onLoadMore: () =>
-              setContinueVisibleCount((prev) => prev + LOAD_MORE_STEP),
-            variant: "continue",
-            emptyTitle: "No opened challenges yet",
-            emptyMessage:
-              "Once you preview or start a challenge, it will appear here for quick return access.",
-          })}
-
-          {renderSection({
-            eyebrow: "Learning Recommendations",
-            title: "Your next recommended challenges",
-            subtitle:
-              "Fresh suggestions to help you continue learning and build stronger problem-solving depth.",
-            items: visibleRecommendedChallenges,
-            totalCount: recommendedChallenges.length,
-            visibleCount: recommendedVisibleCount,
-            onLoadMore: () =>
-              setRecommendedVisibleCount((prev) => prev + LOAD_MORE_STEP),
-            variant: "recommended",
-            emptyTitle: "No recommendations found",
-            emptyMessage:
-              "Try adjusting your search or filter options to reveal more relevant challenges.",
-          })}
-        </>
+        renderSection({
+          title: "Challenges",
+          subtitle: "Browse, resume, or discover your next challenge.",
+          items: visibleChallenges,
+          totalCount: filteredChallenges.length,
+          visibleCount: visibleCount,
+          onLoadMore: () => setVisibleCount((prev) => prev + LOAD_MORE_STEP),
+        })
       )}
     </div>
   );

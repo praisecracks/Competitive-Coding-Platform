@@ -47,8 +47,10 @@ export default function AnalyticsPage() {
 
   const fetchAnalytics = useCallback(async (showRefresh = false) => {
     if (showRefresh) setIsRefreshing(true);
+
     try {
       const token = localStorage.getItem("terminal_token");
+
       if (!token) {
         setError("Session expired. Please log in again.");
         if (!showRefresh) setLoading(false);
@@ -69,25 +71,34 @@ export default function AnalyticsPage() {
       }
 
       const result = await res.json();
-      
-      // Calculate derived metrics if not provided by API
+
       const processedData: AnalyticsData = {
         ...result,
         stats: {
           ...result.stats,
-          // Ensure acceptance rate is a number
-          acceptanceRate: typeof result.stats.acceptanceRate === 'string' 
-            ? parseFloat(result.stats.acceptanceRate) 
-            : result.stats.acceptanceRate,
-          // Calculate average score if not provided
-          averageScore: result.stats.averageScore || 
-            (result.recentActivity?.length > 0 
-              ? Math.round(result.recentActivity.reduce((sum: number, item: ActivityItem) => sum + (item.score || 0), 0) / result.recentActivity.length)
+          acceptanceRate:
+            typeof result.stats.acceptanceRate === "string"
+              ? parseFloat(result.stats.acceptanceRate)
+              : result.stats.acceptanceRate,
+          averageScore:
+            result.stats.averageScore ||
+            (result.recentActivity?.length > 0
+              ? Math.round(
+                  result.recentActivity.reduce(
+                    (sum: number, item: ActivityItem) =>
+                      sum + (item.score || 0),
+                    0
+                  ) / result.recentActivity.length
+                )
               : 0),
         },
-        lastUpdated: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        lastUpdated: new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
       };
-      
+
       setData(processedData);
       setError("");
     } catch (err) {
@@ -101,8 +112,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     fetchAnalytics();
-    
-    // Auto-refresh every 5 minutes
+
     const interval = setInterval(() => fetchAnalytics(), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchAnalytics]);
@@ -111,8 +121,10 @@ export default function AnalyticsPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#050507]">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-500/20 border-t-pink-500"></div>
-          <p className="text-xs text-gray-500 uppercase tracking-widest">Loading analytics...</p>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-500/20 border-t-pink-500" />
+          <p className="text-xs uppercase tracking-widest text-gray-500">
+            Loading analytics...
+          </p>
         </div>
       </div>
     );
@@ -122,7 +134,10 @@ export default function AnalyticsPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#050507]">
         <div className="w-full max-w-sm rounded-2xl border border-red-500/10 bg-red-500/5 p-6 text-center">
-          <p className="text-sm text-red-400 font-medium">{error || "Something went wrong"}</p>
+          <p className="text-sm font-medium text-red-400">
+            {error || "Something went wrong"}
+          </p>
+
           <div className="mt-6 flex flex-col gap-3">
             <button
               onClick={() => {
@@ -130,11 +145,15 @@ export default function AnalyticsPage() {
                 setLoading(true);
                 fetchAnalytics();
               }}
-              className="rounded-lg bg-red-500/20 px-4 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500/30 transition"
+              className="rounded-lg bg-red-500/20 px-4 py-2.5 text-xs font-bold text-red-400 transition hover:bg-red-500/30"
             >
               Try Again
             </button>
-            <Link href="/dashboard" className="rounded-lg bg-white/5 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition">
+
+            <Link
+              href="/dashboard"
+              className="rounded-lg bg-white/5 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/10"
+            >
               Back to Dashboard
             </Link>
           </div>
@@ -144,28 +163,33 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen text-white">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Header Section */}
-        <div className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-lg">
-          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(236,72,153,0.08),transparent_22%)] px-5 py-5 sm:px-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="min-h-screen overflow-x-hidden text-white">
+      <div className="mx-auto max-w-[1400px] px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
+        <div className="mb-5 overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-lg">
+          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(236,72,153,0.08),transparent_22%)] px-4 py-4 sm:px-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="max-w-3xl">
-                <motion.span 
+                <motion.span
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="inline-flex rounded-lg border border-pink-500/20 bg-pink-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.15em] text-pink-200"
                 >
                   📊 Live Performance Metrics
                 </motion.span>
+
                 <h1 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
                   Your Performance Insights
                 </h1>
+
                 <p className="mt-2 text-xs leading-relaxed text-gray-400 sm:text-sm">
-                  Real-time analysis of your coding journey. Track consistency, master categories, and identify growth areas.
+                  Real-time analysis of your coding journey. Track consistency,
+                  master categories, and identify growth areas.
                 </p>
+
                 {data.lastUpdated && (
-                  <p className="mt-2 text-[10px] text-gray-600">Last updated: {data.lastUpdated}</p>
+                  <p className="mt-2 text-[10px] text-gray-600">
+                    Last updated: {data.lastUpdated}
+                  </p>
                 )}
               </div>
 
@@ -173,18 +197,24 @@ export default function AnalyticsPage() {
                 <button
                   onClick={() => fetchAnalytics(true)}
                   disabled={isRefreshing}
-                  className="inline-flex items-center justify-center gap-1.5 h-9 rounded-lg border border-white/10 bg-white/[0.04] px-4 text-xs font-medium text-white transition hover:bg-white/[0.08] disabled:opacity-50"
+                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-4 text-xs font-medium text-white transition hover:bg-white/[0.08] disabled:opacity-50"
                   title="Refresh data"
                 >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  {isRefreshing ? 'Refreshing' : 'Refresh'}
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 ${
+                      isRefreshing ? "animate-spin" : ""
+                    }`}
+                  />
+                  {isRefreshing ? "Refreshing" : "Refresh"}
                 </button>
+
                 <Link
                   href="/dashboard"
                   className="inline-flex h-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-4 text-xs font-medium text-white transition hover:bg-white/[0.08]"
                 >
                   Dashboard
                 </Link>
+
                 <Link
                   href="/dashboard/challenges"
                   className="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 px-4 text-xs font-medium text-white shadow-lg shadow-pink-500/20 transition hover:opacity-90"
@@ -195,7 +225,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-px bg-white/5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-px bg-white/5 sm:grid-cols-2 md:grid-cols-4">
             <StatCard
               label="Total Points"
               value={data.stats.totalPoints.toLocaleString()}
@@ -224,92 +254,135 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-3">
-          {/* Main Content Area */}
-          <div className="lg:col-span-2 space-y-5">
-            {/* Weekly Progress */}
-            <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5 sm:p-6">
-              <div className="mb-6 flex items-center justify-between">
+        <div className="grid items-start gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="min-w-0 space-y-4 sm:space-y-5 md:col-span-2">
+            <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-4 sm:p-5 lg:p-6">
+              <div className="mb-4 flex items-center justify-between sm:mb-6">
                 <div>
-                  <h2 className="text-lg font-bold text-white">Weekly Activity</h2>
-                  <p className="mt-0.5 text-xs text-gray-500">Challenges attempted per day (Solo + Duo)</p>
+                  <h2 className="text-lg font-bold text-white">
+                    Weekly Activity
+                  </h2>
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    Challenges attempted per day (Solo + Duo)
+                  </p>
                 </div>
               </div>
 
-              <div className="relative w-full" style={{ height: '250px' }}>
-                <div className="absolute inset-0 flex items-end justify-between gap-3">
-                  {data.weeklyProgress.map((item, i) => {
-                    const maxValue = Math.max(...data.weeklyProgress.map(p => p.value), 1);
-                    const heightPercent = (item.value / maxValue) * 100;
-                    return (
-                      <div key={i} className="group relative flex flex-1 flex-col items-center h-full">
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 z-10">
-                          <span className="rounded-md bg-white/10 px-2 py-1 text-[9px] text-white backdrop-blur-md whitespace-nowrap">
-                            {item.value} {item.value === 1 ? 'attempt' : 'attempts'}
-                          </span>
+              <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                <div
+                  className="relative min-w-[300px] w-full sm:min-w-0"
+                  style={{ height: "180px", minHeight: "150px" }}
+                >
+                  <div className="absolute inset-0 flex items-end justify-between gap-1 sm:gap-2 md:gap-3">
+                    {data.weeklyProgress.map((item, i) => {
+                      const maxValue = Math.max(
+                        ...data.weeklyProgress.map((p) => p.value),
+                        1
+                      );
+                      const heightPercent = (item.value / maxValue) * 100;
+
+                      return (
+                        <div
+                          key={i}
+                          className="group relative flex h-full flex-1 flex-col items-center"
+                        >
+                          <div className="absolute -top-10 left-1/2 z-10 -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100">
+                            <span className="whitespace-nowrap rounded-md bg-white/10 px-2 py-1 text-[9px] text-white backdrop-blur-md">
+                              {item.value}{" "}
+                              {item.value === 1 ? "attempt" : "attempts"}
+                            </span>
+                          </div>
+
+                          <div className="flex h-full w-full flex-col items-center justify-end">
+                            <motion.div
+                              initial={{ height: 0 }}
+                              animate={{ height: `${Math.max(heightPercent, 8)}%` }}
+                              transition={{ delay: i * 0.05, duration: 0.6 }}
+                              className="w-6 rounded-t-lg bg-gradient-to-t from-pink-500/30 via-pink-500/50 to-purple-500 shadow-lg shadow-pink-500/20 transition-all group-hover:brightness-125 group-hover:shadow-pink-500/40 sm:w-8 md:w-10"
+                            />
+                            <span className="mt-3 text-xs font-medium text-gray-500">
+                              {item.day}
+                            </span>
+                          </div>
                         </div>
-                        <div className="w-full flex flex-col items-center justify-end h-full">
-                          <motion.div 
-                            initial={{ height: 0 }}
-                            animate={{ height: `${Math.max(heightPercent, 8)}%` }}
-                            transition={{ delay: i * 0.05, duration: 0.6 }}
-                            className="w-10 rounded-t-lg bg-gradient-to-t from-pink-500/30 via-pink-500/50 to-purple-500 shadow-lg shadow-pink-500/20 transition-all group-hover:brightness-125 group-hover:shadow-pink-500/40"
-                          />
-                          <span className="mt-3 text-xs font-medium text-gray-500">{item.day}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </section>
 
-            {/* Recent Activity Table */}
-            <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] overflow-hidden">
-              <div className="p-5 sm:p-6 border-b border-white/10">
-                <h2 className="text-lg font-bold text-white">Recent Attempts</h2>
-                <p className="mt-0.5 text-xs text-gray-500">Your latest challenge interactions</p>
+            <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a]">
+              <div className="border-b border-white/10 p-4 sm:p-5 lg:p-6">
+                <h2 className="text-lg font-bold text-white">
+                  Recent Attempts
+                </h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Your latest challenge interactions
+                </p>
               </div>
+
               {data.recentActivity.length === 0 ? (
                 <div className="p-8 text-center">
-                  <p className="text-xs text-gray-500">No activity yet. Start solving challenges!</p>
+                  <p className="text-xs text-gray-500">
+                    No activity yet. Start solving challenges!
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full min-w-[400px] text-left text-xs">
                     <thead>
-                      <tr className="bg-white/[0.02] uppercase tracking-widest text-gray-500 border-b border-white/5">
+                      <tr className="border-b border-white/5 bg-white/[0.02] uppercase tracking-widest text-gray-500">
                         <th className="px-5 py-3 font-medium">Challenge</th>
                         <th className="px-5 py-3 font-medium">Difficulty</th>
                         <th className="px-5 py-3 font-medium">Status</th>
                         <th className="px-5 py-3 font-medium">Date</th>
                       </tr>
                     </thead>
+
                     <tbody className="divide-y divide-white/5">
                       {data.recentActivity.map((item, i) => (
-                        <tr key={i} className="group transition hover:bg-white/[0.02]">
+                        <tr
+                          key={i}
+                          className="group transition hover:bg-white/[0.02]"
+                        >
                           <td className="px-5 py-3">
-                            <div className="text-xs font-medium text-white">{item.title}</div>
-                            <div className="text-[10px] text-gray-500">{item.category}</div>
+                            <div className="text-xs font-medium text-white">
+                              {item.title}
+                            </div>
+                            <div className="text-[10px] text-gray-500">
+                              {item.category}
+                            </div>
                           </td>
+
                           <td className="px-5 py-3">
-                            <span className={`inline-flex rounded-lg px-2 py-1 text-[9px] font-semibold ${
-                              item.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400' :
-                              item.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400' :
-                              'bg-red-500/10 text-red-400'
-                            }`}>
+                            <span
+                              className={`inline-flex rounded-lg px-2 py-1 text-[9px] font-semibold ${
+                                item.difficulty === "Easy"
+                                  ? "bg-emerald-500/10 text-emerald-400"
+                                  : item.difficulty === "Medium"
+                                  ? "bg-yellow-500/10 text-yellow-400"
+                                  : "bg-red-500/10 text-red-400"
+                              }`}
+                            >
                               {item.difficulty}
                             </span>
                           </td>
+
                           <td className="px-5 py-3">
-                             <span className={`text-[10px] font-medium ${
-                               item.status === 'Accepted' ? 'text-emerald-400' : 
-                               item.status === 'Pending' ? 'text-yellow-400' :
-                               'text-rose-400'
-                             }`}>
-                               {item.status}
-                             </span>
+                            <span
+                              className={`text-[10px] font-medium ${
+                                item.status === "Accepted"
+                                  ? "text-emerald-400"
+                                  : item.status === "Pending"
+                                  ? "text-yellow-400"
+                                  : "text-rose-400"
+                              }`}
+                            >
+                              {item.status}
+                            </span>
                           </td>
+
                           <td className="px-5 py-3 text-[10px] text-gray-500">
                             {item.date}
                           </td>
@@ -322,67 +395,97 @@ export default function AnalyticsPage() {
             </section>
           </div>
 
-          {/* Sidebar Area */}
-          <div className="space-y-5">
-            {/* Difficulty Breakdown */}
-            <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5 sm:p-6">
-              <h2 className="text-lg font-bold text-white mb-5">Completion</h2>
-              <div className="space-y-4">
-                {data.difficultyBreakdown.map((item, i) => {
-                  const percentage = item.total > 0 ? (item.solved / item.total) * 100 : 0;
-                  return (
-                    <div key={i}>
-                      <div className="flex justify-between text-xs mb-1.5">
-                        <span className="text-gray-400 font-medium">{item.label}</span>
-                        <span className="text-white font-bold">{item.solved}/{item.total}</span>
+          <div className="min-w-0 self-start">
+            <div className="space-y-4 sm:space-y-5 lg:sticky lg:top-28">
+              <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-4 sm:p-5 lg:p-6">
+                <h2 className="mb-4 text-lg font-bold text-white sm:mb-5">
+                  Completion
+                </h2>
+
+                <div className="space-y-4">
+                  {data.difficultyBreakdown.map((item, i) => {
+                    const percentage =
+                      item.total > 0 ? (item.solved / item.total) * 100 : 0;
+
+                    return (
+                      <div key={i}>
+                        <div className="mb-1.5 flex justify-between text-xs">
+                          <span className="font-medium text-gray-400">
+                            {item.label}
+                          </span>
+                          <span className="font-bold text-white">
+                            {item.solved}/{item.total}
+                          </span>
+                        </div>
+
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percentage}%` }}
+                            className={`h-full rounded-full ${
+                              item.label === "Easy"
+                                ? "bg-emerald-500"
+                                : item.label === "Medium"
+                                ? "bg-yellow-500"
+                                : "bg-red-500"
+                            }`}
+                          />
+                        </div>
                       </div>
-                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${percentage}%` }}
-                          className={`h-full rounded-full ${
-                            item.label === 'Easy' ? 'bg-emerald-500' :
-                            item.label === 'Medium' ? 'bg-yellow-500' :
-                            'bg-red-500'
-                          }`}
-                        />
-                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] p-4 sm:p-5 lg:p-6">
+                <h2 className="mb-4 text-lg font-bold text-white">
+                  Category Strength
+                </h2>
+
+                <div className="space-y-2.5">
+                  {data.categoryPerformance.slice(0, 5).map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.03] p-2.5 transition hover:bg-white/[0.05]"
+                    >
+                      <span className="text-xs font-medium text-gray-300">
+                        {item.label}
+                      </span>
+                      <span className="text-xs font-bold text-pink-400">
+                        {item.value}%
+                      </span>
                     </div>
-                  )
-                })}
-              </div>
-            </section>
+                  ))}
 
-            {/* Category Strength */}
-            <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5 sm:p-6">
-              <h2 className="text-lg font-bold text-white mb-4">Category Strength</h2>
-              <div className="space-y-2.5">
-                {data.categoryPerformance.slice(0, 5).map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition">
-                    <span className="text-xs text-gray-300 font-medium">{item.label}</span>
-                    <span className="text-xs font-bold text-pink-400">{item.value}%</span>
-                  </div>
-                ))}
-                {data.categoryPerformance.length === 0 && (
-                  <p className="text-xs text-gray-500 text-center py-3">Solve challenges to unlock stats</p>
-                )}
-              </div>
-            </section>
+                  {data.categoryPerformance.length === 0 && (
+                    <p className="py-3 text-center text-xs text-gray-500">
+                      Solve challenges to unlock stats
+                    </p>
+                  )}
+                </div>
+              </section>
 
-            {/* Smart Tips */}
-            <section className="rounded-2xl border border-pink-500/10 bg-gradient-to-br from-pink-500/5 to-transparent p-5 sm:p-6">
-              <h2 className="text-lg font-bold text-white mb-3">💡 Smart Tip</h2>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                {data.stats.totalSolved < 5 ? 
-                  "Start solving more challenges to unlock personalized insights and category-specific performance metrics." :
-                  data.stats.acceptanceRate >= 80 ?
-                  "Excellent performance! Push to higher difficulty challenges to maximize points growth." :
-                  "Focus on improving your accuracy by reviewing failed attempts before trying new challenges."}
-              </p>
-              <Link href="/dashboard/leaderboard" className="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/5 py-2.5 text-xs font-bold text-white transition hover:bg-white/10">
-                View Global Rank
-              </Link>
-            </section>
+              <section className="rounded-2xl border border-pink-500/10 bg-gradient-to-br from-pink-500/5 to-transparent p-4 sm:p-5 lg:p-6">
+                <h2 className="mb-3 text-lg font-bold text-white">
+                  💡 Smart Tip
+                </h2>
+
+                <p className="text-xs leading-relaxed text-gray-400">
+                  {data.stats.totalSolved < 5
+                    ? "Start solving more challenges to unlock personalized insights and category-specific performance metrics."
+                    : data.stats.acceptanceRate >= 80
+                    ? "Excellent performance! Push to higher difficulty challenges to maximize points growth."
+                    : "Focus on improving your accuracy by reviewing failed attempts before trying new challenges."}
+                </p>
+
+                <Link
+                  href="/dashboard/leaderboard"
+                  className="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/5 py-2.5 text-xs font-bold text-white transition hover:bg-white/10"
+                >
+                  View Global Rank
+                </Link>
+              </section>
+            </div>
           </div>
         </div>
       </div>
@@ -390,27 +493,34 @@ export default function AnalyticsPage() {
   );
 }
 
-
 function StatCard({ label, value, subtext, icon, trend }: StatCardProps) {
   return (
-    <div className="bg-[#0a0a0a] px-5 py-4 transition hover:bg-white/[0.02] relative group">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">
+    <div className="group relative bg-[#0a0a0a] px-4 py-3 transition hover:bg-white/[0.02] sm:px-5 sm:py-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[9px] font-bold uppercase tracking-widest text-gray-500">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-bold text-white tracking-tight">{value}</p>
+          <p className="mt-1.5 truncate text-xl font-bold tracking-tight text-white sm:mt-2 sm:text-2xl">
+            {value}
+          </p>
         </div>
+
         {icon && (
-          <div className="text-gray-600 group-hover:text-pink-500/50 transition">
+          <div className="shrink-0 text-gray-600 transition group-hover:text-pink-500/50">
             {icon}
           </div>
         )}
       </div>
+
       <div className="mt-1.5 flex items-center justify-between">
-        <p className="text-[10px] text-gray-500 font-medium">{subtext}</p>
+        <p className="truncate text-[10px] font-medium text-gray-500">
+          {subtext}
+        </p>
         {trend && (
-          <span className="text-[9px] text-emerald-400 font-bold">{trend}</span>
+          <span className="shrink-0 text-[9px] font-bold text-emerald-400">
+            {trend}
+          </span>
         )}
       </div>
     </div>

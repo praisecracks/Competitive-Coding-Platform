@@ -34,6 +34,11 @@ type LeaderboardEntry struct {
 	MediumSolved   int       `json:"mediumSolved"`
 	HardSolved     int       `json:"hardSolved"`
 	LastAcceptedAt time.Time `json:"lastAcceptedAt"`
+	Bio            string    `json:"bio,omitempty"`
+	GithubUrl      string    `json:"githubUrl,omitempty"`
+	LinkedinUrl    string    `json:"linkedinUrl,omitempty"`
+	PublicProfile  bool      `json:"publicProfile,omitempty"`
+	UserRank       string    `json:"userRank,omitempty"`
 }
 
 func getPointsForDifficulty(difficulty string) int {
@@ -218,6 +223,11 @@ func BuildLeaderboard(
 			MediumSolved:   mediumSolved,
 			HardSolved:     hardSolved,
 			LastAcceptedAt: userLastPassedAt[userID],
+			Bio:            user.Bio,
+			GithubUrl:      user.GithubUrl,
+			LinkedinUrl:    user.LinkedinUrl,
+			PublicProfile:  user.PublicProfile,
+			UserRank:       user.Rank,
 		})
 	}
 

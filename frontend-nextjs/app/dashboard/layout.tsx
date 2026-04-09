@@ -14,6 +14,7 @@ export default function DashboardLayout({
   const [isMobile, setIsMobile] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+
   const router = useRouter();
   const pathname = usePathname();
 
@@ -54,10 +55,14 @@ export default function DashboardLayout({
 
   if (!isAuthenticated) return null;
 
-  const mainPadding = isMobile ? "pl-0" : sidebarOpen ? "lg:pl-64" : "lg:pl-20";
+  const mainPadding = isMobile
+    ? "pl-0"
+    : sidebarOpen
+    ? "lg:pl-62"
+    : "lg:pl-20";
 
   return (
-    <div className="min-h-screen bg-[#020202] text-white">
+    <div className="min-h-screen bg-[#020202] text-white overflow-x-clip">
       <Header onMenuClick={toggleSidebar} />
 
       <Sidebar
@@ -68,8 +73,10 @@ export default function DashboardLayout({
         onToggle={toggleSidebar}
       />
 
-      <main className={`pt-20 transition-all duration-300 ${mainPadding}`}>
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <main
+        className={`relative overflow-visible pt-20 transition-all duration-300 ${mainPadding}`}
+      >
+        <div className="w-full min-w-0 overflow-visible px-4 py-6 sm:px-6 lg:px-8">
           {children}
         </div>
       </main>

@@ -41,6 +41,7 @@ func RegisterRoutes(r *gin.Engine) {
 		protected.GET("/profile", controllers.GetProfile)
 		protected.PUT("/profile", controllers.UpdateProfile)
 		protected.POST("/profile/avatar", controllers.UploadAvatar)
+		protected.DELETE("/profile/avatar", controllers.DeleteAvatar)
 		protected.POST("/profile/change-password", controllers.ChangePassword)
 		protected.GET("/profile/referral-code", controllers.GetReferralCode)
 

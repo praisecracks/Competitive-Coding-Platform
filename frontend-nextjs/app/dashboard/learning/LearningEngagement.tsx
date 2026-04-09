@@ -143,7 +143,7 @@ export default function LearningEngagement({
   };
 
   return (
-    <section className="rounded-[24px] border border-white/10 bg-[#0b0b0f] p-5 sm:p-6">
+    <section className="rounded-[24px]  border-white/10 bg-[#0b0b0f] p-5 sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="max-w-2xl">
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gray-500">

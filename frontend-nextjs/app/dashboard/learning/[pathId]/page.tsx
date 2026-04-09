@@ -284,7 +284,7 @@ export default function LearningPathEngine() {
         )}
       </AnimatePresence>
 
-      <div className="mt-[-30px] mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8 ">
+      <div className="mt-[-30px] mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <button
             onClick={() => router.push("/dashboard/learning")}
@@ -329,12 +329,12 @@ export default function LearningPathEngine() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 xl:grid-cols-12 xl:items-start">
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-12">
           <div className="space-y-8 pb-20 xl:col-span-8">
             <LearningHero path={heroPath} />
 
             {activeStep && contentPath && (
-              <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#09090c]">
+              <div className="overflow-hidden rounded-[28px] border-t border-white/10">
                 <div className="border-b border-white/5 px-6 py-5 sm:px-8">
                   <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div>
@@ -469,8 +469,8 @@ export default function LearningPathEngine() {
             )}
           </div>
 
-          <div className="xl:col-span-4 xl:self-start xl:sticky xl:top-24 z-20">
-            <div className="xl:max-h-[calc(100vh-120px)] xl:overflow-y-auto no-scrollbar">
+          <div className="xl:col-span-4 xl:self-start">
+            <div className="p-2 pb-6 pt-4 pr-8 mt-20 lg:fixed xl:top-24 xl:max-h-[calc(100vh-120px)] xl:overflow-y-auto no-scrollbar">
               <LearningOutline
                 path={{
                   completedSteps: enhancedPath.completedSteps,

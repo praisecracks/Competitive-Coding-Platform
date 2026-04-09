@@ -17,10 +17,16 @@ import (
 
 // SearchUser represents a user in search results
 type SearchUser struct {
-	ID         primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Username   string             `json:"username" bson:"username"`
-	Rank       string             `json:"rank,omitempty" bson:"rank"`
-	ProfilePic string             `json:"profile_pic,omitempty" bson:"profile_pic"`
+	ID            primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Username      string             `json:"username" bson:"username"`
+	Rank          string             `json:"rank,omitempty" bson:"rank"`
+	ProfilePic    string             `json:"profilePic,omitempty" bson:"profile_pic"`
+	Bio           string             `json:"bio,omitempty" bson:"bio"`
+	GithubUrl     string             `json:"githubUrl,omitempty" bson:"github_url"`
+	LinkedinUrl   string             `json:"linkedinUrl,omitempty" bson:"linkedin_url"`
+	Country       string             `json:"country,omitempty" bson:"country"`
+	PublicProfile bool               `json:"publicProfile,omitempty" bson:"public_profile"`
+	TotalSolved   int                `json:"totalSolved,omitempty" bson:"total_solved"`
 }
 
 // SearchChallenge represents a challenge in search results

@@ -163,6 +163,12 @@ footer {
   50% { opacity: 0.12; transform: scale(1.2); }
 }
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(200%);
+  }
+}
+
 .animate-float-1 { animation: float-1 22s ease-in-out infinite; }
 .animate-float-2 { animation: float-2 19s ease-in-out infinite; }
 .animate-float-3 { animation: float-3 25s ease-in-out infinite; }

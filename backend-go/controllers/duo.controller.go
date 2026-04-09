@@ -36,12 +36,12 @@ func GetPendingInvites(c *gin.Context) {
 	usersCollection := database.GetCollection("users")
 	challengesCollection := database.GetCollection("challenges")
 
-	// Mark expired pending invites first
+	// Expire old pending invites before fetching fresh ones
 	_, _ = duelsCollection.UpdateMany(
 		ctx,
 		bson.M{
 			"status":     models.DuelPending,
-			"expires_at": bson.M{"$lte": time.Now()},
+			"expires_at": bson.M{"$lte": time.Now().UTC()},
 		},
 		bson.M{
 			"$set": bson.M{"status": models.DuelExpired},
@@ -49,9 +49,9 @@ func GetPendingInvites(c *gin.Context) {
 	)
 
 	filter := bson.M{
-		"opponent_id": userID,
-		"status":      models.DuelPending,
-		"expires_at":  bson.M{"$gt": time.Now()},
+		"opponent":   userID,
+		"status":     models.DuelPending,
+		"expires_at": bson.M{"$gt": time.Now().UTC()},
 	}
 
 	cursor, err := duelsCollection.Find(ctx, filter)
@@ -80,6 +80,7 @@ func GetPendingInvites(c *gin.Context) {
 	response := []InviteResponse{}
 	for _, duel := range duels {
 		var challenger models.User
+
 		objID, err := primitive.ObjectIDFromHex(duel.Challenger)
 		if err == nil {
 			_ = usersCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&challenger)
@@ -106,7 +107,11 @@ func GetPendingInvites(c *gin.Context) {
 
 // SendDuelInvite sends an invitation to a duel
 func SendDuelInvite(c *gin.Context) {
-	userIDRaw, _ := c.Get("user_id")
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 	userID := userIDRaw.(string)
 
 	var req DuoInviteRequest
@@ -125,14 +130,14 @@ func SendDuelInvite(c *gin.Context) {
 
 	duelsCollection := database.GetCollection("duels")
 
-	// prevent duplicate active pending invite for same challenger/opponent/challenge
+	// Prevent duplicate active pending invite for same challenger/opponent/challenge
 	var existing models.Duel
 	err := duelsCollection.FindOne(ctx, bson.M{
-		"challenger_id": userID,
-		"opponent_id":   req.OpponentID,
-		"challenge_id":  req.ChallengeID,
-		"status":        models.DuelPending,
-		"expires_at":    bson.M{"$gt": time.Now()},
+		"challenger":   userID,
+		"opponent":     req.OpponentID,
+		"challenge_id": req.ChallengeID,
+		"status":       models.DuelPending,
+		"expires_at":   bson.M{"$gt": time.Now().UTC()},
 	}).Decode(&existing)
 
 	if err == nil {
@@ -180,22 +185,19 @@ func GetDuelStatus(c *gin.Context) {
 	defer cancel()
 
 	duelsCollection := database.GetCollection("duels")
-
 	var duel models.Duel
-	err := duelsCollection.FindOne(ctx, bson.M{"_id": duelID}).Decode(&duel)
+
+	err := duelsCollection.FindOne(ctx, bson.M{"id": duelID}).Decode(&duel)
 	if err != nil {
-		err = duelsCollection.FindOne(ctx, bson.M{"id": duelID}).Decode(&duel)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Duel not found"})
-			return
-		}
+		c.JSON(http.StatusNotFound, gin.H{"error": "Duel not found"})
+		return
 	}
 
-	// auto-expire pending duel
-	if duel.Status == models.DuelPending && duel.ExpiresAt.Before(time.Now()) {
+	// Auto-expire pending duel if needed
+	if duel.Status == models.DuelPending && duel.ExpiresAt.Before(time.Now().UTC()) {
 		_, _ = duelsCollection.UpdateOne(
 			ctx,
-			bson.M{"id": duel.ID},
+			bson.M{"id": duelID, "status": models.DuelPending},
 			bson.M{"$set": bson.M{"status": models.DuelExpired}},
 		)
 		duel.Status = models.DuelExpired
@@ -232,13 +234,10 @@ func AcceptDuelInvite(c *gin.Context) {
 	duelsCollection := database.GetCollection("duels")
 
 	var duel models.Duel
-	err := duelsCollection.FindOne(ctx, bson.M{"_id": duelID}).Decode(&duel)
+	err := duelsCollection.FindOne(ctx, bson.M{"id": duelID}).Decode(&duel)
 	if err != nil {
-		err = duelsCollection.FindOne(ctx, bson.M{"id": duelID}).Decode(&duel)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Duel not found"})
-			return
-		}
+		c.JSON(http.StatusNotFound, gin.H{"error": "Duel not found"})
+		return
 	}
 
 	if duel.Opponent != userID {
@@ -251,10 +250,10 @@ func AcceptDuelInvite(c *gin.Context) {
 		return
 	}
 
-	if duel.ExpiresAt.Before(time.Now()) {
+	if duel.ExpiresAt.Before(time.Now().UTC()) {
 		_, _ = duelsCollection.UpdateOne(
 			ctx,
-			bson.M{"id": duel.ID},
+			bson.M{"id": duelID, "status": models.DuelPending},
 			bson.M{"$set": bson.M{"status": models.DuelExpired}},
 		)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invite has expired"})
@@ -263,9 +262,12 @@ func AcceptDuelInvite(c *gin.Context) {
 
 	acceptedAt := time.Now().UTC()
 
-	_, err = duelsCollection.UpdateOne(
+	result, err := duelsCollection.UpdateOne(
 		ctx,
-		bson.M{"id": duel.ID},
+		bson.M{
+			"id":     duelID,
+			"status": models.DuelPending,
+		},
 		bson.M{
 			"$set": bson.M{
 				"status":      models.DuelAccepted,
@@ -278,9 +280,14 @@ func AcceptDuelInvite(c *gin.Context) {
 		return
 	}
 
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invite is no longer pending"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":     "Invitation accepted",
-		"duel_id":     duel.ID,
+		"duel_id":     duelID,
 		"accepted_at": acceptedAt,
 		"status":      models.DuelAccepted,
 	})
@@ -302,13 +309,10 @@ func DeclineDuelInvite(c *gin.Context) {
 	duelsCollection := database.GetCollection("duels")
 
 	var duel models.Duel
-	err := duelsCollection.FindOne(ctx, bson.M{"_id": duelID}).Decode(&duel)
+	err := duelsCollection.FindOne(ctx, bson.M{"id": duelID}).Decode(&duel)
 	if err != nil {
-		err = duelsCollection.FindOne(ctx, bson.M{"id": duelID}).Decode(&duel)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Duel not found"})
-			return
-		}
+		c.JSON(http.StatusNotFound, gin.H{"error": "Duel not found"})
+		return
 	}
 
 	if duel.Opponent != userID {
@@ -316,12 +320,23 @@ func DeclineDuelInvite(c *gin.Context) {
 		return
 	}
 
-	_, err = duelsCollection.UpdateOne(ctx, bson.M{"id": duel.ID}, bson.M{
-		"$set": bson.M{"status": models.DuelDeclined},
-	})
-
+	result, err := duelsCollection.UpdateOne(
+		ctx,
+		bson.M{
+			"id":     duelID,
+			"status": models.DuelPending,
+		},
+		bson.M{
+			"$set": bson.M{"status": models.DuelDeclined},
+		},
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decline invitation"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invite is no longer pending"})
 		return
 	}
 
@@ -331,7 +346,11 @@ func DeclineDuelInvite(c *gin.Context) {
 // SubmitDuel handles submission for a duel
 func SubmitDuel(c *gin.Context) {
 	duelID := c.Param("duel_id")
-	userIDRaw, _ := c.Get("user_id")
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 	userID := userIDRaw.(string)
 
 	var req struct {
@@ -347,13 +366,10 @@ func SubmitDuel(c *gin.Context) {
 
 	duelsCollection := database.GetCollection("duels")
 	var duel models.Duel
-	err := duelsCollection.FindOne(ctx, bson.M{"_id": duelID}).Decode(&duel)
+	err := duelsCollection.FindOne(ctx, bson.M{"id": duelID}).Decode(&duel)
 	if err != nil {
-		err = duelsCollection.FindOne(ctx, bson.M{"id": duelID}).Decode(&duel)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Duel not found"})
-			return
-		}
+		c.JSON(http.StatusNotFound, gin.H{"error": "Duel not found"})
+		return
 	}
 
 	update := bson.M{}
@@ -366,7 +382,11 @@ func SubmitDuel(c *gin.Context) {
 		return
 	}
 
-	_, err = duelsCollection.UpdateOne(ctx, bson.M{"id": duel.ID}, bson.M{"$set": update})
+	_, err = duelsCollection.UpdateOne(
+		ctx,
+		bson.M{"id": duelID},
+		bson.M{"$set": update},
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to submit score"})
 		return

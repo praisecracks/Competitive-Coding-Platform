@@ -1,9 +1,19 @@
 "use client";
 
-import { Copy, Share2, MessageCircle } from "lucide-react";
+import {
+  Copy,
+  Share2,
+  MessageCircle,
+  BookOpen,
+  Trophy,
+  Sparkles,
+  ArrowRight,
+  BrainCircuit,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import EditProfileModal from "@/app/components/profile/editmodal";
+import ProfileHeader from "@/app/components/profile/ProfileHeader";
 import { getCountryFlag } from "@/lib/flags";
 import {
   AUTH_EMAIL_KEY,
@@ -13,6 +23,7 @@ import {
   getStoredUser,
   normalizeProfileImageUrl,
 } from "@/lib/auth";
+import { LEARNING_PATHS } from "@/app/dashboard/learning/data";
 
 type ProfileData = {
   id?: string;
@@ -54,7 +65,20 @@ type InsightItem = {
   tone: InsightTone;
 };
 
+type LearningProgressStore = {
+  totalXp?: number;
+  paths?: Record<
+    string,
+    {
+      completedStepIds?: string[];
+      liked?: boolean;
+      rating?: number;
+    }
+  >;
+};
+
 const API_BASE_URL = "/api";
+const LEARNING_PROGRESS_KEY = "codemaster_learning_progress_v1";
 
 const DEFAULT_BIO = "Building, learning, and improving every day.";
 const DEFAULT_RANK = "Beginner";
@@ -121,6 +145,17 @@ function truncateText(value: string, max: number) {
   return value.length > max ? `${value.slice(0, max)}…` : value;
 }
 
+function getLearningProgress(): LearningProgressStore {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(LEARNING_PROGRESS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
 const FRONTEND_URL =
   process.env.NEXT_PUBLIC_FRONTEND_URL || "http://127.0.0.1:3000";
 
@@ -139,6 +174,7 @@ export default function ProfilePage() {
   const [referralLink, setReferralLink] = useState("");
   const [recentActivity, setRecentActivity] = useState<SubmissionItem[]>([]);
   const [imageError, setImageError] = useState(false);
+  const [learningTick, setLearningTick] = useState(0);
 
   const notify = useCallback(
     (msg: string, type: "success" | "error" = "success") => {
@@ -169,8 +205,10 @@ export default function ProfilePage() {
       const currentSolved = payload?.totalSolved ?? user?.totalSolved ?? 0;
       const currentStreak = payload?.currentStreak ?? user?.currentStreak ?? 0;
       const currentGithubUrl = payload?.githubUrl ?? user?.githubUrl ?? "";
-      const currentLinkedinUrl = payload?.linkedinUrl ?? user?.linkedinUrl ?? "";
-      const currentRole = payload?.role ?? user?.role ?? cachedUser?.role ?? "user";
+      const currentLinkedinUrl =
+        payload?.linkedinUrl ?? user?.linkedinUrl ?? "";
+      const currentRole =
+        payload?.role ?? user?.role ?? cachedUser?.role ?? "user";
       const currentReferralCode =
         payload?.referralCode ?? user?.referralCode ?? "";
       const currentDuelsWon = payload?.duelsWon ?? user?.duelsWon ?? 0;
@@ -238,6 +276,20 @@ export default function ProfilePage() {
 
     void loadProfilePage(token);
   }, [router]);
+
+  useEffect(() => {
+    const syncLearning = () => setLearningTick((prev) => prev + 1);
+
+    window.addEventListener("storage", syncLearning);
+    window.addEventListener("focus", syncLearning);
+    window.addEventListener("user-profile-updated", syncLearning);
+
+    return () => {
+      window.removeEventListener("storage", syncLearning);
+      window.removeEventListener("focus", syncLearning);
+      window.removeEventListener("user-profile-updated", syncLearning);
+    };
+  }, []);
 
   const loadProfilePage = async (token: string) => {
     setLoading(true);
@@ -561,7 +613,9 @@ export default function ProfilePage() {
       }
 
       const data = await res.json();
-      const normalizedProfilePic = normalizeProfileImageUrl(data.profile_pic || "");
+      const normalizedProfilePic = normalizeProfileImageUrl(
+        data.profile_pic || ""
+      );
 
       setImageError(false);
 
@@ -585,6 +639,63 @@ export default function ProfilePage() {
     } catch (error) {
       console.error("Upload error:", error);
       notify("Network error during upload.", "error");
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) return;
+
+    try {
+      notify("Removing avatar...");
+
+      // TODO: BACKEND NEEDED - Create DELETE /api/profile/avatar endpoint
+      // Expected backend: DELETE /api/profile/avatar
+      // Response: { success: true }
+      // For now, we clear locally and rely on backend sync
+      
+      const res = await fetch(`${API_BASE_URL}/profile/avatar`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const rawText = await res.text().catch(() => "");
+        console.error("Avatar remove failed:", {
+          status: res.status,
+          statusText: res.statusText,
+          body: rawText,
+        });
+        // Continue with local update even if backend fails
+      }
+
+      setImageError(false);
+
+      setUser((prev) => {
+        if (!prev) return prev;
+
+        const updated = {
+          ...prev,
+          profile_pic: null,
+        };
+
+        syncSidebarCache(updated);
+        return updated;
+      });
+
+      notify("Avatar removed successfully");
+    } catch (error) {
+      console.error("Remove avatar error:", error);
+      // Even on network error, clear locally
+      setUser((prev) => {
+        if (!prev) return prev;
+        const updated = { ...prev, profile_pic: null };
+        syncSidebarCache(updated);
+        return updated;
+      });
+      notify("Avatar removed", "success");
     }
   };
 
@@ -808,6 +919,158 @@ export default function ProfilePage() {
     return actions.slice(0, 3);
   }, [user]);
 
+  const learningSnapshot = useMemo(() => {
+    const progress = getLearningProgress();
+    const pathProgress = progress.paths || {};
+
+    let completedCourses = 0;
+    let startedCourses = 0;
+    let completedSteps = 0;
+    let activeCourse: {
+      id: string;
+      title: string;
+      subtitle: string;
+      completed: number;
+      total: number;
+      percent: number;
+      nextStepTitle?: string;
+      relatedChallengeId?: string;
+      category: string;
+    } | null = null;
+
+    let strongestCategory = "No dominant area yet";
+    let maxCompletedInCategory = 0;
+
+    const categoryCounter: Record<string, number> = {};
+
+    for (const path of LEARNING_PATHS) {
+      const completedStepIds = pathProgress[path.id]?.completedStepIds || [];
+      const totalSteps = path.steps.length;
+      const doneCount = completedStepIds.length;
+
+      if (doneCount > 0) {
+        startedCourses++;
+        completedSteps += doneCount;
+        categoryCounter[path.category] =
+          (categoryCounter[path.category] || 0) + doneCount;
+      }
+
+      if (doneCount === totalSteps && totalSteps > 0) {
+        completedCourses++;
+      }
+
+      const percent =
+        totalSteps > 0 ? Math.round((doneCount / totalSteps) * 100) : 0;
+
+      if (doneCount > 0 && doneCount < totalSteps) {
+        const nextStep = path.steps.find(
+          (step) => !completedStepIds.includes(step.id)
+        );
+
+        if (!activeCourse || percent > activeCourse.percent) {
+          activeCourse = {
+            id: path.id,
+            title: path.title,
+            subtitle: path.subtitle,
+            completed: doneCount,
+            total: totalSteps,
+            percent,
+            nextStepTitle: nextStep?.title,
+            relatedChallengeId: path.relatedChallengeId,
+            category: path.category,
+          };
+        }
+      }
+    }
+
+    for (const [category, count] of Object.entries(categoryCounter)) {
+      if (count > maxCompletedInCategory) {
+        maxCompletedInCategory = count;
+        strongestCategory = category;
+      }
+    }
+
+    return {
+      totalLearningXp: progress.totalXp || 0,
+      startedCourses,
+      completedCourses,
+      completedSteps,
+      strongestCategory,
+      activeCourse,
+    };
+  }, [learningTick]);
+
+  const recommendedChallenge = useMemo(() => {
+    if (learningSnapshot.activeCourse?.relatedChallengeId) {
+      return {
+        challengeId: learningSnapshot.activeCourse.relatedChallengeId,
+        reason: `Recommended from your ${learningSnapshot.activeCourse.title} learning path.`,
+        label: "Continue with linked challenge",
+      };
+    }
+
+    const fallbackMap: Record<string, { id: string; title: string; reason: string }> = {
+      "Data Structures": {
+        id: "1",
+        title: "Two Sum",
+        reason: "A good next step for practicing core lookup patterns.",
+      },
+      Algorithms: {
+        id: "2",
+        title: "Valid Parentheses",
+        reason: "Helps strengthen structured problem-solving under pressure.",
+      },
+      JavaScript: {
+        id: "1",
+        title: "Two Sum",
+        reason: "Good for applying beginner logic with practical coding flow.",
+      },
+      Python: {
+        id: "1",
+        title: "Two Sum",
+        reason: "Useful for translating beginner logic into problem-solving.",
+      },
+      Go: {
+        id: "1",
+        title: "Two Sum",
+        reason: "A simple challenge to build confidence in structured thinking.",
+      },
+    };
+
+    const fallback = fallbackMap[learningSnapshot.strongestCategory];
+    if (!fallback) return null;
+
+    return {
+      challengeId: fallback.id,
+      reason: fallback.reason,
+      title: fallback.title,
+      label: "Recommended next challenge",
+    };
+  }, [learningSnapshot]);
+
+  const skillIdentity = useMemo(() => {
+    const solved = user?.totalSolved ?? 0;
+    const streak = user?.currentStreak ?? 0;
+
+    const competitiveState =
+      solved >= 15
+        ? "Battle-tested"
+        : solved >= 5
+        ? "Building traction"
+        : "Early stage";
+
+    const consistencyState =
+      streak >= 7 ? "Highly consistent" : streak >= 3 ? "Getting consistent" : "Needs rhythm";
+
+    return {
+      strongestArea: learningSnapshot.strongestCategory,
+      growthState: competitiveState,
+      consistencyState,
+      learningState:
+        learningSnapshot.totalLearningXp > 0 ? "Learning active" : "Learning not started",
+    };
+  }, [learningSnapshot, user?.currentStreak, user?.totalSolved]);
+
   const isAdmin =
     user?.role === "super_admin" || user?.role === "sub_admin";
 
@@ -860,170 +1123,295 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5 sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="group relative">
-              <div
-                onClick={handleAvatarIntent}
-                className={`flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 ${
-                  isAdmin ? "border-purple-500/30" : "border-white/10"
-                } bg-gradient-to-br from-white/[0.06] to-white/[0.02] shadow-xl transition hover:border-pink-500/40`}
-              >
-                {resolvedProfilePic && !imageError ? (
-                  <img
-                    src={resolvedProfilePic}
-                    alt={user.username}
-                    className="h-full w-full object-cover"
-                    onError={() => setImageError(true)}
-                  />
-                ) : (
-                  <span className="text-xl font-bold uppercase tracking-wide text-white/70">
-                    {avatarInitials}
-                  </span>
-                )}
-              </div>
-
-              {isAdmin && (
-                <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-lg border border-white/10 bg-purple-500 shadow-lg">
-                  <span className="text-[9px]">🛡️</span>
-                </div>
-              )}
-
-              <button
-                onClick={handleAvatarIntent}
-                className="absolute -bottom-1 -right-1 rounded-full border border-white/10 bg-gradient-to-r from-pink-500 to-purple-500 p-1.5 text-white shadow-lg"
-                type="button"
-              >
-                <svg
-                  className="h-3 w-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </button>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarFileChange}
-              />
-            </div>
-
-            <div className="min-w-0">
-              <h1 className="mt-1 max-w-[250px] truncate text-2xl font-semibold text-white">
-                {user.username}
-              </h1>
-              <p className="text-xs text-gray-500">{user.email}</p>
-              <p className="mt-2 max-w-2xl line-clamp-2 text-xs leading-6 text-gray-400">
-                {user.bio || "No bio added yet."}
-              </p>
-
-              {(user.githubUrl || user.linkedinUrl) && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {user.githubUrl && (
-                    <a
-                      href={user.githubUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] text-gray-300 transition hover:bg-white/[0.06] hover:text-white"
-                    >
-                      <svg
-                        className="h-2.5 w-2.5"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      GitHub
-                    </a>
-                  )}
-                  {user.linkedinUrl && (
-                    <a
-                      href={user.linkedinUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] text-gray-300 transition hover:bg-white/[0.06] hover:text-white"
-                    >
-                      <svg
-                        className="h-2.5 w-2.5"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451c.979 0 1.771-.773 1.771-1.729V1.729C24 .774 23.204 0 22.225 0zM7.119 20.452H3.555V9h3.564v11.452zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zM20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286z" />
-                      </svg>
-                      LinkedIn
-                    </a>
-                  )}
-                </div>
-              )}
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Badge
-                  label={
-                    user.role === "super_admin"
-                      ? "Super Admin"
-                      : user.role === "sub_admin"
-                      ? "Admin"
-                      : user.rank || DEFAULT_RANK
-                  }
-                  tone={
-                    user.role === "super_admin" || user.role === "sub_admin"
-                      ? "purple"
-                      : "pink"
-                  }
-                />
-                <Badge label={`${profileCompleteness}% complete`} tone="pink" />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsEditModalOpen(true)}
-              className="rounded-lg border border-white/10 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-black shadow-xl transition-all hover:bg-gray-200 active:scale-95"
-              type="button"
-            >
-              Edit Identity
-            </button>
-          </div>
-        </div>
-      </section>
+      <ProfileHeader
+        user={user}
+        isAdmin={isAdmin}
+        resolvedProfilePic={resolvedProfilePic}
+        imageError={imageError}
+        avatarInitials={avatarInitials}
+        profileCompleteness={profileCompleteness}
+        learningXp={learningSnapshot.totalLearningXp}
+        strongestCategory={learningSnapshot.strongestCategory}
+        onAvatarClick={handleAvatarIntent}
+        onAvatarChange={handleAvatarFileChange}
+        onAvatarRemove={handleAvatarRemove}
+        onEditClick={() => setIsEditModalOpen(true)}
+        fileInputRef={fileInputRef}
+      />
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Solved" value={user.totalSolved ?? 0} />
-        <StatCard label="Streak" value={`${user.currentStreak ?? 0} days`} />
-        <StatCard label="Rank" value={user.rank || DEFAULT_RANK} />
-        <StatCard label="Joined" value={displayJoinYear} />
+        <StatCard label="Problems Solved" value={user.totalSolved ?? 0} />
+        <StatCard label="Coding Streak" value={`${user.currentStreak ?? 0} days`} />
+        <StatCard label="Skill Tier" value={user.rank || DEFAULT_RANK} />
+        <StatCard label="Learning XP" value={learningSnapshot.totalLearningXp} />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_0.8fr]">
+      <section className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
         <div className="space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-base font-semibold text-white">
+                  Learning Snapshot
+                </h2>
+                <p className="mt-0.5 text-[10px] text-gray-500">
+                  Your progress inside the CodeMaster learning hub.
+                </p>
+              </div>
+              <div className="rounded-xl border border-pink-500/20 bg-pink-500/10 p-2 text-pink-300">
+                <BookOpen className="h-4 w-4" />
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <StatCard label="Started" value={learningSnapshot.startedCourses} />
+              <StatCard label="Completed" value={learningSnapshot.completedCourses} />
+              <StatCard label="Steps Done" value={learningSnapshot.completedSteps} />
+              <StatCard label="XP" value={learningSnapshot.totalLearningXp} />
+            </div>
+
+            <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+                    Strongest Area
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-white">
+                    {learningSnapshot.strongestCategory}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+                    Learning State
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-white">
+                    {skillIdentity.learningState}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-base font-semibold text-white">
+                  Current Learning Focus
+                </h2>
+                <p className="mt-0.5 text-[10px] text-gray-500">
+                  Pick up where your growth path currently stands.
+                </p>
+              </div>
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2 text-emerald-300">
+                <Sparkles className="h-4 w-4" />
+              </div>
+            </div>
+
+            {learningSnapshot.activeCourse ? (
+              <div className="mt-4">
+                <p className="text-lg font-semibold text-white">
+                  {learningSnapshot.activeCourse.title}
+                </p>
+                <p className="mt-1 max-w-2xl text-xs leading-6 text-gray-400">
+                  {learningSnapshot.activeCourse.subtitle}
+                </p>
+
+                <div className="mt-4">
+                  <div className="mb-1.5 flex items-center justify-between text-[10px]">
+                    <p className="text-gray-400">Progress</p>
+                    <p className="font-bold text-pink-400">
+                      {learningSnapshot.activeCourse.percent}%
+                    </p>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all duration-500"
+                      style={{
+                        width: `${learningSnapshot.activeCourse.percent}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
+                      Next Step
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-white">
+                      {learningSnapshot.activeCourse.nextStepTitle ||
+                        "Continue your course"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
+                      Focus Area
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-white">
+                      {learningSnapshot.activeCourse.category}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/learning/${learningSnapshot.activeCourse?.id}`
+                      )
+                    }
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-black transition hover:bg-gray-200"
+                    type="button"
+                  >
+                    Continue Learning
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+
+                  {learningSnapshot.activeCourse.relatedChallengeId && (
+                    <button
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/challenges/${learningSnapshot.activeCourse?.relatedChallengeId}`
+                        )
+                      }
+                      className="inline-flex items-center gap-2 rounded-lg border border-pink-500/20 bg-pink-500/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-pink-200 transition hover:bg-pink-500/15"
+                      type="button"
+                    >
+                      Linked Challenge
+                      <Trophy className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6">
+                <p className="text-sm font-medium text-white">
+                  No active course yet
+                </p>
+                <p className="mt-1 text-xs leading-6 text-gray-400">
+                  Start a learning path so your profile reflects both knowledge growth and challenge readiness.
+                </p>
+
+                <button
+                  onClick={() => router.push("/dashboard/learning")}
+                  className="mt-4 rounded-lg border border-white/10 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-black transition hover:bg-gray-200"
+                  type="button"
+                >
+                  Explore Learning Hub
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-base font-semibold text-white">
+                  Account Information
+                </h2>
+                <p className="mt-0.5 text-[10px] text-gray-500">
+                  Identity and platform metadata.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <InfoItem label="Email" value={user.email} />
+              <InfoItem label="Username" value={user.username} />
+              <InfoItem
+                label="Country"
+                value={
+                  user.country
+                    ? `${getCountryFlag(user.country)} ${user.country}`
+                    : "Not specified"
+                }
+              />
+              <InfoItem label="Member Since" value={displayJoinDate} />
+              <InfoItem label="User ID" value={user.id || "Not available yet"} />
+              {referralLink && (
+                <InfoItem
+                  label="Referral Link"
+                  value={referralLink}
+                  isReferral={true}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-white">
+                Skill Identity
+              </h2>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2 text-pink-300">
+                <BrainCircuit className="h-4 w-4" />
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              <SkillSignal
+                label="Strongest area"
+                value={skillIdentity.strongestArea}
+              />
+              <SkillSignal
+                label="Challenge momentum"
+                value={skillIdentity.growthState}
+              />
+              <SkillSignal
+                label="Consistency"
+                value={skillIdentity.consistencyState}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-white">
+                Challenge Recommendation
+              </h2>
+              <span className="text-[10px] text-pink-300">Adaptive</span>
+            </div>
+
+            {recommendedChallenge ? (
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <p className="text-sm font-semibold text-white">
+                  {recommendedChallenge.title || "Next recommended challenge"}
+                </p>
+                <p className="mt-1 text-xs leading-6 text-gray-400">
+                  {recommendedChallenge.reason}
+                </p>
+
+                <button
+                  onClick={() =>
+                    router.push(`/dashboard/challenges/${recommendedChallenge.challengeId}`)
+                  }
+                  className="mt-4 inline-flex items-center gap-2 rounded-lg border border-pink-500/20 bg-pink-500/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-pink-200 transition hover:bg-pink-500/15"
+                  type="button"
+                >
+                  Solve Challenge
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6">
+                <p className="text-xs text-gray-400">
+                  Start learning or solving more challenges so CodeMaster can recommend the next best battle for you.
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
             <div className="mb-3">
               <h2 className="text-base font-semibold text-white">
                 Profile Strength
               </h2>
               <p className="mt-0.5 text-[10px] text-gray-500">
-                Metric evaluating account completeness.
+                Supporting metric for account completeness.
               </p>
             </div>
 
@@ -1054,36 +1442,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
-            <h2 className="text-base font-semibold text-white">
-              Account Information
-            </h2>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <InfoItem label="Email" value={user.email} />
-              <InfoItem label="Username" value={user.username} />
-              <InfoItem
-                label="Country"
-                value={
-                  user.country
-                    ? `${getCountryFlag(user.country)} ${user.country}`
-                    : "Not specified"
-                }
-              />
-              <InfoItem label="Member Since" value={displayJoinDate} />
-              <InfoItem label="User ID" value={user.id || "Not available yet"} />
-              {referralLink && (
-                <InfoItem
-                  label="Referral Link"
-                  value={referralLink}
-                  isReferral={true}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
           <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-white">Smart Tips</h2>
@@ -1157,29 +1515,6 @@ export default function ProfilePage() {
   );
 }
 
-function Badge({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: "pink" | "purple" | "neutral";
-}) {
-  const toneClass =
-    tone === "pink"
-      ? "border-pink-500/20 bg-pink-500/10 text-pink-200"
-      : tone === "purple"
-      ? "border-purple-500/20 bg-purple-500/10 text-purple-200"
-      : "border-white/10 bg-white/[0.04] text-gray-300";
-
-  return (
-    <span
-      className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${toneClass}`}
-    >
-      {label}
-    </span>
-  );
-}
-
 function InsightCard({
   title,
   description,
@@ -1198,7 +1533,9 @@ function InsightCard({
 
   return (
     <div className="flex items-start gap-2 rounded-xl border border-white/5 bg-white/[0.01] p-2.5">
-      <div className={`mt-1 h-1 w-1 shrink-0 rounded-full bg-current ${toneClass}`} />
+      <div
+        className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current ${toneClass}`}
+      />
       <div>
         <p className="text-[11px] font-bold text-white">{title}</p>
         <p className="mt-0.5 text-[10px] leading-relaxed text-gray-500">
@@ -1217,13 +1554,30 @@ function StatCard({
   value: string | number;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-[#0a0a0a] p-3 text-center transition-all hover:border-pink-500/20">
-      <p className="text-[10px] uppercase tracking-wider text-gray-500">
+    <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-4 text-center transition-all hover:border-pink-500/20">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
         {label}
       </p>
-      <p className="mt-1 text-lg font-semibold tracking-tight text-white">
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-white">
         {value}
       </p>
+    </div>
+  );
+}
+
+function SkillSignal({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
     </div>
   );
 }
@@ -1343,10 +1697,14 @@ function ActivityItem({
   date: string;
   score: number;
 }) {
-  const isCompleted = status.toLowerCase() === "completed";
+  const normalizedStatus = status.toLowerCase();
+  const isSuccess =
+    normalizedStatus === "completed" ||
+    normalizedStatus === "accepted" ||
+    normalizedStatus === "passed";
 
   return (
-    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
+    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3 transition-all hover:border-pink-500/15">
       <div className="min-w-0">
         <p className="truncate text-xs font-medium text-white">{title}</p>
         <p className="mt-0.5 text-[10px] text-gray-500">{date || "Recent"}</p>
@@ -1355,7 +1713,7 @@ function ActivityItem({
       <div className="ml-4 text-right">
         <p
           className={`text-[10px] font-bold ${
-            isCompleted ? "text-emerald-400" : "text-amber-400"
+            isSuccess ? "text-emerald-400" : "text-amber-400"
           }`}
         >
           {status}
