@@ -18,7 +18,7 @@ type Duel struct {
 	ID          string     `json:"id" bson:"_id"`
 	ChallengeID int        `json:"challenge_id" bson:"challenge_id"`
 	Challenger  string     `json:"challenger_id" bson:"challenger_id"` // User ID
-	Opponent    string     `json:"opponent_id" bson:"opponent_id"`     // User ID
+	Opponent   string     `json:"opponent_id" bson:"opponent_id"`     // User ID
 	Status      DuelStatus `json:"status" bson:"status"`
 	CreatedAt   time.Time  `json:"created_at" bson:"created_at"`
 	ExpiresAt   time.Time  `json:"expires_at" bson:"expires_at"`

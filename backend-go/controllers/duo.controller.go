@@ -49,9 +49,9 @@ func GetPendingInvites(c *gin.Context) {
 	)
 
 	filter := bson.M{
-		"opponent":   userID,
-		"status":     models.DuelPending,
-		"expires_at": bson.M{"$gt": time.Now().UTC()},
+		"opponent_id": userID,
+		"status":      models.DuelPending,
+		"expires_at":  bson.M{"$gt": time.Now().UTC()},
 	}
 
 	cursor, err := duelsCollection.Find(ctx, filter)
@@ -133,11 +133,11 @@ func SendDuelInvite(c *gin.Context) {
 	// Prevent duplicate active pending invite for same challenger/opponent/challenge
 	var existing models.Duel
 	err := duelsCollection.FindOne(ctx, bson.M{
-		"challenger":   userID,
-		"opponent":     req.OpponentID,
-		"challenge_id": req.ChallengeID,
-		"status":       models.DuelPending,
-		"expires_at":   bson.M{"$gt": time.Now().UTC()},
+		"challenger_id": userID,
+		"opponent_id":   req.OpponentID,
+		"challenge_id":  req.ChallengeID,
+		"status":        models.DuelPending,
+		"expires_at":    bson.M{"$gt": time.Now().UTC()},
 	}).Decode(&existing)
 
 	if err == nil {
