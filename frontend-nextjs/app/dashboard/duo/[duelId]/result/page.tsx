@@ -31,14 +31,26 @@ export default function DuelResultPage() {
     const fetchResult = async () => {
       try {
         const token = localStorage.getItem("terminal_token");
-        const res = await fetch(`${API_BASE_URL}/duo/status/${duelId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-        });
+        
+        const [duelRes, profileRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/duo/status/${duelId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          }),
+          fetch(`${API_BASE_URL}/profile`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          })
+        ]);
 
-        if (res.ok) {
-          const data = await res.json();
-          setDuel(data);
+        if (duelRes.ok) {
+          const duelData = await duelRes.json();
+          setDuel(duelData);
+        }
+        
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          setUserId(profileData.id || profileData._id || null);
         }
       } catch (err) {
         console.error("Failed to fetch duel result", err);

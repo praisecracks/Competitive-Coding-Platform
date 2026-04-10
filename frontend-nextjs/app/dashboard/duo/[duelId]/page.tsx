@@ -47,16 +47,26 @@ export default function DuelRoomPage() {
     setTerminalHistory((prev) => [...prev, { time: nowLabel(), line }]);
   }, []);
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (!savedUser) return;
-
-    try {
-      const parsed = JSON.parse(savedUser);
-      setUserId(parsed.id || parsed._id || null);
-    } catch {
-      setUserId(null);
-    }
+useEffect(() => {
+    const loadUserId = async () => {
+      const token = localStorage.getItem("terminal_token");
+      if (!token) return;
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUserId(data.id || data._id || null);
+        }
+      } catch (e) {
+        setUserId(null);
+      }
+    };
+    
+    loadUserId();
   }, []);
 
   const fetchDuelData = useCallback(
