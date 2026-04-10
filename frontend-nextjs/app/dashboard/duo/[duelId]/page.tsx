@@ -201,6 +201,7 @@ export default function DuelRoomPage() {
 
   const opponentProgress = useMemo(() => {
     if (opponentSubmitted) return opponentScore;
+    if (opponentScore > 0) return opponentScore;
     return 0;
   }, [opponentSubmitted, opponentScore]);
 

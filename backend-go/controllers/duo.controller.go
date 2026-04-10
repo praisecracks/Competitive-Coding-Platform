@@ -382,12 +382,15 @@ func SubmitDuel(c *gin.Context) {
 	}
 
 	update := bson.M{}
-	if duel.Challenger == userID {
+	isChallenger := duel.Challenger == userID
+	isOpponent := duel.Opponent == userID
+
+	if isChallenger {
 		update["challenger_score"] = req.Score
 		update["challenger_submitted"] = true
 		duel.ChallengerScore = req.Score
 		duel.ChallengerSubmitted = true
-	} else if duel.Opponent == userID {
+	} else if isOpponent {
 		update["opponent_score"] = req.Score
 		update["opponent_submitted"] = true
 		duel.OpponentScore = req.Score
@@ -397,7 +400,8 @@ func SubmitDuel(c *gin.Context) {
 		return
 	}
 
-	if duel.ChallengerSubmitted && duel.OpponentSubmitted {
+	bothSubmitted := (duel.ChallengerSubmitted && duel.OpponentSubmitted) || (isChallenger && duel.OpponentSubmitted) || (isOpponent && duel.ChallengerSubmitted)
+	if bothSubmitted {
 		completedAt := time.Now().UTC()
 		update["status"] = models.DuelCompleted
 		update["completed_at"] = completedAt
