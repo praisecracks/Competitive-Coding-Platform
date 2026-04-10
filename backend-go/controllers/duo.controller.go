@@ -36,7 +36,6 @@ func GetPendingInvites(c *gin.Context) {
 	usersCollection := database.GetCollection("users")
 	challengesCollection := database.GetCollection("challenges")
 
-	// Expire old pending invites before fetching fresh ones
 	_, _ = duelsCollection.UpdateMany(
 		ctx,
 		bson.M{
@@ -130,7 +129,6 @@ func SendDuelInvite(c *gin.Context) {
 
 	duelsCollection := database.GetCollection("duels")
 
-	// Prevent duplicate active pending invite for same challenger/opponent/challenge
 	var existing models.Duel
 	err := duelsCollection.FindOne(ctx, bson.M{
 		"challenger_id": userID,
@@ -153,13 +151,17 @@ func SendDuelInvite(c *gin.Context) {
 	}
 
 	duel := models.Duel{
-		ID:          uuid.New().String(),
-		Challenger:  userID,
-		Opponent:    req.OpponentID,
-		ChallengeID: req.ChallengeID,
-		Status:      models.DuelPending,
-		CreatedAt:   time.Now().UTC(),
-		ExpiresAt:   time.Now().UTC().Add(2 * time.Minute),
+		ID:                  uuid.New().String(),
+		Challenger:          userID,
+		Opponent:            req.OpponentID,
+		ChallengeID:         req.ChallengeID,
+		Status:              models.DuelPending,
+		CreatedAt:           time.Now().UTC(),
+		ExpiresAt:           time.Now().UTC().Add(2 * time.Minute),
+		ChallengerSubmitted: false,
+		OpponentSubmitted:   false,
+		ChallengerScore:     0,
+		OpponentScore:       0,
 	}
 
 	_, err = duelsCollection.InsertOne(ctx, duel)
@@ -193,7 +195,6 @@ func GetDuelStatus(c *gin.Context) {
 		return
 	}
 
-	// Auto-expire pending duel if needed
 	if duel.Status == models.DuelPending && duel.ExpiresAt.Before(time.Now().UTC()) {
 		_, _ = duelsCollection.UpdateOne(
 			ctx,
@@ -204,17 +205,20 @@ func GetDuelStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":               duel.ID,
-		"challenger_id":    duel.Challenger,
-		"opponent_id":      duel.Opponent,
-		"challenge_id":     duel.ChallengeID,
-		"status":           duel.Status,
-		"created_at":       duel.CreatedAt,
-		"expires_at":       duel.ExpiresAt,
-		"accepted_at":      duel.AcceptedAt,
-		"challenger_score": duel.ChallengerScore,
-		"opponent_score":   duel.OpponentScore,
-		"winner_id":        duel.WinnerID,
+		"id":                   duel.ID,
+		"challenger_id":        duel.Challenger,
+		"opponent_id":          duel.Opponent,
+		"challenge_id":         duel.ChallengeID,
+		"status":               duel.Status,
+		"created_at":           duel.CreatedAt,
+		"expires_at":           duel.ExpiresAt,
+		"accepted_at":          duel.AcceptedAt,
+		"completed_at":         duel.CompletedAt,
+		"winner_id":            duel.WinnerID,
+		"challenger_submitted": duel.ChallengerSubmitted,
+		"opponent_submitted":   duel.OpponentSubmitted,
+		"challenger_score":     duel.ChallengerScore,
+		"opponent_score":       duel.OpponentScore,
 	})
 }
 
@@ -372,14 +376,44 @@ func SubmitDuel(c *gin.Context) {
 		return
 	}
 
+	if duel.Status != models.DuelAccepted {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Duel is not active"})
+		return
+	}
+
 	update := bson.M{}
 	if duel.Challenger == userID {
 		update["challenger_score"] = req.Score
+		update["challenger_submitted"] = true
+		duel.ChallengerScore = req.Score
+		duel.ChallengerSubmitted = true
 	} else if duel.Opponent == userID {
 		update["opponent_score"] = req.Score
+		update["opponent_submitted"] = true
+		duel.OpponentScore = req.Score
+		duel.OpponentSubmitted = true
 	} else {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Not a participant"})
 		return
+	}
+
+	if duel.ChallengerSubmitted && duel.OpponentSubmitted {
+		completedAt := time.Now().UTC()
+		update["status"] = models.DuelCompleted
+		update["completed_at"] = completedAt
+
+		if duel.ChallengerScore > duel.OpponentScore {
+			update["winner_id"] = duel.Challenger
+			duel.WinnerID = duel.Challenger
+		} else if duel.OpponentScore > duel.ChallengerScore {
+			update["winner_id"] = duel.Opponent
+			duel.WinnerID = duel.Opponent
+		} else {
+			update["winner_id"] = "TIE"
+			duel.WinnerID = "TIE"
+		}
+		duel.Status = models.DuelCompleted
+		duel.CompletedAt = &completedAt
 	}
 
 	_, err = duelsCollection.UpdateOne(
@@ -392,5 +426,13 @@ func SubmitDuel(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Score submitted"})
+	c.JSON(http.StatusOK, gin.H{
+		"message":              "Score submitted",
+		"status":               duel.Status,
+		"winner_id":            duel.WinnerID,
+		"challenger_score":     duel.ChallengerScore,
+		"opponent_score":       duel.OpponentScore,
+		"challenger_submitted": duel.ChallengerSubmitted,
+		"opponent_submitted":   duel.OpponentSubmitted,
+	})
 }

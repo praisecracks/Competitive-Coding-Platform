@@ -9,6 +9,19 @@ import type { Language } from "@/app/components/dashboard/challenges/CodeEditor"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
+type TerminalEntry = {
+  time: string;
+  line: string;
+};
+
+function nowLabel() {
+  return new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
 export default function DuelRoomPage() {
   const params = useParams<{ duelId: string }>();
   const router = useRouter();
@@ -19,48 +32,98 @@ export default function DuelRoomPage() {
   const [loading, setLoading] = useState(true);
   const [preDuelCountdown, setPreDuelCountdown] = useState(5);
   const [gameState, setGameState] = useState<"counting" | "coding" | "finished">("counting");
-  
-  // Workspace states
+  const [userId, setUserId] = useState<string | null>(null);
+
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState<Language>("javascript");
-  const [terminalHistory, setTerminalHistory] = useState<{ time: string; line: string }[]>([]);
+  const [terminalHistory, setTerminalHistory] = useState<TerminalEntry[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [running, setRunning] = useState(false);
   const [lastScore, setLastScore] = useState<number | null>(null);
   const [timeLeftLabel, setTimeLeftLabel] = useState("00:00");
   const [workspaceTab, setWorkspaceTab] = useState<"problem" | "examples" | "constraints">("problem");
 
-  const fetchDuelData = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("terminal_token");
-      const res = await fetch(`${API_BASE_URL}/duo/status/${duelId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setDuel(data);
-        
-        // Fetch challenge if not loaded
-        const challengeRes = await fetch(`${API_BASE_URL}/challenges/${data.challenge_id}`);
-        if (challengeRes.ok) {
-          const cData = await challengeRes.json();
-          setChallenge(cData);
-        }
-      } else {
-        router.push("/dashboard/challenges");
-      }
-    } catch (err) {
-      console.error("Failed to fetch duel data", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [duelId, router]);
+  const pushTerminal = useCallback((line: string) => {
+    setTerminalHistory((prev) => [...prev, { time: nowLabel(), line }]);
+  }, []);
 
   useEffect(() => {
-    fetchDuelData();
+    const savedUser = localStorage.getItem("user");
+    if (!savedUser) return;
+
+    try {
+      const parsed = JSON.parse(savedUser);
+      setUserId(parsed.id || parsed._id || null);
+    } catch {
+      setUserId(null);
+    }
+  }, []);
+
+  const fetchDuelData = useCallback(
+    async (silent = false) => {
+      try {
+        const token = localStorage.getItem("terminal_token");
+        const res = await fetch(`${API_BASE_URL}/duo/status/${duelId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          router.push("/dashboard/challenges");
+          return;
+        }
+
+        const data = await res.json();
+        setDuel(data);
+
+        if (!silent) {
+          pushTerminal(`Duel status: ${String(data.status).toUpperCase()}`);
+        }
+
+        if (!challenge || challenge.id !== data.challenge_id) {
+          const challengeRes = await fetch(`${API_BASE_URL}/challenges/${data.challenge_id}`, {
+            cache: "no-store",
+          });
+
+          if (challengeRes.ok) {
+            const cData = await challengeRes.json();
+            setChallenge(cData);
+            if (!silent) {
+              pushTerminal(`Challenge loaded: ${cData.title}`);
+            }
+          }
+        }
+
+        if (data.status === "completed") {
+          pushTerminal("Duel completed. Redirecting to result...");
+          setGameState("finished");
+          router.push(`/dashboard/duo/${duelId}/result`);
+        }
+      } catch (err) {
+        console.error("Failed to fetch duel data", err);
+        if (!silent) {
+          pushTerminal("Failed to sync duel state.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [duelId, router, challenge, pushTerminal]
+  );
+
+  useEffect(() => {
+    fetchDuelData(false);
   }, [fetchDuelData]);
 
-  // Pre-duel countdown
+  useEffect(() => {
+    if (!duelId || loading) return;
+    const interval = setInterval(() => {
+      fetchDuelData(true);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [duelId, loading, fetchDuelData]);
+
   useEffect(() => {
     if (gameState === "counting" && !loading) {
       const timer = setInterval(() => {
@@ -68,50 +131,94 @@ export default function DuelRoomPage() {
           if (prev <= 1) {
             clearInterval(timer);
             setGameState("coding");
+            pushTerminal("Duel started. Begin coding.");
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
+
       return () => clearInterval(timer);
     }
-  }, [gameState, loading]);
+  }, [gameState, loading, pushTerminal]);
 
-  // Game timer logic
   useEffect(() => {
     if (gameState === "coding" && duel?.accepted_at) {
       const duration = (challenge?.duration || 30) * 60;
       const startTime = new Date(duel.accepted_at).getTime();
-      
+
       const timer = setInterval(() => {
         const now = Date.now();
         const elapsed = Math.floor((now - startTime) / 1000);
         const remaining = Math.max(0, duration - elapsed);
-        
+
         const mins = Math.floor(remaining / 60);
         const secs = remaining % 60;
         setTimeLeftLabel(`${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`);
-        
+
         if (remaining <= 0) {
           clearInterval(timer);
           setGameState("finished");
+          pushTerminal("Time is up. Redirecting to result...");
           router.push(`/dashboard/duo/${duelId}/result`);
         }
       }, 1000);
+
       return () => clearInterval(timer);
     }
-  }, [gameState, duel, challenge, duelId, router]);
+  }, [gameState, duel, challenge, duelId, router, pushTerminal]);
+
+  const isChallenger = useMemo(() => {
+    return !!userId && !!duel && duel.challenger_id === userId;
+  }, [userId, duel]);
+
+  const myScore = useMemo(() => {
+    if (!duel || !userId) return 0;
+    return isChallenger ? duel.challenger_score || 0 : duel.opponent_score || 0;
+  }, [duel, userId, isChallenger]);
+
+  const opponentScore = useMemo(() => {
+    if (!duel || !userId) return 0;
+    return isChallenger ? duel.opponent_score || 0 : duel.challenger_score || 0;
+  }, [duel, userId, isChallenger]);
+
+  const mySubmitted = useMemo(() => {
+    if (!duel || !userId) return false;
+    return isChallenger ? !!duel.challenger_submitted : !!duel.opponent_submitted;
+  }, [duel, userId, isChallenger]);
+
+  const opponentSubmitted = useMemo(() => {
+    if (!duel || !userId) return false;
+    return isChallenger ? !!duel.opponent_submitted : !!duel.challenger_submitted;
+  }, [duel, userId, isChallenger]);
+
+  const myProgress = Math.max(0, Math.min(100, mySubmitted ? myScore : 0));
+  const opponentProgress = Math.max(0, Math.min(100, opponentSubmitted ? opponentScore : 0));
 
   const handleRun = async () => {
     setRunning(true);
-    // ... logic for running code ...
-    setRunning(false);
+    pushTerminal(`Running ${language} solution...`);
+
+    setTimeout(() => {
+      setRunning(false);
+      pushTerminal("Run completed.");
+    }, 700);
   };
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    pushTerminal("Submitting duel score...");
+
     try {
       const token = localStorage.getItem("terminal_token");
+
+      const simulatedScore =
+        challenge?.id === 1
+          ? 60
+          : lastScore !== null
+          ? lastScore
+          : 60;
+
       const res = await fetch(`${API_BASE_URL}/duo/submit/${duelId}`, {
         method: "POST",
         headers: {
@@ -119,23 +226,42 @@ export default function DuelRoomPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          score: 100, // In a real app, this would be based on test cases
+          score: simulatedScore,
         }),
       });
 
-      if (res.ok) {
+      if (!res.ok) {
+        pushTerminal("Submission failed.");
+        return;
+      }
+
+      const data = await res.json();
+      setLastScore(simulatedScore);
+      pushTerminal(`Score submitted: ${simulatedScore}%`);
+
+      await fetchDuelData(true);
+
+      if (data.status === "completed") {
+        pushTerminal("Both players submitted. Opening result...");
         router.push(`/dashboard/duo/${duelId}/result`);
       } else {
-        console.error("Failed to submit duel result");
+        pushTerminal("Waiting for opponent submission...");
       }
     } catch (err) {
       console.error("Submission error:", err);
+      pushTerminal("Submission error occurred.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-[#050507] flex items-center justify-center text-white">Loading duel...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050507] flex items-center justify-center text-white">
+        Loading duel...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050507] text-white flex flex-col">
@@ -156,7 +282,9 @@ export default function DuelRoomPage() {
             >
               {preDuelCountdown}
             </motion.div>
-            <p className="text-xl font-black uppercase tracking-[0.5em] text-gray-500 mt-10">Prepare for Battle</p>
+            <p className="text-xl font-black uppercase tracking-[0.5em] text-gray-500 mt-10">
+              Prepare for Battle
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -181,7 +309,10 @@ export default function DuelRoomPage() {
           code={code}
           onCodeChange={setCode}
           onRun={handleRun}
-          onReset={() => setCode("")}
+          onReset={() => {
+            setCode("");
+            pushTerminal("Editor reset.");
+          }}
           onSubmit={handleSubmit}
           onReplay={() => {}}
           terminalHistory={terminalHistory}
@@ -197,18 +328,28 @@ export default function DuelRoomPage() {
         />
       </main>
 
-      {/* Opponent Progress Bar (Bottom) */}
       <footer className="h-16 border-t border-white/10 bg-[#0a0a0a] px-8 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="h-2 w-32 rounded-full bg-white/5 overflow-hidden">
-            <div className="h-full bg-blue-500 w-1/2 animate-pulse" />
+            <div
+              className="h-full bg-blue-500 transition-all duration-500"
+              style={{ width: `${opponentProgress}%` }}
+            />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Opponent Coding...</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
+            {opponentSubmitted ? `Opponent ${opponentScore}%` : "Opponent Coding..."}
+          </span>
         </div>
+
         <div className="flex items-center gap-4">
-          <span className="text-[10px] font-black uppercase tracking-widest text-pink-400">Your Progress</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-pink-400">
+            {mySubmitted ? `Your Progress ${myScore}%` : "Your Progress"}
+          </span>
           <div className="h-2 w-32 rounded-full bg-white/5 overflow-hidden">
-            <div className="h-full bg-pink-500 w-[10%]" />
+            <div
+              className="h-full bg-pink-500 transition-all duration-500"
+              style={{ width: `${myProgress}%` }}
+            />
           </div>
         </div>
       </footer>
