@@ -205,20 +205,22 @@ func GetDuelStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":                   duel.ID,
-		"challenger_id":        duel.Challenger,
-		"opponent_id":          duel.Opponent,
-		"challenge_id":         duel.ChallengeID,
-		"status":               duel.Status,
-		"created_at":           duel.CreatedAt,
-		"expires_at":           duel.ExpiresAt,
-		"accepted_at":          duel.AcceptedAt,
-		"completed_at":         duel.CompletedAt,
-		"winner_id":            duel.WinnerID,
-		"challenger_submitted": duel.ChallengerSubmitted,
-		"opponent_submitted":   duel.OpponentSubmitted,
-		"challenger_score":     duel.ChallengerScore,
-		"opponent_score":       duel.OpponentScore,
+		"id":                       duel.ID,
+		"challenger_id":            duel.Challenger,
+		"opponent_id":              duel.Opponent,
+		"challenge_id":             duel.ChallengeID,
+		"status":                   duel.Status,
+		"created_at":               duel.CreatedAt,
+		"expires_at":               duel.ExpiresAt,
+		"accepted_at":              duel.AcceptedAt,
+		"completed_at":             duel.CompletedAt,
+		"winner_id":                duel.WinnerID,
+		"challenger_submitted":     duel.ChallengerSubmitted,
+		"opponent_submitted":       duel.OpponentSubmitted,
+		"challenger_score":         duel.ChallengerScore,
+		"opponent_score":           duel.OpponentScore,
+		"challenger_live_progress": duel.ChallengerLiveProgress,
+		"opponent_live_progress":   duel.OpponentLiveProgress,
 	})
 }
 
@@ -439,4 +441,64 @@ func SubmitDuel(c *gin.Context) {
 		"challenger_submitted": duel.ChallengerSubmitted,
 		"opponent_submitted":   duel.OpponentSubmitted,
 	})
+}
+
+// UpdateLiveProgress updates the live progress for a player during duel (without final submission)
+func UpdateLiveProgress(c *gin.Context) {
+	duelID := c.Param("duel_id")
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := userIDRaw.(string)
+
+	var req struct {
+		Progress int `json:"progress"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	duelsCollection := database.GetCollection("duels")
+	var duel models.Duel
+	err := duelsCollection.FindOne(ctx, bson.M{"_id": duelID}).Decode(&duel)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Duel not found"})
+		return
+	}
+
+	if duel.Status != models.DuelAccepted {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Duel is not active"})
+		return
+	}
+
+	update := bson.M{}
+	isChallenger := duel.Challenger == userID
+	isOpponent := duel.Opponent == userID
+
+	if isChallenger {
+		update["challenger_live_progress"] = req.Progress
+	} else if isOpponent {
+		update["opponent_live_progress"] = req.Progress
+	} else {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Not a participant"})
+		return
+	}
+
+	_, err = duelsCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": duelID},
+		bson.M{"$set": update},
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update progress"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Progress updated"})
 }

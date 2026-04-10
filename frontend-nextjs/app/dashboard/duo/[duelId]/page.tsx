@@ -209,11 +209,17 @@ useEffect(() => {
     return 0;
   }, [mySubmitted, myScore, lastScore, code.length]);
 
+  const opponentLiveProgress = useMemo(() => {
+    if (!duel) return 0;
+    return isChallenger ? (duel.opponent_live_progress || 0) : (duel.challenger_live_progress || 0);
+  }, [duel, isChallenger]);
+
   const opponentProgress = useMemo(() => {
     if (opponentSubmitted) return opponentScore;
     if (opponentScore > 0) return opponentScore;
+    if (opponentLiveProgress > 0) return opponentLiveProgress;
     return 0;
-  }, [opponentSubmitted, opponentScore]);
+  }, [opponentSubmitted, opponentScore, opponentLiveProgress]);
 
   const handleRun = async () => {
     if (!code.trim()) {
@@ -244,6 +250,15 @@ useEffect(() => {
         const runScore = runData.score || 0;
         setLastScore(runScore);
         pushTerminal(`Run complete: ${runScore}% (${runData.passed_tests || 0}/${runData.total_tests || 0} tests passed)`);
+        
+        await fetch(`${API_BASE_URL}/duo/progress/${duelId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ progress: runScore }),
+        });
       } else {
         pushTerminal("Run failed.");
       }

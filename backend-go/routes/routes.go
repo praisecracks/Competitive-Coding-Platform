@@ -77,6 +77,7 @@ func RegisterRoutes(r *gin.Engine) {
 			duo.POST("/accept/:duel_id", controllers.AcceptDuelInvite)
 			duo.POST("/decline/:duel_id", controllers.DeclineDuelInvite)
 			duo.POST("/submit/:duel_id", controllers.SubmitDuel)
+			duo.POST("/progress/:duel_id", controllers.UpdateLiveProgress)
 		}
 
 		// Notification routes
