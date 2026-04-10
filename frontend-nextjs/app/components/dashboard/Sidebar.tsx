@@ -567,7 +567,7 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                 Win Rate
               </p>
               <div className="mt-1 flex items-baseline gap-1.5">
-                <p className="text-xl font-bold text-white">{userData.winRate}%</p>
+                <p className="text-xl font-bold text-white">{Number(userData.winRate || 0).toFixed(1)}%</p>
               </div>
             </div>
           </div>
