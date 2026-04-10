@@ -77,8 +77,9 @@ export default function Notifications() {
   };
 
   const markInviteProcessed = (duelId: string) => {
-    processedInviteIdsRef.current.add(duelId);
-    removeNotification(`invite-${duelId}`);
+    const notificationId = `invite-${duelId}`;
+    processedInviteIdsRef.current.add(notificationId);
+    removeNotification(notificationId);
   };
 
   useEffect(() => {
@@ -131,7 +132,8 @@ export default function Notifications() {
           .filter((invite: any) => {
             const duelId = String(invite.id || "");
             if (!duelId) return false;
-            if (processedInviteIdsRef.current.has(duelId)) return false;
+            const notificationId = `invite-${duelId}`;
+            if (processedInviteIdsRef.current.has(notificationId)) return false;
             if (processingDuelIds[duelId]) return false;
             return true;
           })
@@ -452,11 +454,11 @@ export default function Notifications() {
               <div className="border-t border-white/10 p-3 text-center">
                 <button
                   onClick={() => {
-                    const duelIds = notifications
-                      .filter((n) => n.duelId)
-                      .map((n) => n.duelId!);
-
-                    duelIds.forEach((id) => processedInviteIdsRef.current.add(id));
+                    notifications.forEach((n) => {
+                      if (n.duelId) {
+                        processedInviteIdsRef.current.add(`invite-${n.duelId}`);
+                      }
+                    });
                     setNotifications([]);
                     setIsOpen(false);
                   }}
