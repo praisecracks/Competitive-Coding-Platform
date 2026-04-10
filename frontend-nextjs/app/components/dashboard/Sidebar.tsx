@@ -204,8 +204,8 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
               ? stats.currentStreak
               : nextUser.currentStreak,
           duelsWon:
-            typeof stats.duelsWon === "number"
-              ? stats.duelsWon
+            typeof stats.victories === "number"
+              ? stats.victories
               : nextUser.duelsWon,
           winRate:
             typeof stats.winRate === "number"

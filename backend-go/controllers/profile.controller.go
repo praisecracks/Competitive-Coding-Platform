@@ -546,6 +546,35 @@ func GetDashboardStats(c *gin.Context) {
 		passRate = (float64(passedSubmissionCount) / float64(len(submissions))) * 100
 	}
 
+	duelsCollection := database.GetCollection("duels")
+
+	totalDuels := 0
+	victories := 0
+
+	duelCursor, err := duelsCollection.Find(ctx, bson.M{
+		"status": models.DuelCompleted,
+		"$or": []bson.M{
+			{"challenger_id": userID},
+			{"opponent_id": userID},
+		},
+	})
+	if err == nil {
+		defer duelCursor.Close(ctx)
+		var completedDuels []models.Duel
+		_ = duelCursor.All(ctx, &completedDuels)
+		totalDuels = len(completedDuels)
+		for _, duel := range completedDuels {
+			if duel.WinnerID == userID {
+				victories++
+			}
+		}
+	}
+
+	winRate := 0.0
+	if totalDuels > 0 {
+		winRate = (float64(victories) / float64(totalDuels)) * 100
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"totalSolved":       len(solvedMap),
 		"currentStreak":     calculateCurrentStreak(submissions),
@@ -562,6 +591,8 @@ func GetDashboardStats(c *gin.Context) {
 		"totalMedium":       mediumTotal,
 		"totalHard":         hardTotal,
 		"recentSubmissions": recentSubmissions,
+		"victories":         victories,
+		"winRate":           winRate,
 	})
 }
 
