@@ -192,32 +192,95 @@ export default function DuelRoomPage() {
     return isChallenger ? !!duel.opponent_submitted : !!duel.challenger_submitted;
   }, [duel, userId, isChallenger]);
 
-  const myProgress = Math.max(0, Math.min(100, mySubmitted ? myScore : 0));
-  const opponentProgress = Math.max(0, Math.min(100, opponentSubmitted ? opponentScore : 0));
+  const myProgress = useMemo(() => {
+    if (mySubmitted) return myScore;
+    if (lastScore !== null && lastScore > 0) return lastScore;
+    if (code.length > 10) return Math.min(10, code.length / 50);
+    return 0;
+  }, [mySubmitted, myScore, lastScore, code.length]);
+
+  const opponentProgress = useMemo(() => {
+    if (opponentSubmitted) return opponentScore;
+    return 0;
+  }, [opponentSubmitted, opponentScore]);
 
   const handleRun = async () => {
+    if (!code.trim()) {
+      pushTerminal("No code to run.");
+      return;
+    }
+
     setRunning(true);
     pushTerminal(`Running ${language} solution...`);
 
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem("terminal_token");
+      const runRes = await fetch(`${API_BASE_URL}/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          challenge_id: challenge?.id,
+          language: language,
+          code: code,
+        }),
+      });
+
+      if (runRes.ok) {
+        const runData = await runRes.json();
+        const runScore = runData.score || 0;
+        setLastScore(runScore);
+        pushTerminal(`Run complete: ${runScore}% (${runData.passed_tests || 0}/${runData.total_tests || 0} tests passed)`);
+      } else {
+        pushTerminal("Run failed.");
+      }
+    } catch (err) {
+      console.error("Run error:", err);
+      pushTerminal("Run error occurred.");
+    } finally {
       setRunning(false);
-      pushTerminal("Run completed.");
-    }, 700);
+    }
   };
 
   const handleSubmit = async () => {
+    if (!code.trim()) {
+      pushTerminal("No code to submit.");
+      setSubmitting(false);
+      return;
+    }
+
     setSubmitting(true);
-    pushTerminal("Submitting duel score...");
+    pushTerminal("Evaluating solution...");
 
     try {
       const token = localStorage.getItem("terminal_token");
 
-      const simulatedScore =
-        challenge?.id === 1
-          ? 60
-          : lastScore !== null
-          ? lastScore
-          : 60;
+      const evalRes = await fetch(`${API_BASE_URL}/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          challenge_id: challenge?.id,
+          language: language,
+          code: code,
+        }),
+      });
+
+      let realScore = 0;
+      if (evalRes.ok) {
+        const evalData = await evalRes.json();
+        realScore = evalData.score || 0;
+        pushTerminal(`Evaluated: ${realScore}% (${evalData.passed_tests || 0}/${evalData.total_tests || 0} passed)`);
+      } else {
+        pushTerminal("Evaluation failed. Using code activity.");
+        realScore = Math.min(100, Math.floor(code.length / 20));
+      }
+
+      setLastScore(realScore);
 
       const res = await fetch(`${API_BASE_URL}/duo/submit/${duelId}`, {
         method: "POST",
@@ -226,7 +289,7 @@ export default function DuelRoomPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          score: simulatedScore,
+          score: realScore,
         }),
       });
 
@@ -236,8 +299,8 @@ export default function DuelRoomPage() {
       }
 
       const data = await res.json();
-      setLastScore(simulatedScore);
-      pushTerminal(`Score submitted: ${simulatedScore}%`);
+      setLastScore(realScore);
+      pushTerminal(`Duel score submitted: ${realScore}%`);
 
       await fetchDuelData(true);
 
