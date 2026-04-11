@@ -12,6 +12,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ChallengeWorkspace from "@/app/components/dashboard/challenges/ChallengeWorkspace";
 import ChallengeHeader from "@/app/components/dashboard/challenges/ChallengeHeader";
 import type { Language } from "@/app/components/dashboard/challenges/CodeEditor";
+import { analyzeThinking, AnalyzerResult } from "@/lib/analyzer/thinkingAnalyzer";
 
 export type StarterCodeMap = {
   javascript?: string;
@@ -578,6 +579,11 @@ function ChallengeDetail() {
     errorCode: undefined,
   });
 
+  const [runCount, setRunCount] = useState(0);
+  const [sessionStart] = useState(() => Date.now());
+  const [analyzerResult, setAnalyzerResult] = useState<AnalyzerResult | null>(null);
+  const [showAnalyzer, setShowAnalyzer] = useState(false);
+
   const languageInitializedRef = useRef(false);
   const timeoutHandledRef = useRef(false);
 
@@ -988,6 +994,24 @@ function ChallengeDetail() {
         addTerminalLine(`Execution time: ${executionTime}`);
       }
 
+      const timeSpent = Math.floor((Date.now() - sessionStart) / 1000);
+      const result = analyzeThinking({
+        code,
+        runCount,
+        timeSpent,
+        score: 0,
+        challenge: {
+          id: String(challenge.id),
+          title: challenge.title,
+          tags: challenge.tags || [],
+          expectedPatterns: [],
+          commonMistakes: [],
+        },
+      });
+      setAnalyzerResult(result);
+      setShowAnalyzer(true);
+      setRunCount((prev) => prev + 1);
+
       addTerminalLine(
         "Run completed. Mission remains active until a valid submission is accepted."
       );
@@ -1111,6 +1135,22 @@ function ChallengeDetail() {
         `Test result: ${normalized.passedTests}/${normalized.totalTests} passed.`
       );
       addTerminalLine(`Score awarded: ${normalized.score}%`);
+
+      const timeSpent = Math.floor((Date.now() - sessionStart) / 1000);
+      const result = analyzeThinking({
+        code,
+        runCount,
+        timeSpent,
+        score: normalized.score,
+        challenge: {
+          id: String(challenge.id),
+          title: challenge.title,
+          tags: challenge.tags || [],
+          expectedPatterns: [],
+          commonMistakes: [],
+        },
+      });
+      setAnalyzerResult(result);
 
       if (normalized.status === "accepted") {
         setMissionState("completed");
@@ -1276,6 +1316,9 @@ function ChallengeDetail() {
           onSubmit={handleSubmitCode}
           onReset={handleResetCode}
           onReplay={() => resetMission({ resetCode: true })}
+          analyzerResult={analyzerResult}
+          showAnalyzer={showAnalyzer}
+          onToggleAnalyzer={() => setShowAnalyzer(!showAnalyzer)}
         />
 
         <ResultModal

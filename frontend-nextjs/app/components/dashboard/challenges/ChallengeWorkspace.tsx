@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft, ChevronRight, X, Brain } from "lucide-react";
 import CodeEditor, { type Language } from "./CodeEditor";
 import SubmissionPanel from "./SubmissionPanel";
 import TerminalConsole from "./TerminalConsole";
@@ -45,6 +46,17 @@ type Props = {
   isEditorLocked: boolean;
   editorLockMessage: string;
   timeLeftLabel: string;
+  analyzerResult?: {
+    insight: string;
+    pattern: string;
+    strengths: string[];
+    gaps: string[];
+    nextHint: string;
+    complexity: { time: string; space: string };
+    progress: { exploration: number; optimization: number; completion: number };
+  } | null;
+  showAnalyzer?: boolean;
+  onToggleAnalyzer?: () => void;
 };
 
 type GuidanceCard = {
@@ -129,6 +141,9 @@ export default function ChallengeWorkspace({
   isEditorLocked,
   editorLockMessage,
   timeLeftLabel,
+  analyzerResult,
+  showAnalyzer = false,
+  onToggleAnalyzer,
 }: Props) {
   const fallbackExamples = buildFallbackExamples(challenge);
   const fallbackConstraints = buildFallbackConstraints(challenge);
@@ -289,9 +304,111 @@ export default function ChallengeWorkspace({
     );
   };
 
+  const renderAnalyzerPanel = () => {
+    if (!analyzerResult) return null;
+    
+    return (
+      <>
+        <div className="hidden xl:block h-full">
+          <div className="flex flex-col overflow-hidden rounded-2xl border border-purple-500/20 bg-[#0d0d14] h-full">
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wider text-purple-300">Thinking Analyzer</span>
+                  <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] text-purple-300">{analyzerResult.pattern}</span>
+                </div>
+                <button onClick={onToggleAnalyzer} className="text-purple-400 hover:text-purple-200">
+                  <X size={16} />
+                </button>
+              </div>
+              <AnalyzerContent result={analyzerResult} />
+            </div>
+          </div>
+        </div>
+
+{showAnalyzer && (
+          <div className="fixed inset-0 z-[9998] flex items-end justify-center xl:hidden">
+            <div className="absolute inset-0 bg-black/50" onClick={(e) => {
+              e.preventDefault();
+              onToggleAnalyzer?.();
+            }} />
+            <div className="relative max-h-[75vh] w-full overflow-y-auto rounded-t-2xl border border-purple-500/20 bg-[#0d0d14] p-4 animate-in slide-in-from-bottom duration-300">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wider text-purple-300">Thinking Analyzer</span>
+                  <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] text-purple-300">{analyzerResult.pattern}</span>
+                </div>
+                <button 
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onToggleAnalyzer?.();
+                  }} 
+                  className="rounded-full border border-white/20 bg-white/10 p-2 text-gray-300"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <AnalyzerContent result={analyzerResult} />
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  const AnalyzerContent = ({ result }: { result: NonNullable<typeof analyzerResult> }) => (
+    <div className="space-y-4">
+      <div>
+        <p className="text-[10px] uppercase tracking-wider text-gray-500">Insight</p>
+        <p className="mt-1 text-sm text-gray-300">{result.insight}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-gray-500">Complexity</p>
+          <p className="mt-1 text-sm text-gray-300">
+            Time: <span className="text-pink-400">{result.complexity.time}</span><br />
+            Space: <span className="text-pink-400">{result.complexity.space}</span>
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-gray-500">Progress</p>
+          <div className="mt-1 space-y-1 text-xs">
+            <div className="flex items-center justify-between"><span className="text-gray-400">Exploration</span><span className="text-emerald-400">{result.progress.exploration}%</span></div>
+            <div className="flex items-center justify-between"><span className="text-gray-400">Optimization</span><span className="text-blue-400">{result.progress.optimization}%</span></div>
+            <div className="flex items-center justify-between"><span className="text-gray-400">Completion</span><span className="text-purple-400">{result.progress.completion}%</span></div>
+          </div>
+        </div>
+      </div>
+      {result.strengths.length > 0 && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-gray-500">Strengths</p>
+          <ul className="mt-1 space-y-1">
+            {result.strengths.slice(0, 2).map((s: string, i: number) => <li key={i} className="text-xs text-emerald-300">+ {s}</li>)}
+          </ul>
+        </div>
+      )}
+      {result.gaps.length > 0 && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-gray-500">Gaps</p>
+          <ul className="mt-1 space-y-1">
+            {result.gaps.slice(0, 2).map((g: string, i: number) => <li key={i} className="text-xs text-rose-300">• {g}</li>)}
+          </ul>
+        </div>
+      )}
+      <div className="rounded-xl border border-purple-500/20 bg-purple-500/[0.05] p-3">
+        <p className="text-[10px] uppercase tracking-wider text-gray-500">Next Hint</p>
+        <p className="mt-1 text-sm text-purple-200">{result.nextHint}</p>
+      </div>
+    </div>
+  );
+
+  const hasAnalyzer = !!analyzerResult;
+
   return (
     <div className="space-y-3 sm:space-y-4">
-      <div className="grid gap-4 sm:gap-5 xl:grid-cols-[0.78fr_1.22fr]">
+      <div className={`grid gap-4 sm:gap-5 ${showAnalyzer && hasAnalyzer ? 'xl:grid-cols-[0.78fr_1fr_0.38fr]' : 'xl:grid-cols-[0.78fr_1fr]'}`}>
         <section className="min-h-[160px] xl:min-h-[200px]">
           {renderInfoPanel()}
         </section>
@@ -309,8 +426,52 @@ export default function ChallengeWorkspace({
             isSubmitting={submitting}
             isLocked={isEditorLocked}
             lockMessage={editorLockMessage}
+            hasAnalyzer={hasAnalyzer}
+            showAnalyzer={showAnalyzer}
+            onToggleAnalyzer={onToggleAnalyzer}
           />
         </section>
+
+        {hasAnalyzer && showAnalyzer && (
+          <section className="hidden xl:block">
+            {renderAnalyzerPanel()}
+          </section>
+        )}
+
+        {hasAnalyzer && showAnalyzer && (
+          <div className="fixed inset-0 z-[9998] flex items-end justify-center xl:hidden">
+            <div className="absolute inset-0 bg-black/60" onClick={() => onToggleAnalyzer?.()} />
+            <div className="relative max-h-[70vh] w-full overflow-y-auto rounded-t-2xl border border-purple-500/30 bg-[#0d0d14] p-4 animate-in slide-in-from-bottom duration-200">
+              <div className="mb-4 flex items-center justify-between border-b border-purple-500/20 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-purple-300">Thinking Analyzer</span>
+                  <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] text-purple-300">{analyzerResult.pattern}</span>
+                </div>
+                <button type="button" onClick={() => onToggleAnalyzer?.()} className="rounded-full bg-white/10 p-2 text-gray-300">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="max-h-[50vh] overflow-y-auto">
+                <AnalyzerContent result={analyzerResult} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {hasAnalyzer && !showAnalyzer && (
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleAnalyzer?.();
+            }} 
+            className="fixed bottom-24 right-4 z-[9999] flex items-center justify-center rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-500 w-12 h-12 md:hidden lg:hidden xl:hidden cursor-pointer"
+            aria-label="Open Thinking Analyzer"
+          >
+            <Brain size={22} />
+          </button>
+        )}
       </div>
 
       <section className="min-w-0">

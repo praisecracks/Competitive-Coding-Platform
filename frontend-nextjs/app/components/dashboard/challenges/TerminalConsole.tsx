@@ -378,7 +378,11 @@ export default function TerminalConsole({
           </button>
         )}
 
-        {terminalContent}
+        <div className={!isDesktop ? "overflow-hidden flex-1" : "flex-1"}>
+          <div className={!isDesktop ? "h-full overflow-y-auto" : ""}>
+            {terminalContent}
+          </div>
+        </div>
       </div>
 
       {expanded && (

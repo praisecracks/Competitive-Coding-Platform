@@ -271,7 +271,7 @@ export default function AnalyticsPage() {
               <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
                 <div
                   className="relative min-w-[300px] w-full sm:min-w-0"
-                  style={{ height: "180px", minHeight: "150px" }}
+                  style={{ height: "180px", minHeight: "150px", overflow: "visible" }}
                 >
                   <div className="absolute inset-0 flex items-end justify-between gap-1 sm:gap-2 md:gap-3">
                     {data.weeklyProgress.map((item, i) => {
@@ -281,30 +281,28 @@ export default function AnalyticsPage() {
                       );
                       const heightPercent = (item.value / maxValue) * 100;
 
-                      return (
+return (
                         <div
                           key={i}
-                          className="group relative flex h-full flex-1 flex-col items-center"
+                          className="group relative flex h-full flex-1 flex-col items-center justify-end px-1 cursor-pointer"
                         >
-                          <div className="absolute -top-10 left-1/2 z-10 -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100">
-                            <span className="whitespace-nowrap rounded-md bg-white/10 px-2 py-1 text-[9px] text-white backdrop-blur-md">
-                              {item.value}{" "}
-                              {item.value === 1 ? "attempt" : "attempts"}
+                          <div className="absolute left-1/2 top-30 z-30 -translate-x-1/2 -translate-y-full opacity-0 transition-all duration-200 group-hover:opacity-100">
+                            <span className="whitespace-nowrap rounded-md border border-purple-500/30 bg-[#141019] px-2.5 py-1.5 text-xs font-semibold text-white shadow-lg">
+                              {item.value} {item.value === 1 ? "attempt" : "attempts"}
                             </span>
                           </div>
 
-                          <div className="flex h-full w-full flex-col items-center justify-end">
-                            <motion.div
-                              initial={{ height: 0 }}
-                              animate={{ height: `${Math.max(heightPercent, 8)}%` }}
-                              transition={{ delay: i * 0.05, duration: 0.6 }}
-                              className="w-6 rounded-t-lg bg-gradient-to-t from-pink-500/30 via-pink-500/50 to-purple-500 shadow-lg shadow-pink-500/20 transition-all group-hover:brightness-125 group-hover:shadow-pink-500/40 sm:w-8 md:w-10"
-                            />
-                            <span className="mt-3 text-xs font-medium text-gray-500">
-                              {item.day}
-                            </span>
-                          </div>
-                        </div>
+                        <motion.div
+                          initial={{ height: 0 }}
+                          animate={{ height: `${Math.max(heightPercent, 8)}%` }}
+                          transition={{ delay: i * 0.05, duration: 0.6 }}
+                          className="w-full max-w-[40px] rounded-t-lg bg-gradient-to-t from-pink-500/30 via-pink-500/50 to-purple-500 shadow-lg shadow-pink-500/20 transition-all duration-200 group-hover:scale-105 group-hover:brightness-125 group-hover:shadow-pink-500/40"
+                        />
+
+                        <span className="mt-3 text-xs font-medium text-gray-500 transition-colors group-hover:text-white">
+                          {item.day}
+                        </span>
+                      </div>
                       );
                     })}
                   </div>
@@ -505,7 +503,7 @@ function StatCard({ label, value, subtext, icon, trend }: StatCardProps) {
             {value}
           </p>
         </div>
-
+value
         {icon && (
           <div className="shrink-0 text-gray-600 transition group-hover:text-pink-500/50">
             {icon}

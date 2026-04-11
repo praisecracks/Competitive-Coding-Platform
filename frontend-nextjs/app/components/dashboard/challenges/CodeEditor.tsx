@@ -17,6 +17,9 @@ type Props = {
   isSubmitting?: boolean;
   isLocked?: boolean;
   lockMessage?: string;
+  hasAnalyzer?: boolean;
+  showAnalyzer?: boolean;
+  onToggleAnalyzer?: () => void;
 };
 
 export default function CodeEditor({
@@ -31,6 +34,9 @@ export default function CodeEditor({
   isSubmitting = false,
   isLocked = false,
   lockMessage = "Editor is locked for this mission.",
+  hasAnalyzer = false,
+  showAnalyzer = false,
+  onToggleAnalyzer,
 }: Props) {
   const stats = useMemo(() => {
     const safeCode = typeof code === "string" ? code : "";
@@ -72,7 +78,7 @@ export default function CodeEditor({
   }, [isLocked, isSubmitting, isRunning]);
 
   return (
-    <div className="flex h-full min-h-[280px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] lg:min-h-[400px]">
+    <div className="flex h-full min-h-[280px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] lg:min-h-[300px]">
       <div className="border-b border-white/10 bg-[#0d0d12] px-3 py-3 sm:px-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
@@ -134,6 +140,20 @@ export default function CodeEditor({
             >
               {isLocked ? "Locked" : isRunning ? "Running..." : "Run"}
             </button>
+
+            {hasAnalyzer && (
+              <button
+                onClick={onToggleAnalyzer}
+                className={`rounded-lg border px-3 py-2 text-sm transition ${
+                  showAnalyzer
+                    ? "border-purple-500 bg-purple-500/20 text-purple-200"
+                    : "border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20"
+                }`}
+                type="button"
+              >
+                {showAnalyzer ? "Hide Analyzer" : "Analyzer"}
+              </button>
+            )}
           </div>
         </div>
       </div>

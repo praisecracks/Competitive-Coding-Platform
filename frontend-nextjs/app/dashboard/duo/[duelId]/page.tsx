@@ -73,6 +73,17 @@ useEffect(() => {
     async (silent = false) => {
       try {
         const token = localStorage.getItem("terminal_token");
+        
+        const profileRes = await fetch(`${API_BASE_URL}/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        let currentUserId: string | null = null;
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          currentUserId = profileData.id || profileData._id || null;
+        }
+        
         const res = await fetch(`${API_BASE_URL}/duo/status/${duelId}`, {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
@@ -84,6 +95,27 @@ useEffect(() => {
         }
 
         const data = await res.json();
+        
+        const isParticipant = data.challenger_id === currentUserId || data.opponent_id === currentUserId;
+        if (!isParticipant) {
+          router.push("/dashboard/challenges");
+          return;
+        }
+        
+        if (data.status !== "accepted" && data.status !== "pending") {
+          if (data.status === "completed") {
+            router.push(`/dashboard/duo/${duelId}/result`);
+          } else {
+            router.push("/dashboard/challenges");
+          }
+          return;
+        }
+
+        if (data.status === "declined" || data.status === "expired") {
+          router.push("/dashboard/challenges");
+          return;
+        }
+
         setDuel(data);
 
         if (!silent) {
