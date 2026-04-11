@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   AcademicCapIcon,
   ChartBarIcon,
@@ -11,6 +11,8 @@ import {
   ClockIcon,
   ChartPieIcon,
   FireIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 
 const featureCards = [
@@ -19,6 +21,8 @@ const featureCards = [
     label: "Learning System",
     description:
       "Structured missions, intelligent hints, and clear challenge flow help users build real coding confidence over time.",
+    moreDetails:
+      "Progress through carefully curated challenges that adapt to your skill level. Get real-time hints when stuck and track your mastery with detailed progress analytics.",
     icon: AcademicCapIcon,
     accent: "from-cyan-500/15 to-blue-500/15",
     border: "hover:border-cyan-400/25",
@@ -29,6 +33,8 @@ const featureCards = [
     label: "Performance Intel",
     description:
       "Post-challenge breakdowns highlight mistakes, strengths, and better paths for improvement after every mission.",
+    moreDetails:
+      "After each challenge, receive a comprehensive report analyzing your approach, time complexity, and providing actionable suggestions for improvement.",
     icon: ChartBarIcon,
     accent: "from-pink-500/15 to-purple-500/15",
     border: "hover:border-pink-500/25",
@@ -39,6 +45,8 @@ const featureCards = [
     label: "Review Flow",
     description:
       "Revisit your mission step by step to understand how you solved, where you slowed down, and what to improve next.",
+    moreDetails:
+      "Watch your solution play back in real-time. Identify bottlenecks, compare with optimal solutions, and learn from your mistakes.",
     icon: ArrowPathRoundedSquareIcon,
     accent: "from-amber-500/15 to-orange-500/15",
     border: "hover:border-amber-400/25",
@@ -49,6 +57,8 @@ const featureCards = [
     label: "Competitive Layer",
     description:
       "Competitive coding sessions sharpen speed, confidence, and decision-making under pressure.",
+    moreDetails:
+      "Compete head-to-head in real-time coding battles. Climb the ranks, earn badges, and prove your coding prowess against developers worldwide.",
     icon: TrophyIcon,
     accent: "from-emerald-500/15 to-teal-500/15",
     border: "hover:border-emerald-400/25",
@@ -231,6 +241,29 @@ function FeaturePreview({ type }: { type: string }) {
 }
 
 export default function FeatureCardsGrid() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const goToPrevious = useCallback(() => {
+    setCurrentIndex((prev) => (prev === 0 ? featureCards.length - 1 : prev - 1));
+  }, []);
+
+  const goToNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev === featureCards.length - 1 ? 0 : prev + 1));
+  }, []);
+
+  useEffect(() => {
+    if (isPaused || isHovered) return;
+    const interval = setInterval(() => {
+      goToNext();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isPaused, isHovered, goToNext]);
+
+  const currentFeature = featureCards[currentIndex];
+  const Icon = currentFeature.icon;
+
   return (
     <div className="mx-auto mt-12 max-w-5xl">
       <div className="mb-8 text-center">
@@ -238,9 +271,9 @@ export default function FeatureCardsGrid() {
           What the platform offers
         </p>
 
-        <h3 className="text-[1.85rem] font-black tracking-[-0.05em] text-white sm:text-[2.15rem]">
+        <h3 className="text-[1.85rem] font-black tracking-[-0.05em] text-gray-600 sm:text-[2.15rem]">
           Product features designed for
-          <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-gray-500 to-gray-400 bg-clip-text text-transparent">
             {" "}real coding progress
           </span>
         </h3>
@@ -251,50 +284,89 @@ export default function FeatureCardsGrid() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {featureCards.map((feature, index) => {
-          const Icon = feature.icon;
+      <div 
+        className="relative"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <button
+          onClick={goToPrevious}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          className="absolute left-0 top-1/2 z-20 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-black/70 backdrop-blur-xl transition-all duration-300 hover:scale-110 hover:border-pink-500/50 hover:bg-gradient-to-r hover:from-pink-500/20 hover:to-purple-500/20"
+          aria-label="Previous feature"
+        >
+          <ChevronLeftIcon className="h-5 w-5 text-gray-300 transition-all duration-300 group-hover:text-white" />
+        </button>
 
-          return (
+        <button
+          onClick={goToNext}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          className="absolute right-0 top-1/2 z-20 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-black/70 backdrop-blur-xl transition-all duration-300 hover:scale-110 hover:border-pink-500/50 hover:bg-gradient-to-r hover:from-pink-500/20 hover:to-purple-500/20"
+          aria-label="Next feature"
+        >
+          <ChevronRightIcon className="h-5 w-5 text-gray-300 transition-all duration-300 group-hover:text-white" />
+        </button>
+
+        <div className="overflow-hidden px-14">
+          <AnimatePresence mode="wait">
             <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.18 }}
-              transition={{ duration: 0.4, delay: index * 0.05 }}
-              whileHover={{ y: -3 }}
-              className={`group relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))] p-4 shadow-[0_12px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl transition-all duration-300 ${feature.border} hover:bg-white/[0.045] sm:p-5`}
+              key={currentIndex}
+              initial={{ opacity: 0, x: 80 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -80 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))] p-4 shadow-[0_12px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:p-5"
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
             >
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
               <div
-                className={`absolute right-0 top-0 h-24 w-24 rounded-full bg-gradient-to-br ${feature.accent} blur-3xl opacity-80`}
+                className={`absolute right-0 top-0 h-24 w-24 rounded-full bg-gradient-to-br ${currentFeature.accent} blur-3xl opacity-80`}
               />
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: isHovered ? 1 : 0 }}
+                transition={{ duration: 0.25 }}
+                className={`absolute inset-0 z-30 flex items-center justify-center rounded-[24px] bg-black/80 backdrop-blur-xl ${
+                  isHovered ? "pointer-events-auto" : "pointer-events-none"
+                }`}
+              >
+                <div className="max-w-sm px-6 text-center">
+                  <p className="text-sm font-medium leading-relaxed text-white">
+                    {currentFeature.moreDetails}
+                  </p>
+                </div>
+              </motion.div>
 
               <div className="relative z-10">
                 <div className="mb-3.5 flex items-start justify-between gap-4">
                   <div>
                     <p className="mb-2 text-[9px] font-semibold uppercase tracking-[0.22em] text-pink-400">
-                      {feature.label}
+                      {currentFeature.label}
                     </p>
 
                     <h4 className="text-[1.2rem] font-black tracking-tight text-white sm:text-[1.35rem]">
-                      {feature.title}
+                      {currentFeature.title}
                     </h4>
+                    <div className="mt-2 h-px w-12 bg-gradient-to-r from-pink-500 to-transparent" />
                   </div>
 
                   <div
-                    className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br ${feature.accent}`}
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br ${currentFeature.accent}`}
                   >
                     <Icon className="h-5 w-5 text-white" />
                   </div>
                 </div>
 
                 <p className="max-w-[30rem] text-sm leading-6 text-gray-400">
-                  {feature.description}
+                  {currentFeature.description}
                 </p>
 
                 <div className="mt-5">
-                  <FeaturePreview type={feature.preview} />
+                  <FeaturePreview type={currentFeature.preview} />
                 </div>
 
                 <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-3.5">
@@ -310,8 +382,27 @@ export default function FeatureCardsGrid() {
                 </div>
               </div>
             </motion.div>
-          );
-        })}
+          </AnimatePresence>
+        </div>
+
+        <div className="mt-6 flex items-center justify-center gap-2">
+          {featureCards.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                setCurrentIndex(index);
+                setIsPaused(true);
+                setTimeout(() => setIsPaused(false), 100);
+              }}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                index === currentIndex
+                  ? "w-8 bg-gradient-to-r from-pink-500 to-purple-500"
+                  : "w-1.5 bg-white/20 hover:bg-white/40"
+              }`}
+              aria-label={`Go to feature ${index + 1}`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

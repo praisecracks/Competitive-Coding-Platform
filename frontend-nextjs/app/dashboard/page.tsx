@@ -207,7 +207,7 @@ export default function DashboardPage() {
     data.recentSubmissions.length > 0 ? "Continue Learning" : "Start Learning"
   }
   secondaryButtonLabel="Explore Challenges"
-  onActionClick={() => router.push("/dashboard/challenges")}
+  onActionClick={() => router.push("/dashboard/learning")}
   onSecondaryActionClick={() => router.push("/dashboard/challenges")}
 />
 

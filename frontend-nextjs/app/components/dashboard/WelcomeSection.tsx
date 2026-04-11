@@ -26,7 +26,7 @@ export default function WelcomeSection({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[#09090c] px-4 py-4 sm:px-5 sm:py-5 lg:rounded-[28px] lg:p-6 xl:p-7"
+      className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[#09090c] px-4 py-4 sm:px-5 sm:py-5 lg:rounded-[28px] lg:p-6 xl:p-4"
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_28%),radial-gradient(circle_at_left,rgba(236,72,153,0.08),transparent_24%)]" />
       <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:28px_28px]" />

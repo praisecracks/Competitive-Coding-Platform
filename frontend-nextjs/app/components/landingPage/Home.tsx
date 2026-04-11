@@ -11,6 +11,103 @@ import {
   useTransform,
 } from "framer-motion";
 
+const credibilityLogos = [
+  {
+    name: "GitHub",
+    category: "Platform",
+    svg: (
+      <svg
+        className="h-10 w-10"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M12 .5C5.648.5.5 5.648.5 12a11.5 11.5 0 0 0 7.863 10.907c.575.106.787-.25.787-.556 0-.275-.012-1.187-.018-2.153-3.2.695-3.877-1.357-3.877-1.357-.524-1.332-1.28-1.686-1.28-1.686-1.047-.716.08-.702.08-.702 1.158.082 1.768 1.188 1.768 1.188 1.03 1.764 2.702 1.254 3.36.958.104-.746.403-1.255.733-1.543-2.554-.29-5.238-1.277-5.238-5.682 0-1.255.448-2.281 1.183-3.085-.119-.29-.513-1.458.112-3.04 0 0 .965-.309 3.162 1.178A10.96 10.96 0 0 1 12 6.32c.974.004 1.955.132 2.872.388 2.195-1.487 3.159-1.178 3.159-1.178.627 1.582.233 2.75.115 3.04.737.804 1.181 1.83 1.181 3.085 0 4.416-2.689 5.389-5.252 5.673.414.356.783 1.055.783 2.126 0 1.536-.014 2.773-.014 3.149 0 .309.208.668.793.555A11.503 11.503 0 0 0 23.5 12C23.5 5.648 18.352.5 12 .5Z" />
+      </svg>
+    ),
+  },
+  {
+    name: "Google",
+    category: "Cloud",
+    svg: (
+      <svg className="h-10 w-10" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="#4285F4"
+          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        />
+        <path
+          fill="#34A853"
+          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.84 20.99 7.65 23 12 23z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+        />
+        <path
+          fill="#EA4335"
+          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.65 1 3.84 3.01 2.18 6.14l2.85 2.84c.87-2.6 3.3-4.6 6.16-4.6z"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: "OpenAI",
+    category: "AI",
+    svg: (
+      <svg
+        className="h-10 w-10"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M22.282 9.821a5.984 5.984 0 0 0-.515-4.91 6.046 6.046 0 0 0-6.509-2.9A6.065 6.065 0 0 0 4.981 4.18a5.984 5.984 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.514 2.9A5.984 5.984 0 0 0 13 24a6.056 6.056 0 0 0 5.951-5.949 5.98 5.98 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.667-7.073 5.98 5.98 0 0 0-.515-4.909 5.98 5.98 0 0 0-6.509-2.9A6.066 6.066 0 0 0 13 0a5.984 5.984 0 0 0-.505 4.783 5.98 5.98 0 0 0-.511 4.91c.055.281.138.541.216.747A6.039 6.039 0 0 0 13 12a5.984 5.984 0 0 0 .505-4.783 5.98 5.98 0 0 0-.511-4.909zM13 8.727a3.488 3.488 0 0 1-.342-2.334A2.477 2.477 0 0 0 13 5.164a2.475 2.475 0 0 0-.669 1.229A3.49 3.49 0 0 1 13 8.727zm-7.449-.402a1.518 1.518 0 0 1 1.412-1.412A1.518 1.518 0 0 1 8.727 8.727a1.52 1.52 0 0 1-1.412 1.413A1.52 1.52 0 0 1 5.551 8.727zm7.449 7.449a1.518 1.518 0 0 1-1.412-1.412 1.52 1.52 0 0 1 1.412-1.413 1.52 1.52 0 0 1 1.413 1.413 1.518 1.518 0 0 1-1.413 1.412z" />
+      </svg>
+    ),
+  },
+  {
+    name: "Vercel",
+    category: "Deploy",
+    svg: (
+      <svg
+        className="h-10 w-10"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M12 1L1.272 22.182h21.456L12 1z" />
+      </svg>
+    ),
+  },
+  {
+    name: "AWS",
+    category: "Infra",
+    svg: (
+      <svg
+        className="h-10 w-10"
+        viewBox="0 0 64 64"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M20.44 41.05c-8.05 5.94-19.73 9.1-29.79 9.1-1.41 0-1.62-1.03-.35-1.6 10.86-4.74 24.28-7.6 38.14-7.6 2.09 0 2.44 1.53.5 1.96-2.94.65-5.92 1.33-8.5 2.14Z"
+          fill="#FF9900"
+          transform="translate(17 0)"
+        />
+        <path
+          d="M52.67 38.56c1.03 1.31-.27 6.55-1.23 8.98-.29.72.34 1.03.95.52 3.95-3.3 4.97-10.22 4.15-11.22-.83-1.01-7.7-1.88-11.97 1.1-.65.45-.52 1.06.16.98 2.2-.27 7.09-.86 7.94-.36Z"
+          fill="#FF9900"
+          transform="translate(0 0)"
+        />
+        <path
+          d="M14.72 26.85v-2.02c0-.31.23-.52.51-.52h9.04c.29 0 .52.22.52.52v1.73c0 .29-.24.67-.66 1.24l-4.68 6.68c1.74-.04 3.58.22 5.15 1.1.35.2.44.49.47.79v2.15c0 .29-.31.63-.63.46-2.78-1.46-6.48-1.62-9.55.02-.31.17-.63-.17-.63-.46v-2.04c0-.33 0-.88.34-1.39l5.42-7.78h-4.72c-.29 0-.51-.22-.51-.51Zm-33.07 13.16H13c.29 0 .52-.23.52-.52V24.83c0-.29-.23-.52-.52-.52h-2.75c-.29 0-.52.23-.52.52v11.51l-4.08-11.66c-.08-.23-.3-.37-.54-.37H2.74c-.24 0-.46.15-.54.37L-1.88 36.34V24.83c0-.29-.23-.52-.52-.52H-5.1c-.29 0-.52.23-.52.52v14.66c0 .29.23.52.52.52h4.68c.24 0 .46-.16.53-.38l4.54-12.58 4.54 12.58c.08.23.29.38.53.38Zm46.7-15.7c-4.08 0-6.3 3.5-6.3 7.95 0 4.32 2.45 7.74 6.3 7.74 4 0 6.17-3.5 6.17-8.06 0-4.23-2.22-7.63-6.17-7.63Zm-.03 2.89c2.02 0 2.14 2.76 2.14 4.48 0 1.72.03 5.41-2.11 5.41-2.11 0-2.2-2.95-2.2-4.75 0-1.18.05-2.59.41-3.71.31-.97.93-1.43 1.76-1.43Zm11.69 12.81h2.73c.29 0 .52-.23.52-.52V28.3c0-1.4-.11-3.37.16-4.69.42-2.11 1.61-2.71 2.96-2.71 1.05 0 2.09.37 2.53 1.51.29.73.26 1.95.26 2.8v14.28c0 .29.23.52.52.52h2.73c.29 0 .52-.23.52-.52V24.94c0-2.48.29-6.1-2.79-6.1-1.54 0-3.14.82-4.1 2.6h-.05v-1.87c0-.29-.23-.52-.52-.52h-2.54c-.29 0-.52.23-.52.52v19.93c0 .29.23.52.52.52Z"
+          fill="currentColor"
+          transform="translate(6 0) scale(0.9)"
+        />
+      </svg>
+    ),
+  },
+];
+
 export default function Home() {
   const containerRef = useRef<HTMLElement | null>(null);
   const heroCardRef = useRef<HTMLDivElement | null>(null);
@@ -194,7 +291,7 @@ export default function Home() {
 
           <p className="mx-auto mt-5 max-w-md text-[14px] leading-7 text-white/50 sm:max-w-lg sm:text-base lg:mx-0">
             The competitive coding platform that transforms how you practice,
-            analyze, and level up your skills,  with real-time feedback,
+            analyze, and level up your skills, with real-time feedback,
             immersive missions, and live competition...
           </p>
 
@@ -482,6 +579,50 @@ export default function Home() {
           </div>
         </motion.div>
       </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.6 }}
+        className="relative mx-auto -mt-2 w-full max-w-6xl px-5 pb-14 sm:px-6 sm:pb-16 lg:px-8 lg:pb-20"
+      >
+        <div className="relative mt-10 overflow-hidden px-5 py-8 sm:px-7 lg:px-10">
+          <div className="absolute left-1/2 top-0 h-24 w-40 -translate-x-1/2 rounded-full" />
+
+          <div className="relative z-10 text-center">
+            <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/40 ">
+              Built around tools developers already trust
+            </p>
+
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-16 gap-y-10">
+              {credibilityLogos.map((logo, index) => (
+                <motion.div
+                  key={logo.name}
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.45, delay: index * 0.06 }}
+                  whileHover={{ y: -2 }}
+                  className="group flex cursor-pointer flex-col items-center gap-2 transition-all duration-300"
+                >
+                  <div className="text-white/30 transition-all duration-300 group-hover:text-white/55">
+                    {logo.svg}
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[12px] font-medium tracking-[0.06em] text-white/30 transition-all duration-300 group-hover:text-white/50">
+                      {logo.name}
+                    </span>
+                    <span className="text-[8px] uppercase tracking-[0.14em] text-white/15">
+                      {logo.category}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </motion.div>
     </section>
   );
 }
