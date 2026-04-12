@@ -313,6 +313,36 @@ func ChangePassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "PASSWORD_CHANGED"})
 }
 
+// DeleteAccount deletes the current user's own account
+func DeleteAccount(c *gin.Context) {
+	userID, ok := getUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "UNAUTHORIZED"})
+		return
+	}
+
+	usersCollection := database.GetCollection("users")
+	submissionsCollection := database.GetCollection("submissions")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Delete user's submissions first
+	_, err := submissionsCollection.DeleteMany(ctx, bson.M{"user_id": userID.Hex()})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DELETE_FAILED"})
+		return
+	}
+
+	// Delete user account
+	_, err = usersCollection.DeleteOne(ctx, bson.M{"_id": userID})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DELETE_FAILED"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "ACCOUNT_DELETED"})
+}
+
 // UploadAvatar handles avatar upload
 func UploadAvatar(c *gin.Context) {
 	userID, ok := getUserID(c)

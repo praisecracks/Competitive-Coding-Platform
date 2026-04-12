@@ -232,7 +232,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const token = localStorage.getItem("terminal_token");
-      const res = await fetch("/api/account", {
+      const res = await fetch("/api/profile", {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -240,8 +240,12 @@ export default function SettingsPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Account deletion failed");
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await res.json();
+          throw new Error(data.error || "Account deletion failed");
+        }
+        throw new Error("Account deletion failed");
       }
 
       // Clear session and redirect to login

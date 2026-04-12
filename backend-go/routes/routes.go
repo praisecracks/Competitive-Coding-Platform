@@ -40,6 +40,7 @@ func RegisterRoutes(r *gin.Engine) {
 		protected.POST("/dashboard/reset-stats", controllers.ResetStats)
 		protected.GET("/profile", controllers.GetProfile)
 		protected.PUT("/profile", controllers.UpdateProfile)
+		protected.DELETE("/profile", controllers.DeleteAccount)
 		protected.POST("/profile/avatar", controllers.UploadAvatar)
 		protected.DELETE("/profile/avatar", controllers.DeleteAvatar)
 		protected.POST("/profile/change-password", controllers.ChangePassword)

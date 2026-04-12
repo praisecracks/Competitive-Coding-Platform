@@ -7,6 +7,7 @@ import ProgressOverview from "../components/dashboard/ProgressOverview";
 import WelcomeSection from "../components/dashboard/WelcomeSection";
 import SocialsNews from "../components/dashboard/socialsnews";
 import RankModal from "../components/dashboard/RankModal";
+import WelcomeOnboardingModal from "../components/dashboard/WelcomeOnboardingModal";
 import { clearUserSession } from "@/lib/auth";
 import { Copy, Check } from "lucide-react";
 
@@ -191,6 +192,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <WelcomeOnboardingModal />
+      
       <WelcomeSection
   userName={userName || "Developer"}
   actionTitle={
@@ -305,7 +308,7 @@ export default function DashboardPage() {
             <p className="text-sm leading-relaxed text-gray-300">
               {dailyTip}
             </p>
-          </div>
+</div>
         </div>
       </div>
     </div>

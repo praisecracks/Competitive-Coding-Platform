@@ -187,7 +187,7 @@ export default function ChallengesPreview() {
             </div>
 
             <Link
-              href="/challenges"
+              href="/login"
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_24px_rgba(236,72,153,0.22)] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_36px_rgba(168,85,247,0.28)]"
             >
               Browse All Missions

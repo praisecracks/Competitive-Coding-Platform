@@ -157,7 +157,7 @@ function getLearningProgress(): LearningProgressStore {
 }
 
 const FRONTEND_URL =
-  process.env.NEXT_PUBLIC_FRONTEND_URL || "http://127.0.0.1:3000";
+  process.env.NEXT_PUBLIC_FRONTEND_URL || "https://codemasterx.com.ng";
 
 export default function ProfilePage() {
   const router = useRouter();
