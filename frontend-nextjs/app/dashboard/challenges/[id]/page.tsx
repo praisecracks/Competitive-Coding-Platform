@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "@/app/context/ThemeContext";
 
 type Challenge = {
   id: number;
@@ -45,6 +46,9 @@ type SectionKey =
 export default function DashboardChallengeDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
 
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +57,7 @@ export default function DashboardChallengeDetailsPage() {
   const [readingProgress, setReadingProgress] = useState(0);
   const [copiedExampleIndex, setCopiedExampleIndex] = useState<number | null>(null);
   const [isModeModalOpen, setIsModeModalOpen] = useState(false);
+  const isGuestMode = searchParams.get("guest") === "true";
 
   const challengeId = Number(params?.id);
 
@@ -250,19 +255,19 @@ export default function DashboardChallengeDetailsPage() {
     const value = challenge?.difficulty?.toLowerCase() || "";
 
     if (value === "easy") {
-      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
+      return isLight ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
     }
 
     if (value === "medium") {
-      return "border-yellow-500/20 bg-yellow-500/10 text-yellow-300";
+      return isLight ? "border-yellow-200 bg-yellow-50 text-yellow-700" : "border-yellow-500/20 bg-yellow-500/10 text-yellow-300";
     }
 
     if (value === "hard") {
-      return "border-red-500/20 bg-red-500/10 text-red-300";
+      return isLight ? "border-red-200 bg-red-50 text-red-700" : "border-red-500/20 bg-red-500/10 text-red-300";
     }
 
-    return "border-white/10 bg-white/5 text-gray-300";
-  }, [challenge?.difficulty]);
+    return isLight ? "border-gray-200 bg-gray-50 text-gray-600" : "border-white/10 bg-white/5 text-gray-300";
+  }, [challenge?.difficulty, isLight]);
 
   const complexitySignal = useMemo(() => {
     const difficulty = challenge?.difficulty?.toLowerCase() || "";
@@ -316,15 +321,21 @@ export default function DashboardChallengeDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050507] px-4 py-6 text-white sm:px-6 sm:py-10">
+      <div className={`min-h-screen px-4 py-6 sm:px-6 sm:py-10 ${isLight ? "bg-gray-50" : "bg-[#050507]"} ${isLight ? "text-gray-900" : "text-white"}`}>
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-[28px] border border-white/10 bg-[#0a0a0d] px-6 py-24 text-center shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:px-8">
+          <div className={`rounded-[28px] border px-6 py-24 text-center shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:px-8 ${
+            isLight 
+              ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]" 
+              : "border-white/10 bg-[#0a0a0d]"
+          }`}>
             <div className="mx-auto max-w-md">
-              <div className="mx-auto h-10 w-10 animate-pulse rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-500/20" />
-              <p className="mt-5 text-sm font-medium text-white">
+              <div className={`mx-auto h-10 w-10 animate-pulse rounded-2xl ${
+                isLight ? "bg-pink-100" : "bg-gradient-to-br from-pink-500/20 to-purple-500/20"
+              }`} />
+              <p className={`mt-5 text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
                 Loading challenge documentation
               </p>
-              <p className="mt-2 text-sm leading-7 text-gray-500">
+              <p className={`mt-2 text-sm leading-7 ${isLight ? "text-gray-500" : "text-gray-500"}`}>
                 Preparing the challenge brief, examples, and learning content.
               </p>
             </div>
@@ -336,21 +347,29 @@ export default function DashboardChallengeDetailsPage() {
 
   if (errorMessage || !challenge) {
     return (
-      <div className="min-h-screen bg-[#050507] px-4 py-6 text-white sm:px-6 sm:py-10">
+      <div className={`min-h-screen px-4 py-6 sm:px-6 sm:py-10 ${isLight ? "bg-gray-50" : "bg-[#050507]"} ${isLight ? "text-gray-900" : "text-white"}`}>
         <div className="mx-auto max-w-7xl space-y-5">
           <button
             onClick={() => router.push("/dashboard/challenges")}
-            className="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-white transition hover:bg-white/[0.06]"
+            className={`inline-flex items-center rounded-xl border px-4 py-2.5 text-sm transition ${
+              isLight 
+                ? "border-gray-200 bg-white text-gray-700 hover:bg-gray-100" 
+                : "border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]"
+            }`}
             type="button"
           >
             ← Back to Challenges
           </button>
 
-          <div className="rounded-[28px] border border-pink-500/15 bg-pink-500/[0.04] px-6 py-16 text-center sm:px-8">
-            <p className="text-sm font-medium text-pink-200">
+          <div className={`rounded-[28px] border px-6 py-16 text-center sm:px-8 ${
+            isLight 
+              ? "border-pink-200 bg-pink-50" 
+              : "border-pink-500/15 bg-pink-500/[0.04]"
+          }`}>
+            <p className={`text-sm font-medium ${isLight ? "text-pink-700" : "text-pink-200"}`}>
               Unable to load challenge details
             </p>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-gray-300">
+            <p className={`mx-auto mt-3 max-w-xl text-sm leading-7 ${isLight ? "text-gray-600" : "text-gray-300"}`}>
               {errorMessage || "This challenge could not be found."}
             </p>
           </div>
@@ -360,8 +379,22 @@ export default function DashboardChallengeDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050507] text-white">
-      <div className="fixed left-0 right-0 top-0 z-50 h-[2px] bg-white/5">
+    <div className={`min-h-screen ${isLight ? "bg-gray-50" : "bg-[#050507]"} ${isLight ? "text-gray-900" : "text-white"}`}>
+      {isGuestMode && (
+        <div className="fixed left-0 right-0 top-0 z-[60] flex items-center justify-center bg-emerald-500/10 px-4 py-2 backdrop-blur-sm">
+          <p className="text-center text-xs font-medium text-emerald-300">
+            You are in demo mode.{" "}
+            <button
+              onClick={() => router.push("/signup")}
+              className="underline hover:text-emerald-200"
+            >
+              Create an account
+            </button>{" "}
+            to save progress.
+          </p>
+        </div>
+      )}
+      <div className={`fixed left-0 right-0 top-0 z-50 h-[2px] ${isLight ? "bg-gray-200" : "bg-white/5"}`}>
         <div
           className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-pink-400 transition-all duration-150"
           style={{ width: `${readingProgress}%` }}
@@ -373,73 +406,117 @@ export default function DashboardChallengeDetailsPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button
               onClick={() => router.push("/dashboard/challenges")}
-              className="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-white transition hover:bg-white/[0.06]"
+              className={`inline-flex items-center rounded-xl border px-4 py-2.5 text-sm transition ${
+                isLight 
+                  ? "border-gray-200 bg-white text-gray-700 hover:bg-gray-100" 
+                  : "border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]"
+              }`}
               type="button"
             >
               ← Back to Challenges
             </button>
 
-            <div className="text-xs uppercase tracking-[0.18em] text-gray-500">
+            <div className={`text-xs uppercase tracking-[0.18em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
               Challenge Documentation
             </div>
           </div>
 
-          <section className="overflow-hidden rounded-[30px] border border-white/10 bg-[#0a0a0d] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-            <div className="border-b border-white/10 px-5 py-6 sm:px-7 sm:py-7">
+          <section className={`overflow-hidden rounded-[30px] border shadow-[0_0_0_1px_rgba(255,255,255,0.02)] ${
+            isLight 
+              ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]" 
+              : "border-white/10 bg-[#0a0a0d]"
+          }`}>
+            <div className={`border-b px-5 py-6 sm:px-7 sm:py-7 ${
+              isLight ? "border-gray-200" : "border-white/10"
+            }`}>
               <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
                 <div className="max-w-3xl">
                   <div className="flex flex-wrap gap-2">
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs ${difficultyClasses}`}
-                    >
+                    <span className={`rounded-full border px-3 py-1 text-xs ${difficultyClasses}`}>
                       {challenge.difficulty}
                     </span>
 
-                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-gray-300">
+                    <span className={`rounded-full border px-3 py-1 text-xs ${
+                      isLight 
+                        ? "border-gray-200 bg-gray-50 text-gray-600" 
+                        : "border-white/10 bg-white/[0.04] text-gray-300"
+                    }`}>
                       {challenge.category}
                     </span>
 
-                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-gray-300">
+                    <span className={`rounded-full border px-3 py-1 text-xs ${
+                      isLight 
+                        ? "border-gray-200 bg-gray-50 text-gray-600" 
+                        : "border-white/10 bg-white/[0.04] text-gray-300"
+                    }`}>
                       {challenge.duration} min
                     </span>
 
-                    <span className="rounded-full border border-pink-500/20 bg-pink-500/10 px-3 py-1 text-xs text-pink-200">
+                    <span className={`rounded-full border px-3 py-1 text-xs ${
+                      isLight 
+                        ? "border-pink-200 bg-pink-50 text-pink-700" 
+                        : "border-pink-500/20 bg-pink-500/10 text-pink-200"
+                    }`}>
                       Challenge #{String(challenge.id).padStart(3, "0")}
                     </span>
                   </div>
 
-                  <h1 className="mt-4 text-3xl font-semibold leading-tight text-white sm:text-4xl">
+                  <h1 className={`mt-4 text-3xl font-semibold leading-tight sm:text-4xl ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}>
                     {challenge.title}
                   </h1>
 
-                  <p className="mt-4 max-w-2xl text-sm leading-8 text-gray-300 sm:text-base">
+                  <p className={`mt-4 max-w-2xl text-sm leading-8 sm:text-base ${
+                    isLight ? "text-gray-600" : "text-gray-300"
+                  }`}>
                     {learningSummary}
                   </p>
 
                   <div className="mt-5 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300">
+                    <span className={`rounded-full border px-3 py-1.5 text-xs ${
+                      isLight 
+                        ? "border-gray-200 bg-gray-50 text-gray-600" 
+                        : "border-white/10 bg-white/[0.03] text-gray-300"
+                    }`}>
                       {complexitySignal}
                     </span>
-                    <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300">
+                    <span className={`rounded-full border px-3 py-1.5 text-xs ${
+                      isLight 
+                        ? "border-gray-200 bg-gray-50 text-gray-600" 
+                        : "border-white/10 bg-white/[0.03] text-gray-300"
+                    }`}>
                       {effortSignal}
                     </span>
-                    <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300">
+                    <span className={`rounded-full border px-3 py-1.5 text-xs ${
+                      isLight 
+                        ? "border-gray-200 bg-gray-50 text-gray-600" 
+                        : "border-white/10 bg-white/[0.03] text-gray-300"
+                    }`}>
                       {visibleSections.length} sections
                     </span>
                     {challenge.learning?.concept && (
-                      <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-1.5 text-xs text-purple-200">
+                      <span className={`rounded-full border px-3 py-1.5 text-xs ${
+                        isLight 
+                          ? "border-purple-200 bg-purple-50 text-purple-700" 
+                          : "border-purple-500/20 bg-purple-500/10 text-purple-200"
+                      }`}>
                         {challenge.learning.concept}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                  <p className="text-xs uppercase tracking-[0.16em] text-gray-500">
+                <div className={`w-full max-w-sm rounded-2xl border p-5 ${
+                  isLight 
+                    ? "border-gray-200 bg-gray-50" 
+                    : "border-white/10 bg-white/[0.03]"
+                }`}>
+                  <p className={`text-xs uppercase tracking-[0.16em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
                     Action
                   </p>
 
-                  <p className="mt-3 text-sm leading-7 text-gray-300">
+                  <p className={`mt-3 text-sm leading-7 ${isLight ? "text-gray-600" : "text-gray-300"}`}>
                     Study the exact learning flow for this challenge, then move into the workspace when you are ready to implement your solution.
                   </p>
 
@@ -454,7 +531,11 @@ export default function DashboardChallengeDetailsPage() {
 
                     <button
                       onClick={() => router.push("/dashboard/challenges")}
-                      className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3.5 text-sm text-white transition hover:bg-white/[0.06]"
+                      className={`w-full rounded-2xl border px-5 py-3.5 text-sm transition ${
+                        isLight 
+                          ? "border-gray-200 bg-white text-gray-700 hover:bg-gray-100" 
+                          : "border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]"
+                      }`}
                       type="button"
                     >
                       Return to Catalog
@@ -465,58 +546,37 @@ export default function DashboardChallengeDetailsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-3 px-5 py-4 sm:grid-cols-4 sm:px-7">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-gray-500">
-                  Focus Areas
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-white">
-                  {focusAreasCount}
-                </p>
-                <p className="mt-1 text-sm text-gray-400">
-                  Concepts involved in this challenge
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-gray-500">
-                  Examples
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-white">
-                  {examplesCount}
-                </p>
-                <p className="mt-1 text-sm text-gray-400">
-                  Sample cases to study before coding
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-gray-500">
-                  Constraints
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-white">
-                  {constraintsCount}
-                </p>
-                <p className="mt-1 text-sm text-gray-400">
-                  Limits that influence your solution
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-gray-500">
-                  Learning Steps
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-white">
-                  {learningStepsCount}
-                </p>
-                <p className="mt-1 text-sm text-gray-400">
-                  Guided steps tied to this mission
-                </p>
-              </div>
+              {[
+                { label: "Focus Areas", value: focusAreasCount, desc: "Concepts involved in this challenge" },
+                { label: "Examples", value: examplesCount, desc: "Sample cases to study before coding" },
+                { label: "Constraints", value: constraintsCount, desc: "Limits that influence your solution" },
+                { label: "Learning Steps", value: learningStepsCount, desc: "Guided steps tied to this mission" },
+              ].map((stat) => (
+                <div key={stat.label} className={`rounded-2xl border px-4 py-4 ${
+                  isLight 
+                    ? "border-gray-200 bg-white" 
+                    : "border-white/10 bg-white/[0.03]"
+                }`}>
+                  <p className={`text-[11px] uppercase tracking-[0.16em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
+                    {stat.label}
+                  </p>
+                  <p className={`mt-2 text-2xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+                    {stat.value}
+                  </p>
+                  <p className={`mt-1 text-sm ${isLight ? "text-gray-500" : "text-gray-400"}`}>
+                    {stat.desc}
+                  </p>
+                </div>
+              ))}
             </div>
           </section>
 
           <div className="xl:hidden">
-            <div className="overflow-x-auto rounded-[24px] border border-white/10 bg-[#0a0a0d] p-2">
+            <div className={`overflow-x-auto rounded-[24px] border p-2 ${
+              isLight 
+                ? "border-gray-200 bg-white" 
+                : "border-white/10 bg-[#0a0a0d]"
+            }`}>
               <div className="flex min-w-max gap-2">
                 {visibleSections.map((section) => {
                   const active = activeSection === section.key;
@@ -527,8 +587,8 @@ export default function DashboardChallengeDetailsPage() {
                       onClick={() => scrollToSection(section.key)}
                       className={`rounded-xl px-3 py-2 text-sm whitespace-nowrap transition ${
                         active
-                          ? "bg-pink-500/10 text-pink-200"
-                          : "text-gray-400 hover:bg-white/[0.04] hover:text-white"
+                          ? isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/10 text-pink-200"
+                          : isLight ? "text-gray-600 hover:bg-gray-100 hover:text-gray-900" : "text-gray-400 hover:bg-white/[0.04] hover:text-white"
                       }`}
                       type="button"
                     >
@@ -540,10 +600,14 @@ export default function DashboardChallengeDetailsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[250px_minmax(0,1fr)]">
-            <aside className="hidden xl:block xl:sticky xl:top-6 xl:self-start">
-              <div className="rounded-[24px] border border-white/10 bg-[#0a0a0d] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-                <p className="text-xs uppercase tracking-[0.18em] text-pink-300">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+            <aside className="hidden xl:block xl:sticky xl:top-8 xl:h-screen xl:max-h-[calc(100vh-4rem)] xl:overflow-y-auto xl:self-start xl:z-40">
+              <div className={`rounded-[24px] border p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] ${
+                isLight 
+                  ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]" 
+                  : "border-white/10 bg-[#0a0a0d]"
+              }`}>
+                <p className={`text-xs uppercase tracking-[0.18em] sticky top-0 z-10 ${isLight ? "text-pink-600 bg-white" : "text-pink-300 bg-[#0a0a0d]"} py-2`}>
                   On this page
                 </p>
 
@@ -557,8 +621,12 @@ export default function DashboardChallengeDetailsPage() {
                         onClick={() => scrollToSection(section.key)}
                         className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${
                           active
-                            ? "border border-pink-500/20 bg-pink-500/10 text-pink-200"
-                            : "border border-transparent text-gray-400 hover:bg-white/[0.04] hover:text-white"
+                            ? isLight 
+                              ? "border border-pink-200 bg-pink-50 text-pink-700"
+                              : "border border-pink-500/20 bg-pink-500/10 text-pink-200"
+                            : isLight 
+                              ? "border border-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                              : "border border-transparent text-gray-400 hover:bg-white/[0.04] hover:text-white"
                         }`}
                         type="button"
                       >
@@ -567,8 +635,8 @@ export default function DashboardChallengeDetailsPage() {
                           <span
                             className={`rounded-full px-2 py-0.5 text-[10px] ${
                               active
-                                ? "bg-pink-500/10 text-pink-200"
-                                : "bg-white/[0.04] text-gray-500"
+                                ? isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/10 text-pink-200"
+                                : isLight ? "bg-gray-100 text-gray-500" : "bg-white/[0.04] text-gray-500"
                             }`}
                           >
                             {section.count}
@@ -584,108 +652,114 @@ export default function DashboardChallengeDetailsPage() {
             </aside>
 
             <main className="min-w-0 space-y-6">
-              <section
-                id="overview"
-                className="scroll-mt-24 rounded-[26px] border border-white/10 bg-[#0a0a0d] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7"
-              >
+              <section id="overview" className={`scroll-mt-24 rounded-[26px] border p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7 ${
+                isLight 
+                  ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]" 
+                  : "border-white/10 bg-[#0a0a0d]"
+              }`}>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-pink-300">
+                    <p className={`text-xs uppercase tracking-[0.18em] ${isLight ? "text-pink-600" : "text-pink-300"}`}>
                       Overview
                     </p>
-                    <h2 className="mt-2 text-2xl font-semibold text-white">
+                    <h2 className={`mt-2 text-2xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                       Problem statement
                     </h2>
                   </div>
 
-                  <button
-                    onClick={() => scrollToSection("overview")}
-                    className="hidden rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-400 transition hover:bg-white/[0.06] hover:text-white sm:block"
-                    type="button"
-                  >
+                  <button onClick={() => scrollToSection("overview")} className={`hidden rounded-lg border px-3 py-1.5 text-xs transition sm:block ${
+                    isLight 
+                      ? "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100" 
+                      : "border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-white"
+                  }`} type="button">
                     #overview
                   </button>
                 </div>
 
-                <p className="mt-5 text-sm leading-8 text-gray-300 sm:text-[15px]">
+                <p className={`mt-5 text-sm leading-8 sm:text-[15px] ${isLight ? "text-gray-700" : "text-gray-300"}`}>
                   {challenge.description}
                 </p>
               </section>
 
               {challenge.examples && challenge.examples.length > 0 && (
-                <section
-                  id="examples"
-                  className="scroll-mt-24 rounded-[26px] border border-white/10 bg-[#0a0a0d] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7"
-                >
+                <section id="examples" className={`scroll-mt-24 rounded-[26px] border p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7 ${
+                  isLight 
+                    ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]" 
+                    : "border-white/10 bg-[#0a0a0d]"
+                }`}>
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-pink-300">
+                      <p className={`text-xs uppercase tracking-[0.18em] ${isLight ? "text-pink-600" : "text-pink-300"}`}>
                         Examples
                       </p>
-                      <h2 className="mt-2 text-2xl font-semibold text-white">
+                      <h2 className={`mt-2 text-2xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                         Worked sample cases
                       </h2>
                     </div>
 
-                    <button
-                      onClick={() => scrollToSection("examples")}
-                      className="hidden rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-400 transition hover:bg-white/[0.06] hover:text-white sm:block"
-                      type="button"
-                    >
+                    <button onClick={() => scrollToSection("examples")} className={`hidden rounded-lg border px-3 py-1.5 text-xs transition sm:block ${
+                      isLight 
+                        ? "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100" 
+                        : "border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-white"
+                    }`} type="button">
                       #examples
                     </button>
                   </div>
 
-                  <p className="mt-3 text-sm leading-7 text-gray-400">
-                    Study how the inputs map to the outputs. These examples are the
-                    fastest way to verify that you truly understand the task.
+                  <p className={`mt-3 text-sm leading-7 ${isLight ? "text-gray-600" : "text-gray-400"}`}>
+                    Study how the inputs map to the outputs. These examples are the fastest way to verify that you truly understand the task.
                   </p>
 
                   <div className="mt-6 space-y-4">
                     {challenge.examples.map((example, index) => (
-                      <div
-                        key={`${example.input}-${index}`}
-                        className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]"
-                      >
-                        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-3">
-                          <p className="text-sm font-medium text-white">
+                      <div key={`${example.input}-${index}`} className={`overflow-hidden rounded-3xl border ${
+                        isLight 
+                          ? "border-gray-200 bg-gray-50" 
+                          : "border-white/10 bg-white/[0.03]"
+                      }`}>
+                        <div className={`flex items-center justify-between gap-3 border-b px-5 py-3 ${
+                          isLight ? "border-gray-200" : "border-white/10"
+                        }`}>
+                          <p className={`text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
                             Example {index + 1}
                           </p>
 
-                          <button
-                            onClick={() => handleCopyExample(example, index)}
-                            className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300 transition hover:bg-white/[0.06] hover:text-white"
-                            type="button"
-                          >
+                          <button onClick={() => handleCopyExample(example, index)} className={`rounded-lg border px-3 py-1.5 text-xs transition ${
+                            isLight 
+                              ? "border-gray-200 bg-white text-gray-600 hover:bg-gray-100" 
+                              : "border-white/10 bg-white/[0.03] text-gray-300 hover:bg-white/[0.06] hover:text-white"
+                          }`} type="button">
                             {copiedExampleIndex === index ? "Copied" : "Copy"}
                           </button>
                         </div>
 
                         <div className="space-y-4 px-5 py-5">
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.15em] text-gray-500">
-                              Input
-                            </p>
-                            <div className="mt-2 overflow-x-auto rounded-2xl border border-white/10 bg-[#07080b] px-4 py-3 font-mono text-sm text-gray-200">
+                            <p className={`text-[11px] uppercase tracking-[0.15em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>Input</p>
+                            <div className={`mt-2 overflow-x-auto rounded-2xl border px-4 py-3 font-mono text-sm ${
+                              isLight 
+                                ? "border-gray-200 bg-white text-gray-800" 
+                                : "border-white/10 bg-[#07080b] text-gray-200"
+                            }`}>
                               {example.input}
                             </div>
                           </div>
 
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.15em] text-gray-500">
-                              Output
-                            </p>
-                            <div className="mt-2 overflow-x-auto rounded-2xl border border-white/10 bg-[#07080b] px-4 py-3 font-mono text-sm text-gray-200">
+                            <p className={`text-[11px] uppercase tracking-[0.15em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>Output</p>
+                            <div className={`mt-2 overflow-x-auto rounded-2xl border px-4 py-3 font-mono text-sm ${
+                              isLight 
+                                ? "border-gray-200 bg-white text-gray-800" 
+                                : "border-white/10 bg-[#07080b] text-gray-200"
+                            }`}>
                               {example.output}
                             </div>
                           </div>
 
                           {example.explanation && (
                             <div>
-                              <p className="text-[11px] uppercase tracking-[0.15em] text-gray-500">
-                                Explanation
-                              </p>
-                              <p className="mt-2 text-sm leading-7 text-gray-300">
+                              <p className={`text-[11px] uppercase tracking-[0.15em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>Explanation</p>
+                              <p className={`mt-2 text-sm leading-7 ${isLight ? "text-gray-700" : "text-gray-300"}`}>
                                 {example.explanation}
                               </p>
                             </div>
@@ -698,135 +772,81 @@ export default function DashboardChallengeDetailsPage() {
               )}
 
               {challenge.constraints && challenge.constraints.length > 0 && (
-                <section
-                  id="constraints"
-                  className="scroll-mt-24 rounded-[26px] border border-white/10 bg-[#0a0a0d] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7"
-                >
+                <section id="constraints" className={`scroll-mt-24 rounded-[26px] border p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7 ${
+                  isLight 
+                    ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]" 
+                    : "border-white/10 bg-[#0a0a0d]"
+                }`}>
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-pink-300">
-                        Constraints
-                      </p>
-                      <h2 className="mt-2 text-2xl font-semibold text-white">
-                        Technical boundaries
-                      </h2>
+                      <p className={`text-xs uppercase tracking-[0.18em] ${isLight ? "text-pink-600" : "text-pink-300"}`}>Constraints</p>
+                      <h2 className={`mt-2 text-2xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>Technical boundaries</h2>
                     </div>
-
-                    <button
-                      onClick={() => scrollToSection("constraints")}
-                      className="hidden rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-400 transition hover:bg-white/[0.06] hover:text-white sm:block"
-                      type="button"
-                    >
-                      #constraints
-                    </button>
+                    <button onClick={() => scrollToSection("constraints")} className={`hidden rounded-lg border px-3 py-1.5 text-xs transition sm:block ${
+                      isLight ? "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100" : "border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-white"
+                    }`} type="button">#constraints</button>
                   </div>
-
-                  <p className="mt-3 text-sm leading-7 text-gray-400">
-                    Constraints determine whether your approach is practical, efficient,
-                    and robust enough for real evaluation.
-                  </p>
-
+                  <p className={`mt-3 text-sm leading-7 ${isLight ? "text-gray-600" : "text-gray-400"}`}>Constraints determine whether your approach is practical, efficient, and robust enough for real evaluation.</p>
                   <div className="mt-6 space-y-3">
                     {challenge.constraints.map((constraint, index) => (
-                      <div
-                        key={`${constraint}-${index}`}
-                        className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-gray-300"
-                      >
-                        {constraint}
-                      </div>
+                      <div key={`${constraint}-${index}`} className={`rounded-2xl border px-4 py-4 text-sm ${
+                        isLight ? "border-gray-200 bg-gray-50 text-gray-700" : "border-white/10 bg-white/[0.03] text-gray-300"
+                      }`}>{constraint}</div>
                     ))}
                   </div>
                 </section>
               )}
 
               {challenge.tags?.length > 0 && (
-                <section
-                  id="focus"
-                  className="scroll-mt-24 rounded-[26px] border border-white/10 bg-[#0a0a0d] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7"
-                >
+                <section id="focus" className={`scroll-mt-24 rounded-[26px] border p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7 ${
+                  isLight 
+                    ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]" 
+                    : "border-white/10 bg-[#0a0a0d]"
+                }`}>
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-pink-300">
-                        Focus Areas
-                      </p>
-                      <h2 className="mt-2 text-2xl font-semibold text-white">
-                        What you will practice
-                      </h2>
+                      <p className={`text-xs uppercase tracking-[0.18em] ${isLight ? "text-pink-600" : "text-pink-300"}`}>Focus Areas</p>
+                      <h2 className={`mt-2 text-2xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>What you will practice</h2>
                     </div>
-
-                    <button
-                      onClick={() => scrollToSection("focus")}
-                      className="hidden rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-400 transition hover:bg-white/[0.06] hover:text-white sm:block"
-                      type="button"
-                    >
-                      #focus
-                    </button>
+                    <button onClick={() => scrollToSection("focus")} className={`hidden rounded-lg border px-3 py-1.5 text-xs transition sm:block ${
+                      isLight ? "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100" : "border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-white"
+                    }`} type="button">#focus</button>
                   </div>
-
                   <div className="mt-5 flex flex-wrap gap-2">
                     {challenge.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-gray-300"
-                      >
-                        {tag}
-                      </span>
+                      <span key={tag} className={`rounded-full border px-3 py-1.5 text-xs ${
+                        isLight ? "border-gray-200 bg-gray-50 text-gray-600" : "border-white/10 bg-white/[0.04] text-gray-300"
+                      }`}>{tag}</span>
                     ))}
                   </div>
                 </section>
               )}
 
-              {(challenge.learning?.concept ||
-                challenge.learning?.objective ||
-                (challenge.learning?.steps?.length ?? 0) > 0) && (
-                <section
-                  id="learning"
-                  className="scroll-mt-24 rounded-[26px] border border-purple-500/15 bg-[linear-gradient(180deg,rgba(168,85,247,0.10),rgba(168,85,247,0.04))] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7"
-                >
+              {(challenge.learning?.concept || challenge.learning?.objective || (challenge.learning?.steps?.length ?? 0) > 0) && (
+                <section id="learning" className={`scroll-mt-24 rounded-[26px] border p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7 ${
+                  isLight 
+                    ? "border-purple-200 bg-purple-50" 
+                    : "border-purple-500/15 bg-[linear-gradient(180deg,rgba(168,85,247,0.10),rgba(168,85,247,0.04))]"
+                }`}>
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-purple-200">
-                        Learning
-                      </p>
-                      <h2 className="mt-2 text-2xl font-semibold text-white">
-                        Understand the concept
-                      </h2>
+                      <p className={`text-xs uppercase tracking-[0.18em] ${isLight ? "text-purple-700" : "text-purple-200"}`}>Learning</p>
+                      <h2 className={`mt-2 text-2xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>Understand the concept</h2>
                     </div>
-
-                    <button
-                      onClick={() => scrollToSection("learning")}
-                      className="hidden rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300 transition hover:bg-white/[0.06] hover:text-white sm:block"
-                      type="button"
-                    >
-                      #learning
-                    </button>
+                    <button onClick={() => scrollToSection("learning")} className={`hidden rounded-lg border px-3 py-1.5 text-xs transition sm:block ${
+                      isLight ? "border-gray-200 bg-white text-gray-600 hover:bg-gray-100" : "border-white/10 bg-white/[0.03] text-gray-300 hover:bg-white/[0.06] hover:text-white"
+                    }`} type="button">#learning</button>
                   </div>
-
-                  {challenge.learning?.concept && (
-                    <p className="mt-4 text-sm font-medium text-purple-200">
-                      {challenge.learning.concept}
-                    </p>
-                  )}
-
-                  {challenge.learning?.objective && (
-                    <p className="mt-3 text-sm leading-7 text-gray-300">
-                      {challenge.learning.objective}
-                    </p>
-                  )}
-
+                  {challenge.learning?.concept && <p className={`mt-4 text-sm font-medium ${isLight ? "text-purple-700" : "text-purple-200"}`}>{challenge.learning.concept}</p>}
+                  {challenge.learning?.objective && <p className={`mt-3 text-sm leading-7 ${isLight ? "text-gray-700" : "text-gray-300"}`}>{challenge.learning.objective}</p>}
                   {(challenge.learning?.steps?.length ?? 0) > 0 && (
                     <div className="mt-5 space-y-3">
                       {challenge.learning!.steps!.map((step, index) => (
-                        <div
-                          key={`${step}-${index}`}
-                          className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4"
-                        >
-                          <p className="text-sm font-medium text-pink-200">
-                            Step {index + 1}
-                          </p>
-                          <p className="mt-2 text-sm leading-7 text-gray-300">
-                            {step}
-                          </p>
+                        <div key={`${step}-${index}`} className={`rounded-2xl border px-4 py-4 ${
+                          isLight ? "border-gray-200 bg-white" : "border-white/10 bg-white/[0.04]"
+                        }`}>
+                          <p className={`text-sm font-medium ${isLight ? "text-pink-700" : "text-pink-200"}`}>Step {index + 1}</p>
+                          <p className={`mt-2 text-sm leading-7 ${isLight ? "text-gray-700" : "text-gray-300"}`}>{step}</p>
                         </div>
                       ))}
                     </div>
@@ -837,21 +857,21 @@ export default function DashboardChallengeDetailsPage() {
               {(challenge.learning?.walkthrough?.length ?? 0) > 0 && (
                 <section
                   id="walkthrough"
-                  className="scroll-mt-24 rounded-[26px] border border-white/10 bg-[#0a0a0d] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7"
+                  className={`scroll-mt-24 rounded-[26px] border p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7 ${isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-[#0a0a0d]"}`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-pink-300">
+                      <p className={`text-xs uppercase tracking-[0.18em] ${isLight ? "text-pink-600" : "text-pink-300"}`}>
                         Walkthrough
                       </p>
-                      <h2 className="mt-2 text-2xl font-semibold text-white">
+                      <h2 className={`mt-2 text-2xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                         Step-by-step thinking
                       </h2>
                     </div>
 
                     <button
                       onClick={() => scrollToSection("walkthrough")}
-                      className="hidden rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-400 transition hover:bg-white/[0.06] hover:text-white sm:block"
+                      className={`hidden rounded-lg border px-3 py-1.5 text-xs transition hover:bg-white/[0.06] sm:block ${isLight ? "border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900" : "border-white/10 bg-white/[0.03] text-gray-400 hover:text-white"}`}
                       type="button"
                     >
                       #walkthrough
@@ -862,12 +882,12 @@ export default function DashboardChallengeDetailsPage() {
                     {challenge.learning!.walkthrough!.map((step, index) => (
                       <div
                         key={`${step}-${index}`}
-                        className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4"
+                        className={`rounded-2xl border px-4 py-4 ${isLight ? "border-gray-200 bg-white" : "border-white/10 bg-white/[0.03]"}`}
                       >
-                        <p className="text-sm font-medium text-white">
+                        <p className={`text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
                           Walkthrough {index + 1}
                         </p>
-                        <p className="mt-2 text-sm leading-7 text-gray-300">
+                        <p className={`mt-2 text-sm leading-7 ${isLight ? "text-gray-600" : "text-gray-300"}`}>
                           {step}
                         </p>
                       </div>
@@ -879,21 +899,21 @@ export default function DashboardChallengeDetailsPage() {
               {(challenge.learning?.edgeCases?.length ?? 0) > 0 && (
                 <section
                   id="edge-cases"
-                  className="scroll-mt-24 rounded-[26px] border border-yellow-500/20 bg-yellow-500/[0.05] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7"
+                  className={`scroll-mt-24 rounded-[26px] border p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7 ${isLight ? "border-yellow-200 bg-yellow-50" : "border-yellow-500/20 bg-yellow-500/[0.05]"}`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-yellow-300">
+                      <p className={`text-xs uppercase tracking-[0.18em] ${isLight ? "text-yellow-600" : "text-yellow-300"}`}>
                         Edge Cases
                       </p>
-                      <h2 className="mt-2 text-2xl font-semibold text-white">
+                      <h2 className={`mt-2 text-2xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                         Cases you should not ignore
                       </h2>
                     </div>
 
                     <button
                       onClick={() => scrollToSection("edge-cases")}
-                      className="hidden rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300 transition hover:bg-white/[0.06] hover:text-white sm:block"
+                      className={`hidden rounded-lg border px-3 py-1.5 text-xs transition hover:bg-white/[0.06] sm:block ${isLight ? "border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900" : "border-white/10 bg-white/[0.03] text-gray-300 hover:text-white"}`}
                       type="button"
                     >
                       #edge-cases
@@ -904,7 +924,7 @@ export default function DashboardChallengeDetailsPage() {
                     {challenge.learning!.edgeCases!.map((edgeCase, index) => (
                       <div
                         key={`${edgeCase}-${index}`}
-                        className="rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-gray-200"
+                        className={`rounded-2xl border px-4 py-4 text-sm ${isLight ? "border-gray-200 bg-white text-gray-700" : "border-white/10 bg-black/20 text-gray-200"}`}
                       >
                         • {edgeCase}
                       </div>
@@ -916,21 +936,21 @@ export default function DashboardChallengeDetailsPage() {
               {(challenge.learning?.hints?.length ?? 0) > 0 && (
                 <section
                   id="hints"
-                  className="scroll-mt-24 rounded-[26px] border border-blue-500/20 bg-blue-500/[0.05] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7"
+                  className={`scroll-mt-24 rounded-[26px] border p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7 ${isLight ? "border-blue-200 bg-blue-50" : "border-blue-500/20 bg-blue-500/[0.05]"}`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-blue-300">
+                      <p className={`text-xs uppercase tracking-[0.18em] ${isLight ? "text-blue-600" : "text-blue-300"}`}>
                         Hints
                       </p>
-                      <h2 className="mt-2 text-2xl font-semibold text-white">
+                      <h2 className={`mt-2 text-2xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                         Helpful nudges before coding
                       </h2>
                     </div>
 
                     <button
                       onClick={() => scrollToSection("hints")}
-                      className="hidden rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300 transition hover:bg-white/[0.06] hover:text-white sm:block"
+                      className={`hidden rounded-lg border px-3 py-1.5 text-xs transition hover:bg-white/[0.06] sm:block ${isLight ? "border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900" : "border-white/10 bg-white/[0.03] text-gray-300 hover:text-white"}`}
                       type="button"
                     >
                       #hints
@@ -941,7 +961,7 @@ export default function DashboardChallengeDetailsPage() {
                     {challenge.learning!.hints!.map((hint, index) => (
                       <div
                         key={`${hint}-${index}`}
-                        className="rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-gray-200"
+                        className={`rounded-2xl border px-4 py-4 text-sm ${isLight ? "border-gray-200 bg-white text-gray-700" : "border-white/10 bg-black/20 text-gray-200"}`}
                       >
                         💡 {hint}
                       </div>
@@ -950,74 +970,65 @@ export default function DashboardChallengeDetailsPage() {
                 </section>
               )}
 
-              <section
-                id="execution"
-                className="scroll-mt-24 rounded-[26px] border border-white/10 bg-[#0a0a0d] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7"
-              >
+              <section id="execution" className={`scroll-mt-24 rounded-[26px] border p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-7 ${
+                isLight 
+                  ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]" 
+                  : "border-white/10 bg-[#0a0a0d]"
+              }`}>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-pink-300">
+                    <p className={`text-xs uppercase tracking-[0.18em] ${isLight ? "text-pink-600" : "text-pink-300"}`}>
                       Execution Path
                     </p>
-                    <h2 className="mt-2 text-2xl font-semibold text-white">
+                    <h2 className={`mt-2 text-2xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                       Suggested workflow
                     </h2>
                   </div>
 
-                  <button
-                    onClick={() => scrollToSection("execution")}
-                    className="hidden rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-400 transition hover:bg-white/[0.06] hover:text-white sm:block"
-                    type="button"
-                  >
+                  <button onClick={() => scrollToSection("execution")} className={`hidden rounded-lg border px-3 py-1.5 text-xs transition sm:block ${
+                    isLight ? "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100" : "border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-white"
+                  }`} type="button">
                     #execution
                   </button>
                 </div>
 
                 <div className="mt-5 space-y-4">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-                    <p className="text-sm font-medium text-white">
+                  <div className={`rounded-2xl border px-4 py-4 ${isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-white/[0.03]"}`}>
+                    <p className={`text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
                       1. Understand the learning objective
                     </p>
-                    <p className="mt-1 text-sm leading-7 text-gray-400">
+                    <p className={`mt-1 text-sm leading-7 ${isLight ? "text-gray-600" : "text-gray-400"}`}>
                       Read the concept, steps, and examples until the task becomes clear.
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-                    <p className="text-sm font-medium text-white">
+                  <div className={`rounded-2xl border px-4 py-4 ${isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-white/[0.03]"}`}>
+                    <p className={`text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
                       2. Anticipate constraints and edge cases
                     </p>
-                    <p className="mt-1 text-sm leading-7 text-gray-400">
+                    <p className={`mt-1 text-sm leading-7 ${isLight ? "text-gray-600" : "text-gray-400"}`}>
                       Think about what can break your approach before writing code.
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-                    <p className="text-sm font-medium text-white">
+                  <div className={`rounded-2xl border px-4 py-4 ${isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-white/[0.03]"}`}>
+                    <p className={`text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
                       3. Enter the workspace and implement
                     </p>
-                    <p className="mt-1 text-sm leading-7 text-gray-400">
+                    <p className={`mt-1 text-sm leading-7 ${isLight ? "text-gray-600" : "text-gray-400"}`}>
                       Code, run, refine, and submit once your logic is stable.
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <button
-                    onClick={() =>
-                      router.push(`/challenges/${challenge.id}?mode=solo`)
-                    }
-                    className="w-full rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 px-5 py-3.5 text-sm font-medium text-white transition hover:opacity-95"
-                    type="button"
-                  >
+                  <button onClick={() => router.push(`/challenges/${challenge.id}?mode=solo`)} className="w-full rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 px-5 py-3.5 text-sm font-medium text-white transition hover:opacity-95" type="button">
                     Continue to Challenge Workspace
                   </button>
 
-                  <button
-                    onClick={() => scrollToSection("overview")}
-                    className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3.5 text-sm text-white transition hover:bg-white/[0.06]"
-                    type="button"
-                  >
+                  <button onClick={() => scrollToSection("overview")} className={`w-full rounded-2xl border px-5 py-3.5 text-sm transition ${
+                    isLight ? "border-gray-200 bg-white text-gray-700 hover:bg-gray-100" : "border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]"
+                  }`} type="button">
                     Revisit Overview
                   </button>
                 </div>
@@ -1035,19 +1046,27 @@ export default function DashboardChallengeDetailsPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsModeModalOpen(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              className={`absolute inset-0 w-full h-full ${
+                isLight ? "bg-slate-900/50 backdrop-blur-md" : "bg-black/80 backdrop-blur-md"
+              }`}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md rounded-[32px] border border-white/10 bg-[#0d0d0d] p-8 shadow-2xl text-center"
+              className={`relative w-full max-w-md rounded-[32px] border p-8 shadow-2xl text-center ${
+                isLight 
+                  ? "border-gray-200 bg-white shadow-[0_25px_50px_rgba(15,23,42,0.18)]" 
+                  : "border-white/10 bg-[#0d0d0d]"
+              }`}
             >
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 text-3xl mb-6">
+              <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 text-3xl mb-6 ${
+                isLight ? "bg-gradient-to-br from-pink-100 to-purple-100" : ""
+              }`}>
                 🏆
               </div>
-              <h2 className="text-2xl font-black tracking-tight text-white uppercase">Choose Your Path</h2>
-              <p className="mt-2 text-sm text-gray-400 font-medium leading-relaxed">
+              <h2 className={`text-2xl font-black tracking-tight uppercase ${isLight ? "text-gray-900" : "text-white"}`}>Choose Your Path</h2>
+              <p className={`mt-2 text-sm font-medium leading-relaxed ${isLight ? "text-gray-600" : "text-gray-400"}`}>
                 Will you conquer this challenge alone or duel with a rival?
               </p>
               
@@ -1057,14 +1076,20 @@ export default function DashboardChallengeDetailsPage() {
                     setIsModeModalOpen(false);
                     router.push(`/challenges/${challenge.id}?mode=solo`);
                   }}
-                  className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:bg-white/[0.06] hover:border-white/20 text-left"
+                  className={`group flex items-center gap-4 rounded-2xl border p-5 transition hover:bg-white/[0.06] hover:border-white/20 text-left ${
+                    isLight 
+                      ? "border-gray-200 bg-gray-50 hover:bg-gray-100" 
+                      : "border-white/10 bg-white/[0.03]"
+                  }`}
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.05] text-2xl group-hover:scale-110 transition-transform">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-2xl group-hover:scale-110 transition-transform ${
+                    isLight ? "bg-gray-200" : "bg-white/[0.05]"
+                  }`}>
                     👤
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-white uppercase tracking-wider">Play Solo</h3>
-                    <p className="text-[11px] text-gray-500 mt-0.5">Test your skills in a private workspace.</p>
+                    <h3 className={`text-sm font-black uppercase tracking-wider ${isLight ? "text-gray-900" : "text-white"}`}>Play Solo</h3>
+                    <p className={`text-[11px] mt-0.5 ${isLight ? "text-gray-500" : "text-gray-500"}`}>Test your skills in a private workspace.</p>
                   </div>
                 </button>
 
@@ -1073,21 +1098,29 @@ export default function DashboardChallengeDetailsPage() {
                     setIsModeModalOpen(false);
                     router.push(`/dashboard/duo/create?challengeId=${challenge.id}`);
                   }}
-                  className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:bg-white/[0.06] hover:border-white/20 text-left border-pink-500/20 shadow-lg shadow-pink-500/5"
+                  className={`group flex items-center gap-4 rounded-2xl border p-5 transition hover:bg-white/[0.06] text-left ${
+                    isLight 
+                      ? "border-pink-200 bg-pink-50 hover:bg-pink-100" 
+                      : "border-pink-500/20 bg-white/[0.03] shadow-lg shadow-pink-500/5"
+                  }`}
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-pink-500/10 text-2xl group-hover:scale-110 transition-transform">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-2xl group-hover:scale-110 transition-transform ${
+                    isLight ? "bg-pink-100" : "bg-pink-500/10"
+                  }`}>
                     ⚔️
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-pink-400 uppercase tracking-wider">Play Duo</h3>
-                    <p className="text-[11px] text-gray-500 mt-0.5">Duel against another player in real-time.</p>
+                    <h3 className={`text-sm font-black uppercase tracking-wider ${isLight ? "text-pink-700" : "text-pink-400"}`}>Play Duo</h3>
+                    <p className={`text-[11px] mt-0.5 ${isLight ? "text-gray-500" : "text-gray-500"}`}>Duel against another player in real-time.</p>
                   </div>
                 </button>
               </div>
 
               <button
                 onClick={() => setIsModeModalOpen(false)}
-                className="mt-6 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.2em] transition-colors"
+                className={`mt-6 text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${
+                  isLight ? "text-gray-500 hover:text-gray-900" : "text-gray-500 hover:text-white"
+                }`}
               >
                 Close Selection
               </button>

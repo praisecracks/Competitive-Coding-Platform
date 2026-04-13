@@ -227,16 +227,19 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </Link>
           </div>
         ) : !isLoggedIn ? (
-          <div className="hidden items-center gap-3 sm:flex">
+          <div className="hidden items-center gap-3 sm:flex text-gray-800">
+            <div className="text-white">
+
             <Link
               href="/login"
-              className="rounded-full px-4 py-2 text-sm font-medium text-white/65 transition hover:text-white"
-            >
+              className="rounded-full px-4 py-2 text-sm font-medium text-white/25 transition hover:text-white"
+              >
               Login
             </Link>
+              </div>
             <Link
               href="/signup"
-              className="rounded-full border border-white/10 bg-white px-5 py-2.5 text-sm font-semibold text-black transition/90"
+              className="rounded-full border border-white/10 bg-white px-5 py-2.5 text-sm font-semibold text-gray-600 transition/90"
             >
               Get Started
             </Link>

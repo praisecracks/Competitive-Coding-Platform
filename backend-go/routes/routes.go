@@ -57,6 +57,8 @@ func RegisterRoutes(r *gin.Engine) {
 			admin.PUT("/challenges/:id", controllers.UpdateChallenge)
 			admin.DELETE("/challenges/:id", controllers.DeleteChallenge)
 			admin.GET("/submissions", controllers.GetSubmissionsAudit)
+			admin.GET("/reports", controllers.GetReports)
+			admin.PUT("/reports/:id", controllers.ResolveReport)
 
 			// Super Admin routes
 			super := admin.Group("/super")
@@ -92,6 +94,9 @@ func RegisterRoutes(r *gin.Engine) {
 		protected.POST("/run", controllers.RunCode)
 		protected.POST("/submit", controllers.SubmitCode)
 	}
+
+	// Reports
+	protected.POST("/report", controllers.SubmitReport)
 
 	// Leaderboard and Search
 	r.GET("/leaderboard", controllers.GetLeaderboard)

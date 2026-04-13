@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useTheme } from "../../context/ThemeContext";
 
 interface WelcomeSectionProps {
   userName: string;
@@ -21,45 +22,96 @@ export default function WelcomeSection({
   onActionClick,
   onSecondaryActionClick,
 }: WelcomeSectionProps) {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[#09090c] px-4 py-4 sm:px-5 sm:py-5 lg:rounded-[28px] lg:p-6 xl:p-4"
+      className={`relative overflow-hidden rounded-[24px] border px-4 py-4 sm:px-5 sm:py-5 lg:rounded-[28px] lg:p-6 xl:p-4 ${
+        isLight
+          ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+          : "border-white/10 bg-[#09090c]"
+      }`}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_28%),radial-gradient(circle_at_left,rgba(236,72,153,0.08),transparent_24%)]" />
-      <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:28px_28px]" />
+      <div
+        className={`absolute inset-0 ${
+          isLight
+            ? "bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.08),transparent_28%),radial-gradient(circle_at_left,rgba(236,72,153,0.05),transparent_24%)]"
+            : "bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_28%),radial-gradient(circle_at_left,rgba(236,72,153,0.08),transparent_24%)]"
+        }`}
+      />
+      <div
+        className={`absolute inset-0 ${
+          isLight
+            ? "opacity-[0.02] [background-image:linear-gradient(rgba(15,23,42,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.08)_1px,transparent_1px)] [background-size:28px_28px]"
+            : "opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:28px_28px]"
+        }`}
+      />
 
       <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
         <div className="max-w-2xl">
-          <span className="inline-flex items-center rounded-full border border-pink-500/20 bg-pink-500/[0.08] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-pink-200 sm:px-3 sm:text-[10px] sm:tracking-[0.22em]">
+          <span
+            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] sm:px-3 sm:text-[10px] sm:tracking-[0.22em] ${
+              isLight
+                ? "border-pink-200 bg-pink-50 text-pink-600"
+                : "border-pink-500/20 bg-pink-500/[0.08] text-pink-200"
+            }`}
+          >
             Dashboard overview
           </span>
 
-          <h1 className="mt-3 text-xl font-semibold leading-tight tracking-tight text-white sm:text-2xl lg:mt-4 lg:text-[2rem] xl:text-[2.35rem]">
+          <h1
+            className={`mt-3 text-xl font-semibold leading-tight tracking-tight sm:text-2xl lg:mt-4 lg:text-[2rem] xl:text-[2.35rem] ${
+              isLight ? "text-gray-900" : "text-white"
+            }`}
+          >
             Welcome back,{" "}
-            <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
               {userName}
             </span>
           </h1>
 
-          <p className="mt-2 max-w-xl text-[13px] leading-6 text-gray-400 sm:text-sm lg:mt-3">
+          <p
+            className={`mt-2 max-w-xl text-[13px] leading-6 sm:text-sm lg:mt-3 ${
+              isLight ? "text-gray-600" : "text-gray-400"
+            }`}
+          >
             Track your progress, continue learning with intention, and sharpen your
             coding mastery one challenge at a time.
           </p>
         </div>
 
-        <div className="w-full rounded-[20px] border border-white/10 bg-white/[0.03] p-3.5 backdrop-blur-sm sm:p-4 lg:max-w-md lg:rounded-[24px]">
-          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 sm:text-[11px] sm:tracking-[0.22em]">
+        <div
+          className={`w-full rounded-[20px] border p-3.5 backdrop-blur-sm sm:p-4 lg:max-w-md lg:rounded-[24px] ${
+            isLight
+              ? "border-gray-200 bg-gray-50 shadow-[0_8px_24px_rgba(15,23,42,0.05)]"
+              : "border-white/10 bg-white/[0.03]"
+          }`}
+        >
+          <p
+            className={`text-[10px] font-medium uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.22em] ${
+              isLight ? "text-gray-500" : "text-gray-500"
+            }`}
+          >
             Next action
           </p>
 
-          <h2 className="mt-2 text-sm font-semibold leading-6 tracking-tight text-white sm:text-[15px] lg:text-lg lg:leading-tight">
+          <h2
+            className={`mt-2 text-sm font-semibold leading-6 tracking-tight sm:text-[15px] lg:text-lg lg:leading-tight ${
+              isLight ? "text-gray-900" : "text-white"
+            }`}
+          >
             {actionTitle}
           </h2>
 
-          <p className="mt-1.5 text-[12px] leading-5 text-gray-400 sm:text-[13px] sm:leading-6 lg:mt-2 lg:text-sm">
+          <p
+            className={`mt-1.5 text-[12px] leading-5 sm:text-[13px] sm:leading-6 lg:mt-2 lg:text-sm ${
+              isLight ? "text-gray-600" : "text-gray-400"
+            }`}
+          >
             {actionSubtitle}
           </p>
 
@@ -73,7 +125,11 @@ export default function WelcomeSection({
 
             <button
               onClick={onSecondaryActionClick}
-              className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm font-medium text-white transition duration-200 hover:bg-white/[0.08] lg:px-4 lg:py-3"
+              className={`rounded-xl border px-3.5 py-2.5 text-sm font-medium transition duration-200 lg:px-4 lg:py-3 ${
+                isLight
+                  ? "border-gray-200 bg-white text-gray-800 hover:bg-gray-100"
+                  : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              }`}
             >
               {secondaryButtonLabel}
             </button>

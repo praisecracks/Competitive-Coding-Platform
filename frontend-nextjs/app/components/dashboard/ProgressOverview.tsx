@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "../../context/ThemeContext";
 
 interface ProgressOverviewProps {
   stats: {
@@ -42,6 +43,8 @@ export default function ProgressOverview({
   onRankClick,
   onResetStats,
 }: ProgressOverviewProps) {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   const overallTotal = totals.easy + totals.medium + totals.hard;
@@ -55,42 +58,50 @@ export default function ProgressOverview({
         solved: stats.easySolved,
         total: totals.easy,
         color: "from-emerald-500 to-green-400",
-        trackColor: "bg-emerald-500/10",
+        trackClass: isLight ? "bg-emerald-100" : "bg-white/8",
       },
       {
         label: "Medium",
         solved: stats.mediumSolved,
         total: totals.medium,
         color: "from-amber-500 to-yellow-400",
-        trackColor: "bg-amber-500/10",
+        trackClass: isLight ? "bg-amber-100" : "bg-white/8",
       },
       {
         label: "Hard",
         solved: stats.hardSolved,
         total: totals.hard,
         color: "from-rose-500 to-red-400",
-        trackColor: "bg-rose-500/10",
+        trackClass: isLight ? "bg-rose-100" : "bg-white/8",
       },
     ],
-    [stats.easySolved, stats.mediumSolved, stats.hardSolved, totals.easy, totals.medium, totals.hard]
+    [
+      isLight,
+      stats.easySolved,
+      stats.mediumSolved,
+      stats.hardSolved,
+      totals.easy,
+      totals.medium,
+      totals.hard,
+    ]
   );
 
   const getStatusColor = (status: string) => {
     const normalized = status.toLowerCase();
 
     if (normalized === "completed" || normalized === "accepted") {
-      return "text-emerald-400";
+      return isLight ? "text-emerald-600" : "text-emerald-400";
     }
 
     if (normalized === "runtime_error" || normalized === "runtime error") {
-      return "text-amber-400";
+      return isLight ? "text-amber-600" : "text-amber-400";
     }
 
     if (normalized === "rejected" || normalized === "failed") {
-      return "text-rose-400";
+      return isLight ? "text-rose-600" : "text-rose-400";
     }
 
-    return "text-yellow-400";
+    return isLight ? "text-yellow-600" : "text-yellow-400";
   };
 
   const getSubmissionKey = (
@@ -100,27 +111,45 @@ export default function ProgressOverview({
     return `${sub.id}-${sub.title}-${sub.date}-${index}`;
   };
 
+  const statCardClass = isLight
+    ? "rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)]"
+    : "rounded-2xl border border-white/10 bg-white/[0.04] p-4";
+
+  const panelClass = isLight
+    ? "rounded-2xl border border-gray-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+    : "rounded-2xl border border-white/10 bg-white/[0.04] p-5";
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">Solved</p>
-          <p className="mt-2 text-3xl font-semibold tracking-tight text-white">
+        <div className={statCardClass}>
+          <p className={`text-[11px] uppercase tracking-[0.18em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
+            Solved
+          </p>
+          <p className={`mt-2 text-3xl font-semibold tracking-tight ${isLight ? "text-gray-900" : "text-white"}`}>
             {stats.totalSolved}
           </p>
         </div>
 
-        <div className="group relative rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:bg-white/[0.06]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+        <div
+          className={`group relative transition ${
+            isLight
+              ? "rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
+              : "rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.06]"
+          }`}
+        >
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
             Won / Played
           </p>
 
           <div className="mt-2 flex items-end gap-1.5">
-            <p className="text-3xl font-semibold leading-none tracking-tight text-white">
+            <p className={`text-3xl font-semibold leading-none tracking-tight ${isLight ? "text-gray-900" : "text-white"}`}>
               {stats.challengesWon}
             </p>
-            <span className="pb-1 text-sm font-medium text-gray-600">/</span>
-            <p className="pb-1 text-base font-medium text-gray-400">
+            <span className={`pb-1 text-sm font-medium ${isLight ? "text-gray-400" : "text-gray-600"}`}>
+              /
+            </span>
+            <p className={`pb-1 text-base font-medium ${isLight ? "text-gray-500" : "text-gray-400"}`}>
               {stats.challengesPlayed}
             </p>
           </div>
@@ -130,7 +159,11 @@ export default function ProgressOverview({
               e.stopPropagation();
               setIsResetModalOpen(true);
             }}
-            className="absolute bottom-3 right-3 opacity-0 transition-all group-hover:opacity-100 rounded-lg border border-white/5 bg-white/5 p-1.5 text-gray-500 hover:border-white/10 hover:bg-white/10 hover:text-rose-500"
+            className={`absolute bottom-3 right-3 rounded-lg border p-1.5 opacity-0 transition-all group-hover:opacity-100 ${
+              isLight
+                ? "border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-100 hover:text-rose-500"
+                : "border-white/5 bg-white/5 text-gray-500 hover:border-white/10 hover:bg-white/10 hover:text-rose-500"
+            }`}
             title="Reset Stats"
           >
             <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,24 +185,39 @@ export default function ProgressOverview({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsResetModalOpen(false)}
-                className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                className={`absolute inset-0 w-full h-full ${
+                  isLight ? "bg-slate-900/60 backdrop-blur-sm" : "bg-black/80 backdrop-blur-md"
+                }`}
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative w-full max-w-sm overflow-hidden rounded-[28px] border border-white/10 bg-[#0d0d0d] p-7 text-center shadow-2xl"
+                className={`relative w-full max-w-sm overflow-hidden rounded-[28px] border p-7 text-center ${
+                  isLight
+                    ? "border-gray-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+                    : "border-white/10 bg-[#0d0d0d] shadow-2xl"
+                }`}
               >
-                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-rose-500/20 bg-rose-500/10 text-2xl">
+                <div
+                  className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border text-2xl ${
+                    isLight
+                      ? "border-rose-200 bg-rose-50"
+                      : "border-rose-500/20 bg-rose-500/10"
+                  }`}
+                >
                   ⚠️
                 </div>
 
-                <h3 className="text-lg font-semibold uppercase tracking-[0.14em] text-white">
+                <h3 className={`text-lg font-semibold uppercase tracking-[0.14em] ${isLight ? "text-gray-900" : "text-white"}`}>
                   Reset Battle Stats?
                 </h3>
 
-                <p className="mt-3 text-xs leading-6 text-gray-500">
-                  This will permanently clear your <span className="text-white">Won / Played</span>{" "}
+                <p className={`mt-3 text-xs leading-6 ${isLight ? "text-gray-600" : "text-gray-500"}`}>
+                  This will permanently clear your{" "}
+                  <span className={isLight ? "text-gray-900" : "text-white"}>
+                    Won / Played
+                  </span>{" "}
                   record. This action cannot be undone.
                 </p>
 
@@ -186,7 +234,9 @@ export default function ProgressOverview({
 
                   <button
                     onClick={() => setIsResetModalOpen(false)}
-                    className="w-full py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500 transition-colors hover:text-white"
+                    className={`w-full py-2 text-[10px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+                      isLight ? "text-gray-500 hover:text-gray-900" : "text-gray-500 hover:text-white"
+                    }`}
                   >
                     Go Back
                   </button>
@@ -198,42 +248,66 @@ export default function ProgressOverview({
 
         <button
           onClick={onRankClick}
-          className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.06]"
+          className={`text-left transition ${
+            isLight
+              ? "rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
+              : "rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.06]"
+          }`}
         >
-          <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">Rank</p>
-          <p className="mt-2 text-3xl font-semibold tracking-tight text-white">#{stats.rank}</p>
+          <p className={`text-[11px] uppercase tracking-[0.18em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
+            Rank
+          </p>
+          <p className={`mt-2 text-3xl font-semibold tracking-tight ${isLight ? "text-gray-900" : "text-white"}`}>
+            #{stats.rank}
+          </p>
         </button>
 
         <button
           onClick={onRankClick}
-          className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:bg-white/[0.06]"
+          className={`text-left transition ${
+            isLight
+              ? "rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
+              : "rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.06]"
+          }`}
         >
-          <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">Points</p>
-          <p className="mt-2 text-3xl font-semibold tracking-tight text-white">
+          <p className={`text-[11px] uppercase tracking-[0.18em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
+            Points
+          </p>
+          <p className={`mt-2 text-3xl font-semibold tracking-tight ${isLight ? "text-gray-900" : "text-white"}`}>
             {stats.totalPoints}
           </p>
         </button>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+      <div className={panelClass}>
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-white">Progress Overview</h3>
-            <p className="mt-1 text-xs text-gray-500">
+            <h3 className={`text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+              Progress Overview
+            </h3>
+            <p className={`mt-1 text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>
               Track your challenge completion across difficulty levels.
             </p>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
+          <div
+            className={`rounded-xl border px-3.5 py-2 ${
+              isLight
+                ? "border-gray-200 bg-gray-50"
+                : "border-white/10 bg-white/[0.03]"
+            }`}
+          >
+            <p className={`text-[10px] uppercase tracking-[0.18em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
               Overall Completion
             </p>
             <div className="mt-1 flex items-center gap-2">
-              <span className="text-sm font-semibold text-white">
+              <span className={`text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                 {stats.totalSolved}/{overallTotal}
               </span>
-              <span className="text-xs text-gray-500">•</span>
-              <span className="text-sm font-medium text-pink-300">{overallPercentage}%</span>
+              <span className={isLight ? "text-gray-400" : "text-gray-500"}>•</span>
+              <span className={`text-sm font-medium ${isLight ? "text-pink-600" : "text-pink-300"}`}>
+                {overallPercentage}%
+              </span>
             </div>
           </div>
         </div>
@@ -247,19 +321,23 @@ export default function ProgressOverview({
               <div key={diff.label}>
                 <div className="mb-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-300">{diff.label}</span>
+                    <span className={`text-sm font-medium ${isLight ? "text-gray-700" : "text-gray-300"}`}>
+                      {diff.label}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-gray-400">
+                    <span className={isLight ? "text-gray-500" : "text-gray-400"}>
                       {diff.solved}/{diff.total}
                     </span>
-                    <span className="text-gray-600">•</span>
-                    <span className="font-medium text-gray-300">{percentage}%</span>
+                    <span className={isLight ? "text-gray-400" : "text-gray-600"}>•</span>
+                    <span className={`font-medium ${isLight ? "text-gray-700" : "text-gray-300"}`}>
+                      {percentage}%
+                    </span>
                   </div>
                 </div>
 
-                <div className={`relative h-2.5 overflow-hidden rounded-full bg-white/8 ${diff.trackColor}`}>
+                <div className={`relative h-2.5 overflow-hidden rounded-full ${diff.trackClass}`}>
                   <div
                     className={`absolute left-0 top-0 h-full rounded-full bg-gradient-to-r ${diff.color} transition-all duration-500`}
                     style={{ width: `${percentage}%` }}
@@ -275,30 +353,40 @@ export default function ProgressOverview({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-        <h3 className="mb-4 text-sm font-semibold text-white">Recent Activity</h3>
+      <div className={panelClass}>
+        <h3 className={`mb-4 text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+          Recent Activity
+        </h3>
 
         <div className="space-y-3">
           {recentSubmissions.length === 0 ? (
-            <p className="py-4 text-center text-sm text-gray-500">
+            <p className={`py-4 text-center text-sm ${isLight ? "text-gray-500" : "text-gray-500"}`}>
               No submissions yet. Start coding!
             </p>
           ) : (
             recentSubmissions.slice(0, 3).map((sub, index) => (
               <div
                 key={getSubmissionKey(sub, index)}
-                className="flex items-center justify-between border-b border-white/5 py-2.5 last:border-0"
+                className={`flex items-center justify-between border-b py-2.5 last:border-0 ${
+                  isLight ? "border-gray-200" : "border-white/5"
+                }`}
               >
                 <div>
-                  <p className="text-sm font-medium text-white">{sub.title}</p>
-                  <p className="text-xs text-gray-500">{sub.date}</p>
+                  <p className={`text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
+                    {sub.title}
+                  </p>
+                  <p className={`text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>
+                    {sub.date}
+                  </p>
                 </div>
 
                 <div className="text-right">
                   <p className={`text-xs font-medium ${getStatusColor(sub.status)}`}>
                     {sub.status}
                   </p>
-                  <p className="text-xs text-gray-500">Score: {sub.score}</p>
+                  <p className={`text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>
+                    Score: {sub.score}
+                  </p>
                 </div>
               </div>
             ))
@@ -316,7 +404,11 @@ export default function ProgressOverview({
 
         <button
           onClick={onViewProfile}
-          className="flex-1 rounded-xl border border-white/10 py-3 font-medium text-white transition-colors hover:bg-white/5"
+          className={`flex-1 rounded-xl border py-3 font-medium transition-colors ${
+            isLight
+              ? "border-gray-200 bg-white text-gray-900 hover:bg-gray-100"
+              : "border-white/10 text-white hover:bg-white/5"
+          }`}
         >
           View Profile
         </button>

@@ -91,12 +91,12 @@ func Register(c *gin.Context) {
 	input.Country = strings.TrimSpace(input.Country)
 
 	if input.Username == "" || input.Email == "" || strings.TrimSpace(input.Password) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "MISSING_REQUIRED_FIELDS"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Please fill in all required fields"})
 		return
 	}
 
 	if len(input.Password) < 8 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "WEAK_PASSWORD"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 8 characters"})
 		return
 	}
 
@@ -190,7 +190,7 @@ func Login(c *gin.Context) {
 	input.Email = normalizeEmail(input.Email)
 
 	if input.Email == "" || strings.TrimSpace(input.Password) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "MISSING_REQUIRED_FIELDS"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Please enter your email and password"})
 		return
 	}
 

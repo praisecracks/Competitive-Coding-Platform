@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "../../context/ThemeContext";
 
 interface NewsItem {
   id: string;
@@ -35,55 +36,55 @@ interface SourceConfig {
 }
 
 const GitHubIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
   </svg>
 );
 
 const DevToIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
     <path d="M7.42 10.05c-.18-.16-.46-.23-.84-.23h-.78v4.61h.78c.38 0 .66-.07.84-.23.18-.16.27-.44.27-.85v-2.45c0-.41-.09-.69-.27-.85zM12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm-2.88 12.89c0 .95-.27 1.64-.82 2.08-.55.44-1.29.67-2.22.67H4.5V8.36h1.58c.93 0 1.67.23 2.22.67.55.44.82 1.13.82 2.08v1.78zm5.38-2.75h-2.06v1.38h1.7v1.33h-1.7v1.69h2.06v1.44h-2.26c-.57 0-1.01-.15-1.32-.46-.31-.31-.46-.74-.46-1.29v-3.94c0-.55.15-.98.46-1.29.31-.31.75-.46 1.32-.46h2.26v1.44zm4.75 5.06c-.57.57-1.32.86-2.25.86-.93 0-1.68-.29-2.25-.86-.57-.57-.86-1.32-.86-2.25v-2.94c0-.93.29-1.68.86-2.25.57-.57 1.32-.86 2.25-.86.93 0 1.68.29 2.25.86.57.57.86 1.32.86 2.25v2.94c0 .93-.29 1.68-.86 2.25z" />
   </svg>
 );
 
 const HackerNewsIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
     <path d="M0 0v24h24V0H0zm5.2 4h2.2l3.1 6.2L13.7 4h2.2l-5.2 9.8V20H9.8v-6.2L5.2 4z" />
   </svg>
 );
 
 const RedditIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.5 13.5c0 .828-.672 1.5-1.5 1.5s-1.5-.672-1.5-1.5.672-1.5 1.5-1.5 1.5.672 1.5 1.5zm-8.5 1.5c-.828 0-1.5-.672-1.5-1.5s.672-1.5 1.5-1.5 1.5.672 1.5 1.5-.672 1.5-1.5 1.5zm4.5 3.5c-1.5 0-2.8-.8-3.6-2h7.2c-.8 1.2-2.1 2-3.6 2z" />
   </svg>
 );
 
 const TrendingIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
   </svg>
 );
 
 const RefreshIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
   </svg>
 );
 
 const ExternalLinkIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
   </svg>
 );
 
 const CloseIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 
 const AutoRotateIcon = () => (
-  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
   </svg>
 );
@@ -201,6 +202,9 @@ function dedupeNews(items: NewsItem[], source: SourceType): NewsItem[] {
 }
 
 export default function SocialsNews() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSource, setCurrentSource] = useState<SourceType>("github");
@@ -239,10 +243,9 @@ export default function SocialsNews() {
   }, []);
 
   const fetchGitHubTrending = useCallback(async (): Promise<NewsItem[]> => {
-    const response = await fetch(
-      "/api/news-proxy?source=github",
-      { cache: "no-store" }
-    );
+    const response = await fetch("/api/news-proxy?source=github", {
+      cache: "no-store",
+    });
 
     if (!response.ok) {
       throw new Error("Failed to fetch GitHub repositories");
@@ -277,10 +280,9 @@ export default function SocialsNews() {
   }, []);
 
   const fetchDevToNews = useCallback(async (): Promise<NewsItem[]> => {
-    const response = await fetch(
-      "/api/news-proxy?source=devto",
-      { cache: "no-store" }
-    );
+    const response = await fetch("/api/news-proxy?source=devto", {
+      cache: "no-store",
+    });
 
     if (!response.ok) {
       throw new Error("Failed to fetch DEV articles");
@@ -311,10 +313,9 @@ export default function SocialsNews() {
   }, []);
 
   const fetchHackerNews = useCallback(async (): Promise<NewsItem[]> => {
-    const response = await fetch(
-      "/api/news-proxy?source=hackernews_ids",
-      { cache: "no-store" }
-    );
+    const response = await fetch("/api/news-proxy?source=hackernews_ids", {
+      cache: "no-store",
+    });
 
     if (!response.ok) {
       throw new Error("Failed to fetch Hacker News ids");
@@ -337,37 +338,35 @@ export default function SocialsNews() {
       })
     );
 
-    return stories
-      .filter(Boolean)
-      .map((story: any, index: number) => ({
-        id: `hn-${story?.id ?? index}`,
-        title: story?.title || "Untitled story",
-        summary:
-          story?.text?.slice(0, 120) ||
-          `${story?.score ?? 0} points • ${story?.descendants ?? 0} comments`,
-        source: "Hacker News",
-        sourceIcon: <HackerNewsIcon />,
-        url: story?.url || `https://news.ycombinator.com/item?id=${story?.id ?? index}`,
-        timestamp: story?.time
-          ? new Date(story.time * 1000).toISOString()
-          : new Date().toISOString(),
-        category: "tech",
-        engagement: {
-          likes: story?.score ?? 0,
-          comments: story?.descendants ?? 0,
-        },
-        author: {
-          name: story?.by || "Hacker News",
-          username: story?.by || "hn",
-        },
-      }));
+    return stories.filter(Boolean).map((story: any, index: number) => ({
+      id: `hn-${story?.id ?? index}`,
+      title: story?.title || "Untitled story",
+      summary:
+        story?.text?.slice(0, 120) ||
+        `${story?.score ?? 0} points • ${story?.descendants ?? 0} comments`,
+      source: "Hacker News",
+      sourceIcon: <HackerNewsIcon />,
+      url:
+        story?.url || `https://news.ycombinator.com/item?id=${story?.id ?? index}`,
+      timestamp: story?.time
+        ? new Date(story.time * 1000).toISOString()
+        : new Date().toISOString(),
+      category: "tech",
+      engagement: {
+        likes: story?.score ?? 0,
+        comments: story?.descendants ?? 0,
+      },
+      author: {
+        name: story?.by || "Hacker News",
+        username: story?.by || "hn",
+      },
+    }));
   }, []);
 
   const fetchRedditTech = useCallback(async (): Promise<NewsItem[]> => {
-    const response = await fetch(
-      "/api/news-proxy?source=reddit",
-      { cache: "no-store" }
-    );
+    const response = await fetch("/api/news-proxy?source=reddit", {
+      cache: "no-store",
+    });
 
     if (!response.ok) {
       throw new Error("Failed to fetch Reddit posts");
@@ -546,15 +545,37 @@ export default function SocialsNews() {
   }, [clearTimers]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-      <div className="border-b border-white/10 p-5">
+    <div
+      className={`overflow-hidden rounded-2xl border ${
+        isLight
+          ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+          : "border-white/10 bg-[#0b0d11]"
+      }`}
+    >
+      <div
+        className={`border-b p-5 ${
+          isLight ? "border-gray-200 bg-white" : "border-white/10"
+        }`}
+      >
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-pink-500 to-purple-500">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white">
               <TrendingIcon />
             </div>
-            <h2 className="text-lg font-semibold text-white">Tech Pulse</h2>
-            <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] text-gray-500">
+            <h2
+              className={`text-lg font-semibold ${
+                isLight ? "text-gray-900" : "text-white"
+              }`}
+            >
+              Tech Pulse
+            </h2>
+            <span
+              className={`rounded-full px-2 py-1 text-[10px] ${
+                isLight
+                  ? "border border-gray-200 bg-gray-50 text-gray-500"
+                  : "bg-white/5 text-gray-500"
+              }`}
+            >
               Auto-rotating
             </span>
           </div>
@@ -564,7 +585,11 @@ export default function SocialsNews() {
               onClick={() => setAutoRotate((prev) => !prev)}
               className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
                 autoRotate
-                  ? "text-green-400 hover:text-green-300"
+                  ? isLight
+                    ? "text-emerald-600 hover:text-emerald-700"
+                    : "text-green-400 hover:text-green-300"
+                  : isLight
+                  ? "text-gray-500 hover:text-gray-700"
                   : "text-gray-500 hover:text-gray-400"
               }`}
               title={autoRotate ? "Auto-rotate on" : "Auto-rotate off"}
@@ -576,7 +601,11 @@ export default function SocialsNews() {
             <button
               onClick={handleManualRefresh}
               disabled={loading}
-              className="p-1 text-gray-400 transition-colors hover:text-pink-400 disabled:opacity-50"
+              className={`p-1 transition-colors disabled:opacity-50 ${
+                isLight
+                  ? "text-gray-500 hover:text-pink-600"
+                  : "text-gray-400 hover:text-pink-400"
+              }`}
             >
               <RefreshIcon />
             </button>
@@ -591,6 +620,8 @@ export default function SocialsNews() {
               className={`relative rounded-lg p-2 text-center transition-all ${
                 currentSource === source.id
                   ? `bg-gradient-to-r ${source.color} scale-[1.02] text-white shadow-lg`
+                  : isLight
+                  ? "border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                   : `${source.bgColor} text-gray-400 hover:bg-white/10 hover:text-white`
               }`}
             >
@@ -607,21 +638,41 @@ export default function SocialsNews() {
           ))}
         </div>
 
-        <p className="mt-3 text-center text-[10px] text-gray-500">
+        <p
+          className={`mt-3 text-center text-[10px] ${
+            isLight ? "text-gray-500" : "text-gray-500"
+          }`}
+        >
           {currentSourceConfig.description}
         </p>
       </div>
 
       {loading && (
         <div className="p-6">
-          <div className="space-y-3 animate-pulse">
+          <div className="animate-pulse space-y-3">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="flex gap-3">
-                <div className="h-10 w-10 rounded-full bg-white/10" />
+                <div
+                  className={`h-10 w-10 rounded-full ${
+                    isLight ? "bg-gray-200" : "bg-white/10"
+                  }`}
+                />
                 <div className="flex-1">
-                  <div className="mb-2 h-4 w-3/4 rounded bg-white/10" />
-                  <div className="h-3 w-full rounded bg-white/10" />
-                  <div className="mt-1 h-3 w-2/3 rounded bg-white/10" />
+                  <div
+                    className={`mb-2 h-4 w-3/4 rounded ${
+                      isLight ? "bg-gray-200" : "bg-white/10"
+                    }`}
+                  />
+                  <div
+                    className={`h-3 w-full rounded ${
+                      isLight ? "bg-gray-200" : "bg-white/10"
+                    }`}
+                  />
+                  <div
+                    className={`mt-1 h-3 w-2/3 rounded ${
+                      isLight ? "bg-gray-200" : "bg-white/10"
+                    }`}
+                  />
                 </div>
               </div>
             ))}
@@ -632,10 +683,14 @@ export default function SocialsNews() {
       {error && !loading && (
         <div className="p-6 text-center">
           <div className="mb-2 text-3xl">⚠️</div>
-          <p className="text-sm text-red-400">{error}</p>
+          <p className={`text-sm ${isLight ? "text-rose-600" : "text-red-400"}`}>
+            {error}
+          </p>
           <button
             onClick={handleManualRefresh}
-            className="mt-3 text-xs text-pink-400 hover:text-pink-300"
+            className={`mt-3 text-xs ${
+              isLight ? "text-pink-600 hover:text-pink-700" : "text-pink-400 hover:text-pink-300"
+            }`}
           >
             Try Again
           </button>
@@ -643,7 +698,11 @@ export default function SocialsNews() {
       )}
 
       {!loading && (
-        <div className="max-h-[500px] divide-y divide-white/5 overflow-y-auto">
+        <div
+          className={`max-h-[500px] divide-y overflow-y-auto ${
+            isLight ? "divide-gray-200" : "divide-white/5"
+          }`}
+        >
           {news.map((item, idx) => (
             <motion.div
               key={item.id}
@@ -651,7 +710,9 @@ export default function SocialsNews() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(idx * 0.03, 0.3) }}
               onClick={() => setSelectedNews(item)}
-              className="group cursor-pointer p-4 transition-all hover:bg-white/5"
+              className={`group cursor-pointer p-4 transition-all ${
+                isLight ? "hover:bg-gray-50" : "hover:bg-white/5"
+              }`}
             >
               <div className="flex gap-3">
                 <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white">
@@ -659,20 +720,26 @@ export default function SocialsNews() {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <h3 className="line-clamp-2 text-sm font-medium text-white transition-colors group-hover:text-pink-400">
+                  <h3
+                    className={`line-clamp-2 text-sm font-medium transition-colors ${
+                      isLight
+                        ? "text-gray-900 group-hover:text-pink-600"
+                        : "text-white group-hover:text-pink-400"
+                    }`}
+                  >
                     {item.title}
                   </h3>
 
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <span className="text-[10px] text-gray-500">{item.source}</span>
-                    <span className="h-1 w-1 rounded-full bg-gray-600" />
+                    <span className={`h-1 w-1 rounded-full ${isLight ? "bg-gray-400" : "bg-gray-600"}`} />
                     <span className="text-[10px] text-gray-500">
                       {formatTimeAgo(item.timestamp)}
                     </span>
 
                     {item.engagement?.likes !== undefined && (
                       <>
-                        <span className="h-1 w-1 rounded-full bg-gray-600" />
+                        <span className={`h-1 w-1 rounded-full ${isLight ? "bg-gray-400" : "bg-gray-600"}`} />
                         <span className="text-[10px] text-gray-500">
                           ⭐ {formatNumber(item.engagement.likes)}
                         </span>
@@ -680,7 +747,11 @@ export default function SocialsNews() {
                     )}
                   </div>
 
-                  <p className="mt-2 line-clamp-2 text-xs text-gray-400">
+                  <p
+                    className={`mt-2 line-clamp-2 text-xs ${
+                      isLight ? "text-gray-600" : "text-gray-400"
+                    }`}
+                  >
                     {item.summary}
                   </p>
 
@@ -696,7 +767,13 @@ export default function SocialsNews() {
         </div>
       )}
 
-      <div className="border-t border-white/10 bg-white/5 px-5 py-3">
+      <div
+        className={`border-t px-5 py-3 ${
+          isLight
+            ? "border-gray-200 bg-gray-50"
+            : "border-white/10 bg-white/5"
+        }`}
+      >
         <div className="flex items-center justify-between text-[10px] text-gray-500">
           <span>
             {news.length} stories from {currentSourceConfig.name}
@@ -716,17 +793,27 @@ export default function SocialsNews() {
       <AnimatePresence>
         {selectedNews && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-            <div 
-              className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+            <div
+              className={`absolute inset-0 ${
+                isLight ? "bg-slate-900/35" : "bg-black/80"
+              } backdrop-blur-md`}
               onClick={() => setSelectedNews(null)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#0d0d0d] shadow-2xl flex flex-col max-h-[90vh]"
+              className={`relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border ${
+                isLight
+                  ? "border-gray-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+                  : "border-white/10 bg-[#0d0d0d] shadow-2xl"
+              }`}
             >
-              <div className="border-b border-white/10 p-5">
+              <div
+                className={`border-b p-5 ${
+                  isLight ? "border-gray-200" : "border-white/10"
+                }`}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white">
@@ -734,7 +821,11 @@ export default function SocialsNews() {
                     </div>
 
                     <div>
-                      <p className="text-sm font-medium text-white">
+                      <p
+                        className={`text-sm font-medium ${
+                          isLight ? "text-gray-900" : "text-white"
+                        }`}
+                      >
                         {selectedNews.source}
                       </p>
                       <p className="text-xs text-gray-500">
@@ -745,7 +836,11 @@ export default function SocialsNews() {
 
                   <button
                     onClick={() => setSelectedNews(null)}
-                    className="text-gray-500 hover:text-white"
+                    className={`${
+                      isLight
+                        ? "text-gray-500 hover:text-gray-900"
+                        : "text-gray-500 hover:text-white"
+                    }`}
                   >
                     <CloseIcon />
                   </button>
@@ -753,20 +848,32 @@ export default function SocialsNews() {
               </div>
 
               <div className="p-5">
-                <h3 className="mb-3 text-lg font-semibold text-white">
+                <h3
+                  className={`mb-3 text-lg font-semibold ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
                   {selectedNews.title}
                 </h3>
 
-                <p className="mb-4 text-sm text-gray-300">
+                <p
+                  className={`mb-4 text-sm ${
+                    isLight ? "text-gray-700" : "text-gray-300"
+                  }`}
+                >
                   {selectedNews.summary}
                 </p>
 
                 {selectedNews.engagement && (
-                  <div className="mb-4 flex items-center gap-4 rounded-lg bg-white/5 p-3">
-                    <span className="text-sm">
+                  <div
+                    className={`mb-4 flex items-center gap-4 rounded-lg p-3 ${
+                      isLight ? "bg-gray-50" : "bg-white/5"
+                    }`}
+                  >
+                    <span className={`text-sm ${isLight ? "text-gray-700" : ""}`}>
                       ⭐ {formatNumber(selectedNews.engagement.likes || 0)}
                     </span>
-                    <span className="text-sm">
+                    <span className={`text-sm ${isLight ? "text-gray-700" : ""}`}>
                       💬 {formatNumber(selectedNews.engagement.comments || 0)}
                     </span>
                   </div>
@@ -775,7 +882,11 @@ export default function SocialsNews() {
                 <button
                   onClick={() => {
                     if (selectedNews.url && selectedNews.url !== "#") {
-                      window.open(selectedNews.url, "_blank", "noopener,noreferrer");
+                      window.open(
+                        selectedNews.url,
+                        "_blank",
+                        "noopener,noreferrer"
+                      );
                     }
                   }}
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"

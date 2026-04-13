@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { RefreshCw, TrendingUp, Award, Zap } from "lucide-react";
+import { useTheme } from "../../context/ThemeContext";
 
 type StatCardProps = {
   label: string;
@@ -40,6 +41,9 @@ type AnalyticsData = {
 };
 
 export default function AnalyticsPage() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -85,8 +89,7 @@ export default function AnalyticsPage() {
             (result.recentActivity?.length > 0
               ? Math.round(
                   result.recentActivity.reduce(
-                    (sum: number, item: ActivityItem) =>
-                      sum + (item.score || 0),
+                    (sum: number, item: ActivityItem) => sum + (item.score || 0),
                     0
                   ) / result.recentActivity.length
                 )
@@ -119,10 +122,24 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#050507]">
+      <div
+        className={`flex min-h-screen items-center justify-center ${
+          isLight ? "bg-[#f8fafc]" : "bg-[#050507]"
+        }`}
+      >
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-500/20 border-t-pink-500" />
-          <p className="text-xs uppercase tracking-widest text-gray-500">
+          <div
+            className={`h-8 w-8 animate-spin rounded-full border-4 ${
+              isLight
+                ? "border-pink-200 border-t-pink-500"
+                : "border-pink-500/20 border-t-pink-500"
+            }`}
+          />
+          <p
+            className={`text-xs uppercase tracking-widest ${
+              isLight ? "text-gray-500" : "text-gray-500"
+            }`}
+          >
             Loading analytics...
           </p>
         </div>
@@ -132,9 +149,23 @@ export default function AnalyticsPage() {
 
   if (error || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#050507]">
-        <div className="w-full max-w-sm rounded-2xl border border-red-500/10 bg-red-500/5 p-6 text-center">
-          <p className="text-sm font-medium text-red-400">
+      <div
+        className={`flex min-h-screen items-center justify-center ${
+          isLight ? "bg-[#f8fafc]" : "bg-[#050507]"
+        }`}
+      >
+        <div
+          className={`w-full max-w-sm rounded-2xl border p-6 text-center ${
+            isLight
+              ? "border-red-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
+              : "border-red-500/10 bg-red-500/5"
+          }`}
+        >
+          <p
+            className={`text-sm font-medium ${
+              isLight ? "text-red-600" : "text-red-400"
+            }`}
+          >
             {error || "Something went wrong"}
           </p>
 
@@ -145,14 +176,22 @@ export default function AnalyticsPage() {
                 setLoading(true);
                 fetchAnalytics();
               }}
-              className="rounded-lg bg-red-500/20 px-4 py-2.5 text-xs font-bold text-red-400 transition hover:bg-red-500/30"
+              className={`rounded-lg px-4 py-2.5 text-xs font-bold transition ${
+                isLight
+                  ? "border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                  : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+              }`}
             >
               Try Again
             </button>
 
             <Link
               href="/dashboard"
-              className="rounded-lg bg-white/5 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/10"
+              className={`rounded-lg px-4 py-2.5 text-xs font-bold transition ${
+                isLight
+                  ? "border border-gray-200 bg-gray-50 text-gray-900 hover:bg-gray-100"
+                  : "bg-white/5 text-white hover:bg-white/10"
+              }`}
             >
               Back to Dashboard
             </Link>
@@ -163,31 +202,63 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden text-white">
+    <div
+      className={`min-h-screen overflow-x-hidden ${
+        isLight ? "bg-[#f8fafc] text-gray-900" : "text-white"
+      }`}
+    >
       <div className="mx-auto max-w-[1400px] px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
-        <div className="mb-5 overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-lg">
-          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(236,72,153,0.08),transparent_22%)] px-4 py-4 sm:px-6">
+        <div
+          className={`mb-5 overflow-hidden rounded-2xl border shadow-lg ${
+            isLight
+              ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
+              : "border-white/10 bg-[#0a0a0a]"
+          }`}
+        >
+          <div
+            className={`px-4 py-4 sm:px-6 ${
+              isLight
+                ? "border-b border-gray-200 bg-[radial-gradient(circle_at_top_right,rgba(236,72,153,0.06),transparent_22%)]"
+                : "border-b border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(236,72,153,0.08),transparent_22%)]"
+            }`}
+          >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="max-w-3xl">
                 <motion.span
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="inline-flex rounded-lg border border-pink-500/20 bg-pink-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.15em] text-pink-200"
+                  className={`inline-flex rounded-lg border px-3 py-1 text-[10px] uppercase tracking-[0.15em] ${
+                    isLight
+                      ? "border-pink-200 bg-pink-50 text-pink-600"
+                      : "border-pink-500/20 bg-pink-500/10 text-pink-200"
+                  }`}
                 >
                   📊 Live Performance Metrics
                 </motion.span>
 
-                <h1 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                <h1
+                  className={`mt-3 text-2xl font-bold tracking-tight sm:text-3xl ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
                   Your Performance Insights
                 </h1>
 
-                <p className="mt-2 text-xs leading-relaxed text-gray-400 sm:text-sm">
+                <p
+                  className={`mt-2 text-xs leading-relaxed sm:text-sm ${
+                    isLight ? "text-gray-600" : "text-gray-400"
+                  }`}
+                >
                   Real-time analysis of your coding journey. Track consistency,
                   master categories, and identify growth areas.
                 </p>
 
                 {data.lastUpdated && (
-                  <p className="mt-2 text-[10px] text-gray-600">
+                  <p
+                    className={`mt-2 text-[10px] ${
+                      isLight ? "text-gray-500" : "text-gray-600"
+                    }`}
+                  >
                     Last updated: {data.lastUpdated}
                   </p>
                 )}
@@ -197,20 +268,26 @@ export default function AnalyticsPage() {
                 <button
                   onClick={() => fetchAnalytics(true)}
                   disabled={isRefreshing}
-                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-4 text-xs font-medium text-white transition hover:bg-white/[0.08] disabled:opacity-50"
+                  className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border px-4 text-xs font-medium transition disabled:opacity-50 ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
+                      : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                  }`}
                   title="Refresh data"
                 >
                   <RefreshCw
-                    className={`h-3.5 w-3.5 ${
-                      isRefreshing ? "animate-spin" : ""
-                    }`}
+                    className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}
                   />
                   {isRefreshing ? "Refreshing" : "Refresh"}
                 </button>
 
                 <Link
                   href="/dashboard"
-                  className="inline-flex h-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-4 text-xs font-medium text-white transition hover:bg-white/[0.08]"
+                  className={`inline-flex h-9 items-center justify-center rounded-lg border px-4 text-xs font-medium transition ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
+                      : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                  }`}
                 >
                   Dashboard
                 </Link>
@@ -225,19 +302,25 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-px bg-white/5 sm:grid-cols-2 md:grid-cols-4">
+          <div
+            className={`grid grid-cols-2 gap-px sm:grid-cols-2 md:grid-cols-4 ${
+              isLight ? "bg-gray-200" : "bg-white/5"
+            }`}
+          >
             <StatCard
               label="Total Points"
               value={data.stats.totalPoints.toLocaleString()}
               subtext="Lifetime earnings"
               icon={<Award className="h-4 w-4" />}
               trend="Primary metric"
+              isLight={isLight}
             />
             <StatCard
               label="Acceptance"
               value={`${Math.round(data.stats.acceptanceRate)}%`}
               subtext="Success rate"
               icon={<TrendingUp className="h-4 w-4" />}
+              isLight={isLight}
             />
             <StatCard
               label="Streak"
@@ -245,24 +328,40 @@ export default function AnalyticsPage() {
               subtext="Day streak"
               icon={<Zap className="h-4 w-4" />}
               trend="Keep it going!"
+              isLight={isLight}
             />
             <StatCard
               label="Solved"
               value={data.stats.totalSolved}
               subtext="Unique challenges"
+              isLight={isLight}
             />
           </div>
         </div>
 
         <div className="grid items-start gap-5 md:grid-cols-2 lg:grid-cols-3">
           <div className="min-w-0 space-y-4 sm:space-y-5 md:col-span-2">
-            <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-4 sm:p-5 lg:p-6">
+            <section
+              className={`rounded-2xl border p-4 sm:p-5 lg:p-6 ${
+                isLight
+                  ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+                  : "border-white/10 bg-[#0a0a0a]"
+              }`}
+            >
               <div className="mb-4 flex items-center justify-between sm:mb-6">
                 <div>
-                  <h2 className="text-lg font-bold text-white">
+                  <h2
+                    className={`text-lg font-bold ${
+                      isLight ? "text-gray-900" : "text-white"
+                    }`}
+                  >
                     Weekly Activity
                   </h2>
-                  <p className="mt-0.5 text-xs text-gray-500">
+                  <p
+                    className={`mt-0.5 text-xs ${
+                      isLight ? "text-gray-500" : "text-gray-500"
+                    }`}
+                  >
                     Challenges attempted per day (Solo + Duo)
                   </p>
                 </div>
@@ -281,28 +380,44 @@ export default function AnalyticsPage() {
                       );
                       const heightPercent = (item.value / maxValue) * 100;
 
-return (
+                      return (
                         <div
                           key={i}
-                          className="group relative flex h-full flex-1 flex-col items-center justify-end px-1 cursor-pointer"
+                          className="group relative flex h-full flex-1 cursor-pointer flex-col items-center justify-end px-1"
                         >
                           <div className="absolute left-1/2 top-30 z-30 -translate-x-1/2 -translate-y-full opacity-0 transition-all duration-200 group-hover:opacity-100">
-                            <span className="whitespace-nowrap rounded-md border border-purple-500/30 bg-[#141019] px-2.5 py-1.5 text-xs font-semibold text-white shadow-lg">
+                            <span
+                              className={`whitespace-nowrap rounded-md border px-2.5 py-1.5 text-xs font-semibold shadow-lg ${
+                                isLight
+                                  ? "border-gray-200 bg-white text-gray-900"
+                                  : "border-purple-500/30 bg-[#141019] text-white"
+                              }`}
+                            >
                               {item.value} {item.value === 1 ? "attempt" : "attempts"}
                             </span>
                           </div>
 
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${Math.max(heightPercent, 8)}%` }}
-                          transition={{ delay: i * 0.05, duration: 0.6 }}
-                          className="w-full max-w-[40px] rounded-t-lg bg-gradient-to-t from-pink-500/30 via-pink-500/50 to-purple-500 shadow-lg shadow-pink-500/20 transition-all duration-200 group-hover:scale-105 group-hover:brightness-125 group-hover:shadow-pink-500/40"
-                        />
+                          <motion.div
+                            initial={{ height: 0 }}
+                            animate={{ height: `${Math.max(heightPercent, 8)}%` }}
+                            transition={{ delay: i * 0.05, duration: 0.6 }}
+                            className={`w-full max-w-[40px] rounded-t-lg bg-gradient-to-t from-pink-500/30 via-pink-500/50 to-purple-500 transition-all duration-200 group-hover:scale-105 group-hover:brightness-125 ${
+                              isLight
+                                ? "shadow-[0_10px_24px_rgba(236,72,153,0.16)] group-hover:shadow-[0_14px_30px_rgba(236,72,153,0.24)]"
+                                : "shadow-lg shadow-pink-500/20 group-hover:shadow-pink-500/40"
+                            }`}
+                          />
 
-                        <span className="mt-3 text-xs font-medium text-gray-500 transition-colors group-hover:text-white">
-                          {item.day}
-                        </span>
-                      </div>
+                          <span
+                            className={`mt-3 text-xs font-medium transition-colors ${
+                              isLight
+                                ? "text-gray-500 group-hover:text-gray-900"
+                                : "text-gray-500 group-hover:text-white"
+                            }`}
+                          >
+                            {item.day}
+                          </span>
+                        </div>
                       );
                     })}
                   </div>
@@ -310,19 +425,41 @@ return (
               </div>
             </section>
 
-            <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a]">
-              <div className="border-b border-white/10 p-4 sm:p-5 lg:p-6">
-                <h2 className="text-lg font-bold text-white">
+            <section
+              className={`min-w-0 overflow-hidden rounded-2xl border ${
+                isLight
+                  ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+                  : "border-white/10 bg-[#0a0a0a]"
+              }`}
+            >
+              <div
+                className={`p-4 sm:p-5 lg:p-6 ${
+                  isLight ? "border-b border-gray-200" : "border-b border-white/10"
+                }`}
+              >
+                <h2
+                  className={`text-lg font-bold ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
                   Recent Attempts
                 </h2>
-                <p className="mt-0.5 text-xs text-gray-500">
+                <p
+                  className={`mt-0.5 text-xs ${
+                    isLight ? "text-gray-500" : "text-gray-500"
+                  }`}
+                >
                   Your latest challenge interactions
                 </p>
               </div>
 
               {data.recentActivity.length === 0 ? (
                 <div className="p-8 text-center">
-                  <p className="text-xs text-gray-500">
+                  <p
+                    className={`text-xs ${
+                      isLight ? "text-gray-500" : "text-gray-500"
+                    }`}
+                  >
                     No activity yet. Start solving challenges!
                   </p>
                 </div>
@@ -330,7 +467,13 @@ return (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[400px] text-left text-xs">
                     <thead>
-                      <tr className="border-b border-white/5 bg-white/[0.02] uppercase tracking-widest text-gray-500">
+                      <tr
+                        className={`uppercase tracking-widest ${
+                          isLight
+                            ? "border-b border-gray-200 bg-gray-50 text-gray-500"
+                            : "border-b border-white/5 bg-white/[0.02] text-gray-500"
+                        }`}
+                      >
                         <th className="px-5 py-3 font-medium">Challenge</th>
                         <th className="px-5 py-3 font-medium">Difficulty</th>
                         <th className="px-5 py-3 font-medium">Status</th>
@@ -338,17 +481,29 @@ return (
                       </tr>
                     </thead>
 
-                    <tbody className="divide-y divide-white/5">
+                    <tbody
+                      className={isLight ? "divide-y divide-gray-200" : "divide-y divide-white/5"}
+                    >
                       {data.recentActivity.map((item, i) => (
                         <tr
                           key={i}
-                          className="group transition hover:bg-white/[0.02]"
+                          className={`group transition ${
+                            isLight ? "hover:bg-gray-50" : "hover:bg-white/[0.02]"
+                          }`}
                         >
                           <td className="px-5 py-3">
-                            <div className="text-xs font-medium text-white">
+                            <div
+                              className={`text-xs font-medium ${
+                                isLight ? "text-gray-900" : "text-white"
+                              }`}
+                            >
                               {item.title}
                             </div>
-                            <div className="text-[10px] text-gray-500">
+                            <div
+                              className={`text-[10px] ${
+                                isLight ? "text-gray-500" : "text-gray-500"
+                              }`}
+                            >
                               {item.category}
                             </div>
                           </td>
@@ -357,9 +512,15 @@ return (
                             <span
                               className={`inline-flex rounded-lg px-2 py-1 text-[9px] font-semibold ${
                                 item.difficulty === "Easy"
-                                  ? "bg-emerald-500/10 text-emerald-400"
+                                  ? isLight
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-emerald-500/10 text-emerald-400"
                                   : item.difficulty === "Medium"
-                                  ? "bg-yellow-500/10 text-yellow-400"
+                                  ? isLight
+                                    ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                    : "bg-yellow-500/10 text-yellow-400"
+                                  : isLight
+                                  ? "bg-rose-50 text-rose-700 border border-rose-200"
                                   : "bg-red-500/10 text-red-400"
                               }`}
                             >
@@ -371,9 +532,15 @@ return (
                             <span
                               className={`text-[10px] font-medium ${
                                 item.status === "Accepted"
-                                  ? "text-emerald-400"
+                                  ? isLight
+                                    ? "text-emerald-600"
+                                    : "text-emerald-400"
                                   : item.status === "Pending"
-                                  ? "text-yellow-400"
+                                  ? isLight
+                                    ? "text-amber-600"
+                                    : "text-yellow-400"
+                                  : isLight
+                                  ? "text-rose-600"
                                   : "text-rose-400"
                               }`}
                             >
@@ -381,7 +548,11 @@ return (
                             </span>
                           </td>
 
-                          <td className="px-5 py-3 text-[10px] text-gray-500">
+                          <td
+                            className={`px-5 py-3 text-[10px] ${
+                              isLight ? "text-gray-500" : "text-gray-500"
+                            }`}
+                          >
                             {item.date}
                           </td>
                         </tr>
@@ -395,8 +566,18 @@ return (
 
           <div className="min-w-0 self-start">
             <div className="space-y-4 sm:space-y-5 lg:sticky lg:top-28">
-              <section className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-4 sm:p-5 lg:p-6">
-                <h2 className="mb-4 text-lg font-bold text-white sm:mb-5">
+              <section
+                className={`rounded-2xl border p-4 sm:p-5 lg:p-6 ${
+                  isLight
+                    ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+                    : "border-white/10 bg-[#0a0a0a]"
+                }`}
+              >
+                <h2
+                  className={`mb-4 text-lg font-bold sm:mb-5 ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
                   Completion
                 </h2>
 
@@ -408,15 +589,27 @@ return (
                     return (
                       <div key={i}>
                         <div className="mb-1.5 flex justify-between text-xs">
-                          <span className="font-medium text-gray-400">
+                          <span
+                            className={`font-medium ${
+                              isLight ? "text-gray-600" : "text-gray-400"
+                            }`}
+                          >
                             {item.label}
                           </span>
-                          <span className="font-bold text-white">
+                          <span
+                            className={`font-bold ${
+                              isLight ? "text-gray-900" : "text-white"
+                            }`}
+                          >
                             {item.solved}/{item.total}
                           </span>
                         </div>
 
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                        <div
+                          className={`h-1.5 w-full overflow-hidden rounded-full ${
+                            isLight ? "bg-gray-200" : "bg-white/5"
+                          }`}
+                        >
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${percentage}%` }}
@@ -435,8 +628,18 @@ return (
                 </div>
               </section>
 
-              <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] p-4 sm:p-5 lg:p-6">
-                <h2 className="mb-4 text-lg font-bold text-white">
+              <section
+                className={`overflow-hidden rounded-2xl border p-4 sm:p-5 lg:p-6 ${
+                  isLight
+                    ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+                    : "border-white/10 bg-[#0a0a0a]"
+                }`}
+              >
+                <h2
+                  className={`mb-4 text-lg font-bold ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
                   Category Strength
                 </h2>
 
@@ -444,31 +647,61 @@ return (
                   {data.categoryPerformance.slice(0, 5).map((item, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.03] p-2.5 transition hover:bg-white/[0.05]"
+                      className={`flex items-center justify-between rounded-lg border p-2.5 transition ${
+                        isLight
+                          ? "border-gray-200 bg-gray-50 hover:bg-gray-100"
+                          : "border-white/5 bg-white/[0.03] hover:bg-white/[0.05]"
+                      }`}
                     >
-                      <span className="text-xs font-medium text-gray-300">
+                      <span
+                        className={`text-xs font-medium ${
+                          isLight ? "text-gray-700" : "text-gray-300"
+                        }`}
+                      >
                         {item.label}
                       </span>
-                      <span className="text-xs font-bold text-pink-400">
+                      <span
+                        className={`text-xs font-bold ${
+                          isLight ? "text-pink-600" : "text-pink-400"
+                        }`}
+                      >
                         {item.value}%
                       </span>
                     </div>
                   ))}
 
                   {data.categoryPerformance.length === 0 && (
-                    <p className="py-3 text-center text-xs text-gray-500">
+                    <p
+                      className={`py-3 text-center text-xs ${
+                        isLight ? "text-gray-500" : "text-gray-500"
+                      }`}
+                    >
                       Solve challenges to unlock stats
                     </p>
                   )}
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-pink-500/10 bg-gradient-to-br from-pink-500/5 to-transparent p-4 sm:p-5 lg:p-6">
-                <h2 className="mb-3 text-lg font-bold text-white">
+              <section
+                className={`rounded-2xl border p-4 sm:p-5 lg:p-6 ${
+                  isLight
+                    ? "border-pink-200 bg-gradient-to-br from-pink-50 to-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+                    : "border-pink-500/10 bg-gradient-to-br from-pink-500/5 to-transparent"
+                }`}
+              >
+                <h2
+                  className={`mb-3 text-lg font-bold ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
                   💡 Smart Tip
                 </h2>
 
-                <p className="text-xs leading-relaxed text-gray-400">
+                <p
+                  className={`text-xs leading-relaxed ${
+                    isLight ? "text-gray-600" : "text-gray-400"
+                  }`}
+                >
                   {data.stats.totalSolved < 5
                     ? "Start solving more challenges to unlock personalized insights and category-specific performance metrics."
                     : data.stats.acceptanceRate >= 80
@@ -478,7 +711,11 @@ return (
 
                 <Link
                   href="/dashboard/leaderboard"
-                  className="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/5 py-2.5 text-xs font-bold text-white transition hover:bg-white/10"
+                  className={`mt-4 inline-flex w-full items-center justify-center rounded-lg border py-2.5 text-xs font-bold transition ${
+                    isLight
+                      ? "border-gray-200 bg-white text-gray-900 hover:bg-gray-100"
+                      : "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  }`}
                 >
                   View Global Rank
                 </Link>
@@ -491,32 +728,65 @@ return (
   );
 }
 
-function StatCard({ label, value, subtext, icon, trend }: StatCardProps) {
+function StatCard({
+  label,
+  value,
+  subtext,
+  icon,
+  trend,
+  isLight,
+}: StatCardProps & { isLight: boolean }) {
   return (
-    <div className="group relative bg-[#0a0a0a] px-4 py-3 transition hover:bg-white/[0.02] sm:px-5 sm:py-4">
+    <div
+      className={`group relative px-4 py-3 transition sm:px-5 sm:py-4 ${
+        isLight ? "bg-white hover:bg-gray-50" : "bg-[#0a0a0a] hover:bg-white/[0.02]"
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[9px] font-bold uppercase tracking-widest text-gray-500">
+          <p
+            className={`truncate text-[9px] font-bold uppercase tracking-widest ${
+              isLight ? "text-gray-500" : "text-gray-500"
+            }`}
+          >
             {label}
           </p>
-          <p className="mt-1.5 truncate text-xl font-bold tracking-tight text-white sm:mt-2 sm:text-2xl">
+          <p
+            className={`mt-1.5 truncate text-xl font-bold tracking-tight sm:mt-2 sm:text-2xl ${
+              isLight ? "text-gray-900" : "text-white"
+            }`}
+          >
             {value}
           </p>
         </div>
-value
+
         {icon && (
-          <div className="shrink-0 text-gray-600 transition group-hover:text-pink-500/50">
+          <div
+            className={`shrink-0 transition ${
+              isLight
+                ? "text-gray-400 group-hover:text-pink-500"
+                : "text-gray-600 group-hover:text-pink-500/50"
+            }`}
+          >
             {icon}
           </div>
         )}
       </div>
 
       <div className="mt-1.5 flex items-center justify-between">
-        <p className="truncate text-[10px] font-medium text-gray-500">
+        <p
+          className={`truncate text-[10px] font-medium ${
+            isLight ? "text-gray-500" : "text-gray-500"
+          }`}
+        >
           {subtext}
         </p>
         {trend && (
-          <span className="shrink-0 text-[9px] font-bold text-emerald-400">
+          <span
+            className={`shrink-0 text-[9px] font-bold ${
+              isLight ? "text-emerald-600" : "text-emerald-400"
+            }`}
+          >
             {trend}
           </span>
         )}

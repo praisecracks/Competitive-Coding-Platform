@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStoredToken } from "@/lib/auth";
+import { useTheme } from "../../context/ThemeContext";
+import Header from "@/app/components/dashboard/header";
+import Footer from "@/app/components/Footer";
 
 type Challenge = {
   id: number;
@@ -22,6 +25,8 @@ const LOAD_MORE_STEP = 6;
 
 export default function DashboardChallengesPage() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
 
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +36,9 @@ export default function DashboardChallengesPage() {
   const [activeStatus, setActiveStatus] = useState("All");
   const [errorMessage, setErrorMessage] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
+  const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(
+    null
+  );
 
   const [visibleCount, setVisibleCount] = useState(INITIAL_SECTION_LIMIT);
 
@@ -87,7 +94,9 @@ export default function DashboardChallengesPage() {
   }, [searchQuery, activeDifficulty, activeCategory, activeStatus]);
 
   const categories = useMemo(() => {
-    const unique = [...new Set(challenges.map((item) => item.category).filter(Boolean))];
+    const unique = [
+      ...new Set(challenges.map((item) => item.category).filter(Boolean)),
+    ];
     return ["All", ...unique];
   }, [challenges]);
 
@@ -136,9 +145,20 @@ export default function DashboardChallengesPage() {
         (activeStatus === "Opened" && challenge.opened) ||
         (activeStatus === "Recommended" && !challenge.opened);
 
-      return matchesSearch && matchesDifficulty && matchesCategory && matchesStatus;
+      return (
+        matchesSearch &&
+        matchesDifficulty &&
+        matchesCategory &&
+        matchesStatus
+      );
     });
-  }, [sortedChallenges, searchQuery, activeDifficulty, activeCategory, activeStatus]);
+  }, [
+    sortedChallenges,
+    searchQuery,
+    activeDifficulty,
+    activeCategory,
+    activeStatus,
+  ]);
 
   const visibleChallenges = useMemo(() => {
     return filteredChallenges.slice(0, visibleCount);
@@ -178,13 +198,21 @@ export default function DashboardChallengesPage() {
   const getDifficultyClasses = (difficulty: string) => {
     switch (difficulty.toLowerCase()) {
       case "easy":
-        return "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
+        return isLight
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
       case "medium":
-        return "border-amber-500/20 bg-amber-500/10 text-amber-300";
+        return isLight
+          ? "border-amber-200 bg-amber-50 text-amber-700"
+          : "border-amber-500/20 bg-amber-500/10 text-amber-300";
       case "hard":
-        return "border-rose-500/20 bg-rose-500/10 text-rose-300";
+        return isLight
+          ? "border-rose-200 bg-rose-50 text-rose-700"
+          : "border-rose-500/20 bg-rose-500/10 text-rose-300";
       default:
-        return "border-white/10 bg-white/5 text-gray-300";
+        return isLight
+          ? "border-gray-200 bg-gray-50 text-gray-700"
+          : "border-white/10 bg-white/5 text-gray-300";
     }
   };
 
@@ -204,20 +232,28 @@ export default function DashboardChallengesPage() {
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none rounded-2xl border border-white/10 bg-[#0c0c10] px-4 py-3 pr-10 text-sm text-gray-200 outline-none transition duration-200 hover:border-white/15 focus:border-pink-500/30 focus:bg-[#101017]"
+          className={`w-full appearance-none rounded-2xl border px-4 py-3 pr-10 text-sm outline-none transition duration-200 ${
+            isLight
+              ? "border-gray-200 bg-white text-gray-800 hover:border-gray-300 focus:border-pink-300 focus:bg-white"
+              : "border-white/10 bg-[#0c0c10] text-gray-200 hover:border-white/15 focus:border-pink-500/30 focus:bg-[#101017]"
+          }`}
         >
           {options.map((option) => (
             <option
               key={option}
               value={option}
-              className="bg-[#0c0c10] text-gray-200"
+              className={isLight ? "bg-white text-gray-800" : "bg-[#0c0c10] text-gray-200"}
             >
               {option === "All" ? allLabel : option}
             </option>
           ))}
         </select>
 
-        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[11px] text-gray-500">
+        <span
+          className={`pointer-events-none absolute inset-y-0 right-4 flex items-center text-[11px] ${
+            isLight ? "text-gray-400" : "text-gray-500"
+          }`}
+        >
           ▼
         </span>
       </div>
@@ -228,18 +264,40 @@ export default function DashboardChallengesPage() {
     return (
       <article
         key={challenge.id}
-        className="group relative overflow-hidden rounded-[24px] border border-white/10 bg-[#09090c] p-4 transition duration-300 hover:border-pink-500/20 hover:shadow-[0_0_0_1px_rgba(236,72,153,0.04),0_18px_50px_rgba(0,0,0,0.24)]"
+        className={`group relative overflow-hidden rounded-[24px] border p-4 transition duration-300 ${
+          isLight
+            ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] hover:border-pink-200 hover:shadow-[0_16px_40px_rgba(15,23,42,0.10)]"
+            : "border-white/10 bg-[#09090c] hover:border-pink-500/20 hover:shadow-[0_0_0_1px_rgba(236,72,153,0.04),0_18px_50px_rgba(0,0,0,0.24)]"
+        }`}
       >
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-60" />
+        <div
+          className={`absolute inset-x-0 top-0 h-px ${
+            isLight
+              ? "bg-gradient-to-r from-transparent via-gray-200 to-transparent"
+              : "bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-60"
+          }`}
+        />
 
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] text-gray-400">
+            <span
+              className={`rounded-full border px-2.5 py-1 text-[10px] ${
+                isLight
+                  ? "border-gray-200 bg-gray-50 text-gray-500"
+                  : "border-white/10 bg-white/[0.04] text-gray-400"
+              }`}
+            >
               #{String(challenge.id).padStart(3, "0")}
             </span>
 
             {challenge.opened && (
-              <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-purple-300">
+              <span
+                className={`rounded-full border px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] ${
+                  isLight
+                    ? "border-purple-200 bg-purple-50 text-purple-700"
+                    : "border-purple-500/20 bg-purple-500/10 text-purple-300"
+                }`}
+              >
                 Opened
               </span>
             )}
@@ -254,15 +312,25 @@ export default function DashboardChallengesPage() {
           </span>
         </div>
 
-        <h3 className="text-[1.15rem] font-semibold leading-tight tracking-tight text-white transition group-hover:text-pink-100">
+        <h3
+          className={`text-[1.15rem] font-semibold leading-tight tracking-tight transition ${
+            isLight
+              ? "text-gray-900 group-hover:text-pink-600"
+              : "text-white group-hover:text-pink-100"
+          }`}
+        >
           {challenge.title}
         </h3>
 
-        <p className="mt-1.5 text-xs text-gray-500">
+        <p className={`mt-1.5 text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>
           {challenge.category} • {challenge.duration} min
         </p>
 
-        <p className="mt-3 text-sm leading-6 text-gray-400">
+        <p
+          className={`mt-3 text-sm leading-6 ${
+            isLight ? "text-gray-600" : "text-gray-400"
+          }`}
+        >
           {truncateText(challenge.description, 110)}
         </p>
 
@@ -271,7 +339,11 @@ export default function DashboardChallengesPage() {
             {challenge.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] text-gray-300"
+                className={`rounded-full border px-2.5 py-1 text-[10px] ${
+                  isLight
+                    ? "border-gray-200 bg-gray-50 text-gray-700"
+                    : "border-white/10 bg-white/[0.04] text-gray-300"
+                }`}
               >
                 {tag}
               </span>
@@ -289,7 +361,11 @@ export default function DashboardChallengesPage() {
 
           <button
             onClick={() => handleViewDetails(challenge.id)}
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white transition duration-200 hover:bg-white/[0.08]"
+            className={`rounded-xl border px-4 py-2.5 text-sm transition duration-200 ${
+              isLight
+                ? "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
+                : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+            }`}
           >
             Details
           </button>
@@ -319,23 +395,43 @@ export default function DashboardChallengesPage() {
       <section className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-[1.85rem] font-semibold leading-tight tracking-tight text-white">
+            <h2
+              className={`text-[1.85rem] font-semibold leading-tight tracking-tight ${
+                isLight ? "text-gray-900" : "text-white"
+              }`}
+            >
               {title}
             </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
+            <p
+              className={`mt-2 max-w-2xl text-sm leading-6 ${
+                isLight ? "text-gray-600" : "text-gray-400"
+              }`}
+            >
               {subtitle}
             </p>
           </div>
 
-          <div className="text-sm text-gray-500">
+          <div className={`text-sm ${isLight ? "text-gray-500" : "text-gray-500"}`}>
             {totalCount} {totalCount === 1 ? "challenge" : "challenges"}
           </div>
         </div>
 
         {items.length === 0 ? (
-          <div className="rounded-[24px] border border-white/10 bg-[#09090c] px-6 py-10 text-center">
-            <p className="text-sm font-medium text-white">No challenges found</p>
-            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-400">
+          <div
+            className={`rounded-[24px] border px-6 py-10 text-center ${
+              isLight
+                ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+                : "border-white/10 bg-[#09090c]"
+            }`}
+          >
+            <p className={`text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
+              No challenges found
+            </p>
+            <p
+              className={`mx-auto mt-2 max-w-xl text-sm leading-6 ${
+                isLight ? "text-gray-600" : "text-gray-400"
+              }`}
+            >
               Try adjusting your search or filter options.
             </p>
           </div>
@@ -349,7 +445,11 @@ export default function DashboardChallengesPage() {
               <div className="flex justify-center pt-1">
                 <button
                   onClick={onLoadMore}
-                  className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-2.5 text-sm text-white transition duration-200 hover:bg-white/[0.08]"
+                  className={`rounded-xl border px-5 py-2.5 text-sm transition duration-200 ${
+                    isLight
+                      ? "border-gray-200 bg-white text-gray-800 hover:bg-gray-100"
+                      : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                  }`}
                 >
                   Load More
                 </button>
@@ -362,31 +462,57 @@ export default function DashboardChallengesPage() {
   };
 
   return (
-    <div className="space-y-6 text-white">
+    <div className={`space-y-6 ${isLight ? "text-gray-900" : "text-white"}`}>
       {showModal && selectedChallenge && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+            className={`absolute inset-0 ${
+              isLight ? "bg-slate-900/35" : "bg-black/75"
+            } backdrop-blur-sm`}
             onClick={closeChallengeModal}
           />
 
-          <div className="relative w-full max-w-md overflow-hidden rounded-[26px] border border-white/10 bg-[#0b0b10] shadow-[0_25px_100px_rgba(0,0,0,0.45)]">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
+          <div
+            className={`relative w-full max-w-md overflow-hidden rounded-[26px] border ${
+              isLight
+                ? "border-gray-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+                : "border-white/10 bg-[#0b0b10] shadow-[0_25px_100px_rgba(0,0,0,0.45)]"
+            }`}
+          >
+            <div
+              className={`absolute inset-x-0 top-0 h-px ${
+                isLight
+                  ? "bg-gradient-to-r from-transparent via-pink-300 to-transparent"
+                  : "bg-gradient-to-r from-transparent via-pink-500/50 to-transparent"
+              }`}
+            />
 
             <div className="p-5">
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.22em] text-pink-300">
+                  <p
+                    className={`text-[11px] uppercase tracking-[0.22em] ${
+                      isLight ? "text-pink-600" : "text-pink-300"
+                    }`}
+                  >
                     Challenge Preview
                   </p>
-                  <h3 className="mt-2 text-lg font-semibold leading-tight tracking-tight text-white">
+                  <h3
+                    className={`mt-2 text-lg font-semibold leading-tight tracking-tight ${
+                      isLight ? "text-gray-900" : "text-white"
+                    }`}
+                  >
                     {selectedChallenge.title}
                   </h3>
                 </div>
 
                 <button
                   onClick={closeChallengeModal}
-                  className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-gray-400 transition hover:border-white/20 hover:text-white"
+                  className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                    isLight
+                      ? "border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-900"
+                      : "border-white/10 text-gray-400 hover:border-white/20 hover:text-white"
+                  }`}
                 >
                   ✕
                 </button>
@@ -402,21 +528,43 @@ export default function DashboardChallengesPage() {
                 </span>
 
                 {selectedChallenge.opened && (
-                  <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-purple-300">
+                  <span
+                    className={`rounded-full border px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] ${
+                      isLight
+                        ? "border-purple-200 bg-purple-50 text-purple-700"
+                        : "border-purple-500/20 bg-purple-500/10 text-purple-300"
+                    }`}
+                  >
                     Opened
                   </span>
                 )}
 
-                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] text-gray-300">
+                <span
+                  className={`rounded-full border px-3 py-1 text-[10px] ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50 text-gray-700"
+                      : "border-white/10 bg-white/[0.04] text-gray-300"
+                  }`}
+                >
                   {selectedChallenge.category}
                 </span>
 
-                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] text-gray-300">
+                <span
+                  className={`rounded-full border px-3 py-1 text-[10px] ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50 text-gray-700"
+                      : "border-white/10 bg-white/[0.04] text-gray-300"
+                  }`}
+                >
                   {selectedChallenge.duration} min
                 </span>
               </div>
 
-              <p className="text-sm leading-6 text-gray-400">
+              <p
+                className={`text-sm leading-6 ${
+                  isLight ? "text-gray-600" : "text-gray-400"
+                }`}
+              >
                 {selectedChallenge.description}
               </p>
 
@@ -425,7 +573,11 @@ export default function DashboardChallengesPage() {
                   {selectedChallenge.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] text-gray-300"
+                      className={`rounded-full border px-2.5 py-1 text-[10px] ${
+                        isLight
+                          ? "border-gray-200 bg-gray-50 text-gray-700"
+                          : "border-white/10 bg-white/[0.04] text-gray-300"
+                      }`}
                     >
                       {tag}
                     </span>
@@ -443,7 +595,11 @@ export default function DashboardChallengesPage() {
 
                 <button
                   onClick={() => handleViewDetails(selectedChallenge.id)}
-                  className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white transition hover:bg-white/[0.08]"
+                  className={`rounded-xl border px-4 py-2.5 text-sm transition ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
+                      : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                  }`}
                 >
                   Details
                 </button>
@@ -453,51 +609,125 @@ export default function DashboardChallengesPage() {
         </div>
       )}
 
-      <section className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#09090c] px-5 py-5 sm:px-6 sm:py-6">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_26%),radial-gradient(circle_at_left,rgba(236,72,153,0.08),transparent_24%)]" />
-        <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:28px_28px]" />
+      <section
+        className={`relative overflow-hidden rounded-[28px] border px-5 py-5 sm:px-6 sm:py-6 ${
+          isLight
+            ? "border-gray-200 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.06)]"
+            : "border-white/10 bg-[#09090c]"
+        }`}
+      >
+        <div
+          className={`absolute inset-0 ${
+            isLight
+              ? "bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.08),transparent_26%),radial-gradient(circle_at_left,rgba(236,72,153,0.05),transparent_24%)]"
+              : "bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_26%),radial-gradient(circle_at_left,rgba(236,72,153,0.08),transparent_24%)]"
+          }`}
+        />
+        <div
+          className={`absolute inset-0 ${
+            isLight
+              ? "opacity-[0.02] [background-image:linear-gradient(rgba(15,23,42,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.08)_1px,transparent_1px)] [background-size:28px_28px]"
+              : "opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:28px_28px]"
+          }`}
+        />
 
         <div className="relative">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl">
-              <span className="inline-flex items-center rounded-full border border-pink-500/20 bg-pink-500/[0.08] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-pink-200">
+              <span
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] ${
+                  isLight
+                    ? "border-pink-200 bg-pink-50 text-pink-600"
+                    : "border-pink-500/20 bg-pink-500/[0.08] text-pink-200"
+                }`}
+              >
                 Learning workspace
               </span>
 
-              <h1 className="mt-4 text-[2rem] font-semibold leading-tight tracking-tight text-white sm:text-[2.35rem]">
+              <h1
+                className={`mt-4 text-[2rem] font-semibold leading-tight tracking-tight sm:text-[2.35rem] ${
+                  isLight ? "text-gray-900" : "text-white"
+                }`}
+              >
                 Sharpen your coding mastery with focused practice
               </h1>
 
-              <p className="mt-3 max-w-xl text-sm leading-6 text-gray-400">
+              <p
+                className={`mt-3 max-w-xl text-sm leading-6 ${
+                  isLight ? "text-gray-600" : "text-gray-400"
+                }`}
+                >
                 Continue opened challenges and move into the next set of learning
                 recommendations with a cleaner, more focused workflow.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2.5 lg:max-w-[360px] lg:justify-end">
-              <div className="min-w-[96px] rounded-2xl border border-white/10 bg-white/[0.03] px-3.5 py-3 backdrop-blur-sm">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
+              <div
+                className={`min-w-[96px] rounded-2xl border px-3.5 py-3 backdrop-blur-sm ${
+                  isLight
+                  ? "border-gray-200 bg-gray-50"
+                  : "border-white/10 bg-white/[0.03]"
+                }`}
+                >
+                <p
+                  className={`text-[10px] uppercase tracking-[0.18em] ${
+                    isLight ? "text-gray-500" : "text-gray-500"
+                  }`}
+                  >
                   Total
                 </p>
-                <h3 className="mt-2 text-xl font-semibold text-white">
+                <h3
+                  className={`mt-2 text-xl font-semibold ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                  >
                   {learningStats.total}
                 </h3>
               </div>
 
-              <div className="min-w-[96px] rounded-2xl border border-purple-500/20 bg-purple-500/[0.07] px-3.5 py-3 backdrop-blur-sm">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-purple-200/80">
+              <div
+                className={`min-w-[96px] rounded-2xl border px-3.5 py-3 backdrop-blur-sm ${
+                  isLight
+                  ? "border-purple-200 bg-purple-50"
+                  : "border-purple-500/20 bg-purple-500/[0.07]"
+                }`}
+                >
+                <p
+                  className={`text-[10px] uppercase tracking-[0.18em] ${
+                    isLight ? "text-purple-600/80" : "text-purple-200/80"
+                  }`}
+                  >
                   Opened
                 </p>
-                <h3 className="mt-2 text-xl font-semibold text-white">
+                <h3
+                  className={`mt-2 text-xl font-semibold ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                  >
                   {learningStats.opened}
                 </h3>
               </div>
 
-              <div className="min-w-[96px] rounded-2xl border border-pink-500/20 bg-pink-500/[0.07] px-3.5 py-3 backdrop-blur-sm">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-pink-200/80">
+              <div
+                className={`min-w-[96px] rounded-2xl border px-3.5 py-3 backdrop-blur-sm ${
+                  isLight
+                  ? "border-pink-200 bg-pink-50"
+                  : "border-pink-500/20 bg-pink-500/[0.07]"
+                }`}
+                >
+                <p
+                  className={`text-[10px] uppercase tracking-[0.18em] ${
+                    isLight ? "text-pink-600/80" : "text-pink-200/80"
+                  }`}
+                  >
                   Next
                 </p>
-                <h3 className="mt-2 text-xl font-semibold text-white">
+                <h3
+                  className={`mt-2 text-xl font-semibold ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                  >
                   {learningStats.recommended}
                 </h3>
               </div>
@@ -506,17 +736,35 @@ export default function DashboardChallengesPage() {
         </div>
       </section>
 
-      <section className="rounded-[26px] border border-white/10 bg-[#09090c] p-3 sm:p-4">
+      <section
+        className={`rounded-[26px] border p-3 sm:p-4 ${
+          isLight
+          ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+          : "border-white/10 bg-[#09090c]"
+        }`}
+        >
         <div className="grid gap-3 lg:grid-cols-[1.35fr_0.28fr_0.28fr_0.28fr]">
-          <div className="flex items-center rounded-2xl border border-white/10 bg-[#0c0c10] px-4 py-3 transition duration-200 hover:border-white/15 focus-within:border-pink-500/25">
-            <span className="mr-3 text-sm text-pink-300">Search</span>
+          <div
+            className={`flex items-center rounded-2xl border px-4 py-3 transition duration-200 ${
+              isLight
+              ? "border-gray-200 bg-white hover:border-gray-300 focus-within:border-pink-300"
+              : "border-white/10 bg-[#0c0c10] hover:border-white/15 focus-within:border-pink-500/25"
+            }`}
+            >
+            <span className={`mr-3 text-sm ${isLight ? "text-pink-600" : "text-pink-300"}`}>
+              Search
+            </span>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Title, category, description, or tags"
-              className="w-full bg-transparent text-sm text-white outline-none placeholder:text-gray-600"
-            />
+              className={`w-full bg-transparent text-sm outline-none ${
+                isLight
+                ? "text-gray-900 placeholder:text-gray-400"
+                : "text-white placeholder:text-gray-600"
+              }`}
+              />
           </div>
 
           <CustomSelect
@@ -524,32 +772,56 @@ export default function DashboardChallengesPage() {
             onChange={setActiveStatus}
             options={statusOptions}
             allLabel="All status"
-          />
+            />
 
           <CustomSelect
             value={activeDifficulty}
             onChange={setActiveDifficulty}
             options={["All", ...difficultyOrder]}
             allLabel="All difficulties"
-          />
+            />
 
           <CustomSelect
             value={activeCategory}
             onChange={setActiveCategory}
             options={categories}
             allLabel="All categories"
-          />
+            />
         </div>
       </section>
 
       {loading ? (
-        <div className="rounded-[24px] border border-white/10 bg-[#09090c] py-20 text-center">
-          <p className="text-sm text-gray-500">Loading your learning challenges...</p>
+        <div
+        className={`rounded-[24px] border py-20 text-center ${
+          isLight
+          ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+          : "border-white/10 bg-[#09090c]"
+        }`}
+        >
+          <p className={`text-sm ${isLight ? "text-gray-500" : "text-gray-500"}`}>
+            Loading your learning challenges...
+          </p>
         </div>
       ) : errorMessage ? (
-        <div className="rounded-[24px] border border-pink-500/15 bg-pink-500/[0.04] px-6 py-12 text-center">
-          <p className="text-sm font-medium text-pink-200">Unable to load</p>
-          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-300">
+        <div
+        className={`rounded-[24px] border px-6 py-12 text-center ${
+          isLight
+          ? "border-pink-200 bg-pink-50"
+          : "border-pink-500/15 bg-pink-500/[0.04]"
+        }`}
+        >
+          <p
+            className={`text-sm font-medium ${
+              isLight ? "text-pink-700" : "text-pink-200"
+            }`}
+            >
+            Unable to load
+          </p>
+          <p
+            className={`mx-auto mt-2 max-w-xl text-sm leading-6 ${
+              isLight ? "text-gray-600" : "text-gray-300"
+            }`}
+            >
             {errorMessage}
           </p>
         </div>
@@ -563,6 +835,7 @@ export default function DashboardChallengesPage() {
           onLoadMore: () => setVisibleCount((prev) => prev + LOAD_MORE_STEP),
         })
       )}
+      {/* <Footer /> */}
     </div>
   );
 }

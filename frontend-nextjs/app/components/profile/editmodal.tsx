@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "@/app/context/ThemeContext";
 
 type EditProfileModalProps = {
   isOpen: boolean;
@@ -74,6 +75,8 @@ export default function EditProfileModal({
   onSave,
   isSaving = false,
 }: EditProfileModalProps) {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const [editedUsername, setEditedUsername] = useState("");
   const [editedBio, setEditedBio] = useState("");
   const [editedRank, setEditedRank] = useState("");
@@ -275,81 +278,80 @@ export default function EditProfileModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-2xl flex flex-col"
+            className={`relative w-full overflow-hidden rounded-xl sm:rounded-2xl border shadow-2xl flex flex-col ${
+              isLight
+                ? "border-gray-200 bg-white shadow-[0_25px_50px_rgba(15,23,42,0.12)]"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
             style={{ 
               maxHeight: "90vh",
               maxWidth: "min(95%, 500px)" // Constrained width for desktop
             }}
           >
             {/* Header with close button always visible */}
-            <div className="sticky top-0 z-10 border-b border-white/10 bg-gradient-to-r from-pink-500/5 to-purple-500/5 px-4 sm:px-6 py-3 sm:py-5 backdrop-blur-sm">
+            <div className={`sticky top-0 z-10 border-b px-4 sm:px-6 py-3 sm:py-5 backdrop-blur-sm ${
+              isLight
+                ? "border-gray-200 bg-gradient-to-r from-pink-50 to-purple-50"
+                : "border-white/10 bg-gradient-to-r from-pink-500/5 to-purple-500/5"
+            }`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg sm:text-xl font-semibold text-white">
+                  <h2 className={`text-lg sm:text-xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                     Edit Profile
                   </h2>
-                  <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-500">
+                  <p className={`mt-0.5 sm:mt-1 text-xs sm:text-sm ${isLight ? "text-gray-600" : "text-gray-500"}`}>
                     Refine your public account identity
                   </p>
                 </div>
                 <button
                   onClick={onClose}
-                  className="shrink-0 rounded-lg p-1.5 sm:p-2 text-gray-400 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                  className={`shrink-0 rounded-lg p-1.5 sm:p-2 transition focus:outline-none focus:ring-2 focus:ring-pink-500/50 ${
+                    isLight
+                      ? "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                      : "text-gray-400 hover:bg-white/10 hover:text-white"
+                  }`}
                   type="button"
                   aria-label="Close modal"
                 >
-                  <svg
-                    className="h-4 w-4 sm:h-5 sm:w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
             </div>
 
             {/* Scrollable Body */}
-            <div 
-              ref={scrollContainerRef}
-              className="overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 flex-1"
-            >
+            <div ref={scrollContainerRef} className="overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 flex-1">
               <div className="space-y-4 sm:space-y-6">
                 {/* Username */}
                 <div>
-                  <label className="mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium text-gray-300">
-                    Username
-                  </label>
+                  <label className={`mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium ${isLight ? "text-gray-700" : "text-gray-300"}`}>Username</label>
                   <input
                     value={editedUsername}
-                    onChange={(e) =>
-                      handleFieldChange("username", e.target.value)
-                    }
+                    onChange={(e) => handleFieldChange("username", e.target.value)}
                     onBlur={() => handleBlur("username")}
                     maxLength={USERNAME_MAX}
-                    className={`w-full rounded-lg border ${
-                      errors.username && touched.username
-                        ? "border-red-500/50 bg-red-500/5"
-                        : "border-white/10 bg-[#111111]"
-                    } px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-white outline-none transition focus:border-pink-500/50 placeholder:text-gray-600`}
+                    className={`w-full rounded-lg border px-3 sm:px-4 py-2.5 sm:py-3 text-sm outline-none transition focus:border-pink-500/50 ${
+                      isLight
+                        ? errors.username && touched.username
+                          ? "border-red-300 bg-red-50 text-gray-900 placeholder:text-gray-400"
+                          : "border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400"
+                        : errors.username && touched.username
+                        ? "border-red-500/50 bg-red-500/5 text-white placeholder:text-gray-600"
+                        : "border-white/10 bg-[#111111] text-white placeholder:text-gray-600"
+                    }`}
                     placeholder="Choose a username"
                   />
                   <div className="mt-1.5 sm:mt-2 flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-[10px] sm:text-xs text-gray-500">
+                    <p className={`text-[10px] sm:text-xs ${isLight ? "text-gray-600" : "text-gray-500"}`}>
                       {USERNAME_MIN}–{USERNAME_MAX} characters
                     </p>
-                    <p className="text-[10px] sm:text-xs text-gray-500">
+                    <p className={`text-[10px] sm:text-xs ${isLight ? "text-gray-600" : "text-gray-500"}`}>
                       {editedUsername.length}/{USERNAME_MAX}
                     </p>
                   </div>
                   {errors.username && touched.username && (
-                    <p className="mt-1.5 text-[10px] sm:text-xs text-red-400">
+                    <p className={`mt-1.5 text-[10px] sm:text-xs ${isLight ? "text-red-600" : "text-red-500"}`}>
                       {errors.username}
                     </p>
                   )}
@@ -357,16 +359,20 @@ export default function EditProfileModal({
 
                 {/* Rank */}
                 <div>
-                  <label className="mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium text-gray-300">
+                  <label className={`mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium ${isLight ? "text-gray-700" : "text-gray-300"}`}>
                     Skill Level
                   </label>
                   <select
                     value={editedRank}
                     onChange={(e) => handleFieldChange("rank", e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-[#111111] px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-white outline-none transition focus:border-pink-500/50"
+                    className={`w-full rounded-lg border px-3 sm:px-4 py-2.5 sm:py-3 text-sm outline-none transition focus:border-pink-500/50 ${
+                      isLight
+                        ? "border-gray-200 bg-white text-gray-900"
+                        : "border-white/10 bg-[#111111] text-white"
+                    }`}
                   >
                     {RANK_OPTIONS.map((rank) => (
-                      <option key={rank} value={rank} className="bg-[#111111]">
+                      <option key={rank} value={rank} className={isLight ? "bg-white" : "bg-[#111111]"}>
                         {rank}
                       </option>
                     ))}
@@ -375,26 +381,28 @@ export default function EditProfileModal({
 
                 {/* Country */}
                 <div>
-                  <label className="mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium text-gray-300">
+                  <label className={`mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium ${isLight ? "text-gray-700" : "text-gray-300"}`}>
                     Country
-                    <span className="ml-2 text-[10px] sm:text-xs text-gray-500">
+                    <span className={`ml-2 text-[10px] sm:text-xs ${isLight ? "text-gray-400" : "text-gray-500"}`}>
                       (optional)
                     </span>
                   </label>
                   <input
                     value={editedCountry}
-                    onChange={(e) =>
-                      handleFieldChange("country", e.target.value)
-                    }
+                    onChange={(e) => handleFieldChange("country", e.target.value)}
                     onBlur={() => handleBlur("country")}
-                    className="w-full rounded-lg border border-white/10 bg-[#111111] px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-white outline-none transition focus:border-pink-500/50 placeholder:text-gray-600"
+                    className={`w-full rounded-lg border px-3 sm:px-4 py-2.5 sm:py-3 text-sm outline-none transition focus:border-pink-500/50 ${
+                      isLight
+                        ? "border-gray-200 bg-white text-gray-900 placeholder:text-gray-400"
+                        : "border-white/10 bg-[#111111] text-white placeholder:text-gray-600"
+                    }`}
                     placeholder="e.g., United States, India, UK"
                   />
                 </div>
 
                 {/* Bio */}
                 <div>
-                  <label className="mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium text-gray-300">
+                  <label className={`mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium ${isLight ? "text-gray-700" : "text-gray-300"}`}>
                     Bio
                   </label>
                   <textarea
@@ -403,38 +411,42 @@ export default function EditProfileModal({
                     onBlur={() => handleBlur("bio")}
                     rows={3}
                     maxLength={BIO_MAX}
-                    className={`w-full resize-none rounded-lg border ${
-                      errors.bio && touched.bio
-                        ? "border-red-500/50 bg-red-500/5"
-                        : "border-white/10 bg-[#111111]"
-                    } px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-white outline-none transition focus:border-pink-500/50 placeholder:text-gray-600`}
+                    className={`w-full resize-none rounded-lg border px-3 sm:px-4 py-2.5 sm:py-3 text-sm outline-none transition focus:border-pink-500/50 ${
+                      isLight
+                        ? errors.bio && touched.bio
+                          ? "border-red-300 bg-red-50 text-gray-900 placeholder:text-gray-400"
+                          : "border-gray-200 bg-white text-gray-900 placeholder:text-gray-400"
+                        : errors.bio && touched.bio
+                        ? "border-red-500/50 bg-red-500/5 text-white placeholder:text-gray-600"
+                        : "border-white/10 bg-[#111111] text-white placeholder:text-gray-600"
+                    }`}
                     placeholder="Tell people a little about yourself..."
                   />
                   <div className="mt-1.5 sm:mt-2 flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-[10px] sm:text-xs text-gray-500">
+                    <p className={`text-[10px] sm:text-xs ${isLight ? "text-gray-600" : "text-gray-500"}`}>
                       Keep it specific and professional
                     </p>
-                    <p className="text-[10px] sm:text-xs text-gray-500">
+                    <p className={`text-[10px] sm:text-xs ${isLight ? "text-gray-600" : "text-gray-500"}`}>
                       {bioLength}/{BIO_MAX}
                     </p>
                   </div>
                   {errors.bio && touched.bio && (
-                    <p className="mt-1.5 text-[10px] sm:text-xs text-red-400">{errors.bio}</p>
+                    <p className={`mt-1.5 text-[10px] sm:text-xs ${isLight ? "text-red-600" : "text-red-400"}`}>{errors.bio}</p>
                   )}
                 </div>
 
                 {/* GitHub URL */}
                 <div>
-                  <label className="mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium text-gray-300">
+                  <label className={`mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium ${isLight ? "text-gray-700" : "text-gray-300"}`}>
                     GitHub Profile
-                    <span className="ml-2 text-[10px] sm:text-xs text-gray-500">
+                    <span className={`ml-2 text-[10px] sm:text-xs ${isLight ? "text-gray-400" : "text-gray-500"}`}>
                       (optional)
                     </span>
                   </label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                       <svg
-                        className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500"
+                        className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isLight ? "text-gray-400" : "text-gray-500"}`}
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
@@ -447,21 +459,19 @@ export default function EditProfileModal({
                     </div>
                     <input
                       value={editedGithubUrl}
-                      onChange={(e) =>
-                        handleFieldChange("githubUrl", e.target.value)
-                      }
+                      onChange={(e) => handleFieldChange("githubUrl", e.target.value)}
                       onBlur={() => handleBlur("githubUrl")}
                       maxLength={URL_MAX}
-                      className={`w-full rounded-lg border ${
-                        errors.githubUrl && touched.githubUrl
-                          ? "border-red-500/50 bg-red-500/5"
-                          : "border-white/10 bg-[#111111]"
-                      } py-2.5 sm:py-3 pl-9 sm:pl-10 pr-3 sm:pr-4 text-sm text-white outline-none transition focus:border-pink-500/50 placeholder:text-gray-600`}
-                      placeholder="https://github.com/yourusername"
+                      className={`w-full rounded-lg border py-2.5 sm:py-3 pl-9 sm:pl-10 pr-3 sm:pr-4 text-sm outline-none transition focus:border-pink-500/50 ${
+                        isLight
+                          ? "border-gray-200 bg-white text-gray-900 placeholder:text-gray-400"
+                          : "border-white/10 bg-[#111111] text-white placeholder:text-gray-600"
+                      }`}
+                      placeholder="github.com/yourusername"
                     />
                   </div>
                   {errors.githubUrl && touched.githubUrl && (
-                    <p className="mt-1.5 text-[10px] sm:text-xs text-red-400">
+                    <p className={`mt-1.5 text-[10px] sm:text-xs ${isLight ? "text-red-600" : "text-red-400"}`}>
                       {errors.githubUrl}
                     </p>
                   )}
@@ -469,16 +479,16 @@ export default function EditProfileModal({
 
                 {/* LinkedIn URL */}
                 <div>
-                  <label className="mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium text-gray-300">
+                  <label className={`mb-1.5 sm:mb-2 block text-xs sm:text-sm font-medium ${isLight ? "text-gray-700" : "text-gray-300"}`}>
                     LinkedIn Profile
-                    <span className="ml-2 text-[10px] sm:text-xs text-gray-500">
+                    <span className={`ml-2 text-[10px] sm:text-xs ${isLight ? "text-gray-400" : "text-gray-500"}`}>
                       (optional)
                     </span>
                   </label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                       <svg
-                        className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500"
+                        className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isLight ? "text-gray-400" : "text-gray-500"}`}
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
@@ -487,46 +497,50 @@ export default function EditProfileModal({
                     </div>
                     <input
                       value={editedLinkedinUrl}
-                      onChange={(e) =>
-                        handleFieldChange("linkedinUrl", e.target.value)
-                      }
+                      onChange={(e) => handleFieldChange("linkedinUrl", e.target.value)}
                       onBlur={() => handleBlur("linkedinUrl")}
                       maxLength={URL_MAX}
-                      className={`w-full rounded-lg border ${
-                        errors.linkedinUrl && touched.linkedinUrl
+                      className={`w-full rounded-lg border py-2.5 sm:py-3 pl-9 sm:pl-10 pr-3 sm:pr-4 text-sm outline-none transition focus:border-pink-500/50 ${
+                        isLight
+                          ? errors.linkedinUrl && touched.linkedinUrl
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200 bg-white"
+                          : errors.linkedinUrl && touched.linkedinUrl
                           ? "border-red-500/50 bg-red-500/5"
                           : "border-white/10 bg-[#111111]"
-                      } py-2.5 sm:py-3 pl-9 sm:pl-10 pr-3 sm:pr-4 text-sm text-white outline-none transition focus:border-pink-500/50 placeholder:text-gray-600`}
+                      } ${isLight ? "text-gray-900 placeholder:text-gray-400" : "text-white placeholder:text-gray-600"}`}
                       placeholder="https://linkedin.com/in/yourusername"
                     />
                   </div>
                   {errors.linkedinUrl && touched.linkedinUrl && (
-                    <p className="mt-1.5 text-[10px] sm:text-xs text-red-400">
+                    <p className={`mt-1.5 text-[10px] sm:text-xs ${isLight ? "text-red-600" : "text-red-400"}`}>
                       {errors.linkedinUrl}
                     </p>
                   )}
                 </div>
 
                 {/* Professional Tips */}
-                <div className="rounded-lg border border-pink-500/20 bg-pink-500/5 p-3 sm:p-4">
-                  <p className="mb-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-pink-300">
+                <div className={`rounded-lg border p-3 sm:p-4 ${
+                  isLight ? "border-pink-200 bg-pink-50" : "border-pink-500/20 bg-pink-500/5"
+                }`}>
+                  <p className={`mb-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider ${isLight ? "text-pink-700" : "text-pink-300"}`}>
                     Professional Tips
                   </p>
-                  <ul className="space-y-1.5 sm:space-y-2 text-[11px] sm:text-sm text-gray-400">
+                  <ul className={`space-y-1.5 sm:space-y-2 text-[11px] sm:text-sm ${isLight ? "text-gray-600" : "text-gray-400"}`}>
                     <li className="flex items-start gap-1.5 sm:gap-2">
-                      <span className="mt-0.5 text-pink-400 text-xs">✓</span>
+                      <span className={`mt-0.5 text-xs ${isLight ? "text-pink-600" : "text-pink-400"}`}>✓</span>
                       <span className="flex-1">
                         Add your GitHub to showcase your code contributions
                       </span>
                     </li>
                     <li className="flex items-start gap-1.5 sm:gap-2">
-                      <span className="mt-0.5 text-pink-400 text-xs">✓</span>
+                      <span className={`mt-0.5 text-xs ${isLight ? "text-pink-600" : "text-pink-400"}`}>✓</span>
                       <span className="flex-1">
                         Connect LinkedIn to build professional credibility
                       </span>
                     </li>
                     <li className="flex items-start gap-1.5 sm:gap-2">
-                      <span className="mt-0.5 text-pink-400 text-xs">✓</span>
+                      <span className={`mt-0.5 text-xs ${isLight ? "text-pink-600" : "text-pink-400"}`}>✓</span>
                       <span className="flex-1">
                         Complete profile increases trust and visibility
                       </span>
@@ -537,11 +551,17 @@ export default function EditProfileModal({
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 border-t border-white/10 bg-[#0f0f12] px-4 sm:px-6 py-3 sm:py-4">
+            <div className={`sticky bottom-0 border-t px-4 sm:px-6 py-3 sm:py-4 ${
+              isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-[#0f0f12]"
+            }`}>
               <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                 <button
                   onClick={onClose}
-                  className="w-full sm:w-auto rounded-lg border border-white/10 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-gray-300 transition hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                  className={`w-full sm:w-auto rounded-lg border px-3 sm:px-4 py-2 sm:py-2.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-pink-500/50 ${
+                    isLight
+                      ? "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"
+                      : "border-white/10 bg-white/[0.03] text-gray-300 hover:bg-white/[0.06]"
+                  }`}
                   type="button"
                 >
                   Cancel
@@ -549,13 +569,13 @@ export default function EditProfileModal({
                 <button
                   onClick={handleSubmit}
                   disabled={isSaving || !hasChanges()}
-                  className="w-full sm:w-auto rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-medium text-white transition hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                  className={`w-full sm:w-auto rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-medium text-white transition hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-pink-500/50`}
                   type="button"
                 >
                   {isSaving ? (
                     <div className="flex items-center justify-center gap-2">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      <span>Saving...</span>
+                      <span className="text-white">Saving...</span>
                     </div>
                   ) : (
                     "Save Changes"

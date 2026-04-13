@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "@/app/context/ThemeContext";
 import { 
   ArrowLeft, 
   UserPlus, 
@@ -33,6 +34,8 @@ interface CreatedAccount {
 
 export default function CreateSubAdmin() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -150,27 +153,27 @@ export default function CreateSubAdmin() {
   );
 
   return (
-    <div className="min-h-screen space-y-10 pb-20">
+    <div className={`min-h-screen space-y-10 pb-20 ${isLight ? "bg-gray-100" : ""}`}>
       {/* Header Section */}
       <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-3">
+        <div className={`${isLight ? "text-gray-600" : "text-white"}`}>
           <Link 
             href="/dashboard/admin"
-            className="inline-flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-widest group"
+            className={`inline-flex items-center gap-2 text-xs font-bold transition-colors uppercase tracking-widest group ${isLight ? "text-gray-500 hover:text-gray-900" : "text-gray-500 hover:text-white"}`}
           >
             <ArrowLeft className="h-3 w-3 group-hover:-translate-x-1 transition-transform" />
             Back to Dashboard
           </Link>
           <div className="space-y-2">
-            <h1 className="text-2xl font-black tracking-tight text-white lg:text-3xl">Staff Onboarding</h1>
-            <p className="text-gray-400 text-xs font-medium">Create and authorize new administrative staff members for the platform.</p>
+            <h1 className={`text-2xl font-black tracking-tight lg:text-3xl ${isLight ? "text-gray-900" : "text-white"}`}>Staff Onboarding</h1>
+            <p className={`text-xs font-medium ${isLight ? "text-gray-500" : "text-gray-400"}`}>Create and authorize new administrative staff members for the platform.</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 rounded-lg border border-indigo-500/10 bg-indigo-500/5 px-4 py-2.5 backdrop-blur-sm">
-            <Shield className="h-4 w-4 text-indigo-400" />
-            <span className="text-xs font-black uppercase tracking-widest text-indigo-400">Secure Provisioning</span>
+          <div className={`flex items-center gap-3 rounded-lg border px-4 py-2.5 backdrop-blur-sm ${isLight ? "border-indigo-200 bg-indigo-50" : "border-indigo-500/10 bg-indigo-500/5"}`}>
+            <Shield className={`h-4 w-4 ${isLight ? "text-indigo-600" : "text-indigo-400"}`} />
+            <span className={`text-xs font-black uppercase tracking-widest ${isLight ? "text-indigo-600" : "text-indigo-400"}`}>Secure Provisioning</span>
           </div>
         </div>
       </header>
@@ -180,15 +183,15 @@ export default function CreateSubAdmin() {
         <motion.section
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="rounded-[32px] border border-white/5 bg-white/[0.02] p-8 shadow-2xl backdrop-blur-sm"
+          className={`rounded-[32px] border p-8 shadow-2xl backdrop-blur-sm ${isLight ? "border-gray-200 bg-white" : "border-white/5 bg-white/[0.02]"}`}
         >
           <div className="flex items-center gap-4 mb-6">
-            <div className="h-10 w-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <div className={`h-10 w-10 rounded-lg border flex items-center justify-center ${isLight ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-indigo-500/10 border-indigo-500/20 text-indigo-400"}`}>
               <UserPlus className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-white uppercase tracking-tight">Provision Account</h2>
-              <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">Initialize core staff credentials</p>
+              <h2 className={`text-lg font-black uppercase tracking-tight ${isLight ? "text-gray-900" : "text-white"}`}>Provision Account</h2>
+              <p className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${isLight ? "text-gray-500" : "text-gray-500"}`}>Initialize core staff credentials</p>
             </div>
           </div>
 
@@ -228,7 +231,7 @@ export default function CreateSubAdmin() {
                 <input
                   type="text" required value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="w-full rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:border-indigo-500/30 focus:bg-white/[0.05] focus:outline-none transition-all"
+                  className={`w-full rounded-lg border px-4 py-3 text-sm focus:border-indigo-500/30 focus:outline-none transition-all ${isLight ? "border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400" : "border-white/5 bg-white/[0.03] text-white placeholder:text-gray-600"}`}
                   placeholder="e.g. admin_prime"
                 />
               </div>
@@ -241,7 +244,7 @@ export default function CreateSubAdmin() {
                 <input
                   type="email" required value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:border-indigo-500/30 focus:bg-white/[0.05] focus:outline-none transition-all"
+                  className={`w-full rounded-lg border px-4 py-3 text-sm focus:border-indigo-500/30 focus:outline-none transition-all ${isLight ? "border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400" : "border-white/5 bg-white/[0.03] text-white placeholder:text-gray-600"}`}
                   placeholder="staff@platform.com"
                 />
               </div>
@@ -256,7 +259,7 @@ export default function CreateSubAdmin() {
                 <input
                   type="password" required value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:border-indigo-500/30 focus:bg-white/[0.05] focus:outline-none transition-all"
+                  className={`w-full rounded-lg border px-4 py-3 text-sm focus:border-indigo-500/30 focus:outline-none transition-all ${isLight ? "border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400" : "border-white/5 bg-white/[0.03] text-white placeholder:text-gray-600"}`}
                   placeholder="Minimum 8 characters"
                   minLength={8}
                 />
@@ -270,7 +273,7 @@ export default function CreateSubAdmin() {
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3 text-sm text-white focus:border-indigo-500/30 focus:bg-white/[0.05] focus:outline-none transition-all appearance-none cursor-pointer"
+                  className={`w-full rounded-lg border px-4 py-3 text-sm focus:border-indigo-500/30 focus:outline-none transition-all appearance-none cursor-pointer ${isLight ? "border-gray-200 bg-gray-50 text-gray-900" : "border-white/5 bg-white/[0.03] text-white"}`}
                 >
                   <option value="sub_admin" className="bg-[#0a0a0a]">Sub Admin (Standard)</option>
                   <option value="super_admin" className="bg-[#0a0a0a]">Super Admin (Full Access)</option>
@@ -280,7 +283,7 @@ export default function CreateSubAdmin() {
 
             <button
               type="submit" disabled={loading}
-              className="mt-4 w-full rounded-lg bg-white text-black py-3 text-sm font-black transition hover:bg-gray-200 disabled:opacity-50 active:scale-[0.98] uppercase tracking-widest shadow-xl shadow-white/5 flex items-center justify-center gap-3"
+              className={`mt-4 w-full rounded-lg py-3 text-sm font-black transition disabled:opacity-50 active:scale-[0.98] uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 ${isLight ? "bg-gray-900 text-white hover:bg-gray-800" : "bg-white text-black hover:bg-gray-200 shadow-white/5"}`}
             >
               {loading ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black" />
@@ -298,16 +301,16 @@ export default function CreateSubAdmin() {
         <motion.section
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="rounded-[32px] border border-white/5 bg-white/[0.02] p-8 shadow-2xl backdrop-blur-sm h-fit"
+          className={`rounded-[32px] border p-8 shadow-2xl backdrop-blur-sm h-fit ${isLight ? "border-gray-200 bg-white" : "border-white/5 bg-white/[0.02]"}`}
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="h-10 w-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+              <div className={`h-10 w-10 rounded-lg border flex items-center justify-center ${isLight ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-indigo-500/10 border-indigo-500/20 text-indigo-400"}`}>
                 <Users className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-white uppercase tracking-tight">Access Registry</h2>
-                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{createdAccounts.length} Authorized Entities</p>
+                <h2 className={`text-lg font-black uppercase tracking-tight ${isLight ? "text-gray-900" : "text-white"}`}>Access Registry</h2>
+                <p className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${isLight ? "text-gray-500" : "text-gray-500"}`}>{createdAccounts.length} Authorized Entities</p>
               </div>
             </div>
           </div>
@@ -319,7 +322,7 @@ export default function CreateSubAdmin() {
               placeholder="Search by username or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-white/5 bg-white/[0.03] py-3 pl-10 pr-4 text-sm text-white placeholder:text-gray-600 focus:border-indigo-500/30 focus:bg-white/[0.05] focus:outline-none transition-all"
+              className={`w-full rounded-lg border py-3 pl-10 pr-4 text-sm focus:border-indigo-500/30 focus:outline-none transition-all ${isLight ? "border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400" : "border-white/5 bg-white/[0.03] text-white placeholder:text-gray-600"}`}
             />
           </div>
 
@@ -336,16 +339,16 @@ export default function CreateSubAdmin() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="group relative rounded-2xl border border-white/5 bg-white/[0.03] p-4 hover:bg-white/[0.06] hover:border-white/10 transition-all shadow-lg"
+                  className={`group relative rounded-2xl border p-4 transition-all shadow-lg ${isLight ? "border-gray-200 bg-gray-50 hover:bg-gray-100 hover:border-gray-300" : "border-white/5 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/10"}`}
                 >
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-white/10 to-transparent border border-white/10 flex items-center justify-center text-sm font-black text-white group-hover:scale-110 transition-transform">
+                      <div className={`h-10 w-10 rounded-lg border flex items-center justify-center text-sm font-black group-hover:scale-110 transition-transform ${isLight ? "bg-gray-100 border-gray-200 text-gray-700" : "bg-gradient-to-br from-white/10 to-transparent border-white/10 text-white"}`}>
                         {account.username.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors truncate">{account.username}</p>
-                        <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
+                        <p className={`text-sm font-bold group-hover:text-indigo-400 transition-colors truncate ${isLight ? "text-gray-900" : "text-white"}`}>{account.username}</p>
+                        <p className={`text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mt-0.5 ${isLight ? "text-gray-500" : "text-gray-600"}`}>
                           <Clock className="h-3 w-3" />
                           {account.createdAt.split(',')[0]}
                         </p>
@@ -354,7 +357,7 @@ export default function CreateSubAdmin() {
                     <RoleBadge role={account.role} />
                   </div>
 
-                  <div className="space-y-2 pt-3 border-t border-white/5">
+                  <div className={`space-y-2 pt-3 border-t ${isLight ? "border-gray-200" : "border-white/5"}`}>
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2 min-w-0">
                         <Mail className="h-3 w-3 text-gray-600 flex-shrink-0" />
@@ -364,8 +367,8 @@ export default function CreateSubAdmin() {
                         onClick={() => copyToClipboard(account.email, account.id, "email")}
                         className={`p-1.5 rounded-lg transition-all ${
                           copiedId === `${account.id}-email`
-                            ? "bg-emerald-500/10 text-emerald-500"
-                            : "bg-white/5 text-gray-600 hover:text-white hover:bg-white/10"
+                            ? isLight ? "bg-green-100 text-green-600" : "bg-emerald-500/10 text-emerald-500"
+                            : isLight ? "bg-gray-100 text-gray-500 hover:bg-gray-200" : "bg-white/5 text-gray-600 hover:text-white hover:bg-white/10"
                         }`}
                       >
                         {copiedId === `${account.id}-email` ? <CheckCircle2 className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -382,8 +385,8 @@ export default function CreateSubAdmin() {
                           onClick={() => copyToClipboard(account.password, account.id, "password")}
                           className={`p-1.5 rounded-lg transition-all ${
                             copiedId === `${account.id}-password`
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : "bg-white/5 text-gray-600 hover:text-white hover:bg-white/10"
+                              ? isLight ? "bg-green-100 text-green-600" : "bg-emerald-500/10 text-emerald-400"
+                              : isLight ? "bg-gray-100 text-gray-500 hover:bg-gray-200" : "bg-white/5 text-gray-600 hover:text-white hover:bg-white/10"
                           }`}
                         >
                           {copiedId === `${account.id}-password` ? <CheckCircle2 className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -395,11 +398,11 @@ export default function CreateSubAdmin() {
               ))
             ) : (
               <div className="py-16 flex flex-col items-center justify-center text-center">
-                <div className="h-14 w-14 rounded-lg bg-white/[0.03] border border-white/5 flex items-center justify-center text-gray-700 mb-4">
+                <div className={`h-14 w-14 rounded-lg border flex items-center justify-center mb-4 ${isLight ? "bg-gray-50 border-gray-200 text-gray-600" : "bg-white/[0.03] border-white/5 text-gray-700"}`}>
                   <Info className="h-7 w-7" />
                 </div>
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Registry Empty</h3>
-                <p className="text-[9px] text-gray-600 mt-1.5 max-w-[180px] mx-auto font-medium">No administrative accounts found matching your query.</p>
+                <h3 className={`text-sm font-bold uppercase tracking-widest ${isLight ? "text-gray-500" : "text-gray-500"}`}>Registry Empty</h3>
+                <p className={`text-[9px] mt-1.5 max-w-[180px] mx-auto font-medium ${isLight ? "text-gray-600" : "text-gray-600"}`}>No administrative accounts found matching your query.</p>
               </div>
             )}
           </div>

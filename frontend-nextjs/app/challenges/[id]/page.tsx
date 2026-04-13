@@ -589,6 +589,7 @@ function ChallengeDetail() {
 
   const challengeId = Number(params?.id);
   const mode = searchParams.get("mode") || "solo";
+  const isGuestMode = searchParams.get("guest") === "true";
 
   useEffect(() => {
     if (!challengeId || Number.isNaN(challengeId)) return;
@@ -921,10 +922,14 @@ function ChallengeDetail() {
       return;
     }
 
-    if (!token) {
+    if (!token && !isGuestMode) {
       addTerminalLine("Run blocked: missing authentication token.");
       setErrorMessage("Your session has expired. Please log in again.");
       return;
+    }
+
+    if (isGuestMode && !token) {
+      addTerminalLine("Running in demo mode...");
     }
 
     try {
@@ -932,12 +937,16 @@ function ChallengeDetail() {
       setErrorMessage("");
       addTerminalLine(`Starting ${language} execution...`);
 
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${API_BASE_URL}/run`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         body: JSON.stringify({
           challenge_id: challenge.id,
           language,
@@ -1038,6 +1047,11 @@ function ChallengeDetail() {
       typeof window !== "undefined"
         ? window.localStorage.getItem("terminal_token")
         : null;
+
+    if (isGuestMode) {
+      addTerminalLine("Submission blocked: Create an account to submit and save progress.");
+      return;
+    }
 
     if (!token) {
       addTerminalLine("Submission blocked: missing authentication token.");
@@ -1235,10 +1249,24 @@ function ChallengeDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050507] px-4 py-6 text-white sm:px-6 sm:py-10">
+      <div className="min-h-screen flex items-center justify-center bg-[#050507] px-4 py-6 text-white sm:px-6 sm:py-10">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-3xl border border-white/10 bg-[#0a0a0a] px-6 py-20 text-center sm:px-10 sm:py-24">
-            <p className="text-sm text-gray-500">Loading challenge workspace...</p>
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative">
+              <div className="h-14 w-14 animate-spin rounded-full border-2 border-pink-500/20 border-t-pink-500" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-2 w-2 rounded-full bg-pink-400" />
+              </div>
+            </div>
+            <div className="space-y-2 text-center">
+              <p className="text-base font-medium text-white">Loading workspace</p>
+              <p className="text-sm text-gray-500">Preparing challenge environment...</p>
+            </div>
+            <div className="mt-2 flex items-center gap-1">
+              <div className="h-1 w-1 animate-pulse rounded-full bg-pink-500" style={{ animationDelay: "0ms" }} />
+              <div className="h-1 w-1 animate-pulse rounded-full bg-pink-500" style={{ animationDelay: "150ms" }} />
+              <div className="h-1 w-1 animate-pulse rounded-full bg-pink-500" style={{ animationDelay: "300ms" }} />
+            </div>
           </div>
         </div>
       </div>
@@ -1280,6 +1308,30 @@ function ChallengeDetail() {
         {errorMessage && (
           <div className="mb-4 rounded-2xl border border-yellow-500/15 bg-yellow-500/[0.05] px-4 py-3">
             <p className="text-sm text-yellow-200">{errorMessage}</p>
+          </div>
+        )}
+
+        {isGuestMode && (
+          <div className="mb-4 rounded-2xl border border-purple-500/20 bg-purple-500/[0.08] px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/20">
+                  <svg className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 15h7m9-4h7m-3-8l3 3m0 0l-3 3" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">Demo Mode</p>
+                  <p className="text-xs text-gray-400">Create an account to unlock full features, Live Thinker, compete with others, and save progress.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push("/signup")}
+                className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+              >
+                Create Account
+              </button>
+            </div>
           </div>
         )}
 

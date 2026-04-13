@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "../../context/ThemeContext";
 
 interface Notification {
   id: string;
@@ -16,6 +17,9 @@ interface Notification {
 }
 
 export default function Notifications() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+  
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [preferences, setPreferences] = useState({
@@ -289,7 +293,11 @@ export default function Notifications() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+        className={`relative rounded-lg p-2 transition-colors ${
+          isLight
+            ? "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+            : "text-gray-400 hover:bg-white/10 hover:text-white"
+        }`}
         aria-label="Notifications"
       >
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,10 +321,18 @@ export default function Notifications() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed right-2 z-50 mt-2 w-80 overflow-hidden rounded-xl border border-white/10 bg-[#0a0a0a] shadow-2xl sm:absolute sm:right-0 sm:mt-2 sm:w-96"
+            className={`fixed right-2 z-50 mt-2 w-80 overflow-hidden rounded-xl border shadow-2xl ${
+                  isLight
+                    ? "border-gray-200 bg-white"
+                    : "border-white/10 bg-[#0a0a0a]"
+                } sm:absolute sm:right-0 sm:mt-2 sm:w-96`}
           >
-            <div className="flex items-center justify-between border-b border-white/10 p-4">
-              <h3 className="text-sm font-semibold text-white">Notifications</h3>
+            <div className={`flex items-center justify-between border-b p-4 ${
+              isLight ? "border-gray-200" : "border-white/10"
+            }`}>
+              <h3 className={`text-sm font-semibold ${
+                isLight ? "text-gray-900" : "text-white"
+              }`}>Notifications</h3>
 
               <div className="flex gap-2">
                 {unreadCount > 0 && (
@@ -330,7 +346,11 @@ export default function Notifications() {
 
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="text-gray-500 transition-colors hover:text-white"
+                  className={`transition-colors ${
+                    isLight
+                      ? "text-gray-500 hover:text-gray-900"
+                      : "text-gray-500 hover:text-white"
+                  }`}
                 >
                   ✕
                 </button>

@@ -12,9 +12,11 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "@/app/context/ThemeContext";
 import EditProfileModal from "@/app/components/profile/editmodal";
 import ProfileHeader from "@/app/components/profile/ProfileHeader";
 import { getCountryFlag } from "@/lib/flags";
+import { ReportButton } from "@/app/components/ReportButton";
 import {
   AUTH_EMAIL_KEY,
   AUTH_TOKEN_KEY,
@@ -161,6 +163,8 @@ const FRONTEND_URL =
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const notifyTimeoutRef = useRef<number | null>(null);
 
@@ -649,11 +653,6 @@ export default function ProfilePage() {
     try {
       notify("Removing avatar...");
 
-      // TODO: BACKEND NEEDED - Create DELETE /api/profile/avatar endpoint
-      // Expected backend: DELETE /api/profile/avatar
-      // Response: { success: true }
-      // For now, we clear locally and rely on backend sync
-      
       const res = await fetch(`${API_BASE_URL}/profile/avatar`, {
         method: "DELETE",
         headers: {
@@ -668,7 +667,6 @@ export default function ProfilePage() {
           statusText: res.statusText,
           body: rawText,
         });
-        // Continue with local update even if backend fails
       }
 
       setImageError(false);
@@ -688,7 +686,6 @@ export default function ProfilePage() {
       notify("Avatar removed successfully");
     } catch (error) {
       console.error("Remove avatar error:", error);
-      // Even on network error, clear locally
       setUser((prev) => {
         if (!prev) return prev;
         const updated = { ...prev, profile_pic: null };
@@ -704,13 +701,6 @@ export default function ProfilePage() {
     const parsed = new Date(user.joinDate);
     if (Number.isNaN(parsed.getTime())) return "Not available yet";
     return parsed.toDateString();
-  }, [user?.joinDate]);
-
-  const displayJoinYear = useMemo(() => {
-    if (!user?.joinDate) return "—";
-    const parsed = new Date(user.joinDate);
-    if (Number.isNaN(parsed.getTime())) return "—";
-    return parsed.getFullYear().toString();
   }, [user?.joinDate]);
 
   const avatarInitials = useMemo(() => {
@@ -1076,7 +1066,11 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
+      <div
+        className={`flex min-h-[60vh] items-center justify-center ${
+          isLight ? "bg-gray-50" : ""
+        }`}
+      >
         <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-pink-500" />
       </div>
     );
@@ -1084,8 +1078,14 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-8 text-center">
-        <p className="text-sm text-gray-400">
+      <div
+        className={`rounded-2xl border p-8 text-center ${
+          isLight
+            ? "border-gray-200 bg-white shadow-sm"
+            : "border-white/10 bg-[#0a0a0a]"
+        }`}
+      >
+        <p className={`text-sm ${isLight ? "text-gray-600" : "text-gray-400"}`}>
           Unable to load profile right now.
         </p>
       </div>
@@ -1093,13 +1093,24 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className={`space-y-4 ${isAdmin ? "bg-[#0a0a0a]" : ""}`}>
+    <div
+      className={`space-y-4 ${
+        isAdmin ? (isLight ? "bg-gray-50" : "bg-[#0a0a0a]") : ""
+      }`}
+    >
+      {/* Floating Report Button */}
+      {user?.id && <ReportButton type="user" targetId={parseInt(user.id) || 0} targetLabel={user.username} />}
+      
       {notification && (
         <div className="fixed right-6 top-24 z-[100]">
           <div
             className={`rounded-xl border px-4 py-2 shadow-2xl backdrop-blur-xl ${
               notification.type === "success"
-                ? "border-green-500/30 bg-green-500/10 text-green-300"
+                ? isLight
+                  ? "border-green-200 bg-green-50 text-green-700"
+                  : "border-green-500/30 bg-green-500/10 text-green-300"
+                : isLight
+                ? "border-red-200 bg-red-50 text-red-700"
                 : "border-red-500/30 bg-red-500/10 text-red-300"
             }`}
           >
@@ -1111,13 +1122,29 @@ export default function ProfilePage() {
       {(profileError || statsError) && (
         <div className="space-y-2">
           {profileError && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2">
-              <p className="text-xs text-red-300">{profileError}</p>
+            <div
+              className={`rounded-xl border px-4 py-2 ${
+                isLight
+                  ? "border-red-200 bg-red-50"
+                  : "border-red-500/20 bg-red-500/10"
+              }`}
+            >
+              <p className={`text-xs ${isLight ? "text-red-600" : "text-red-300"}`}>
+                {profileError}
+              </p>
             </div>
           )}
           {statsError && (
-            <div className="rounded-xl border border-pink-500/20 bg-pink-500/10 px-4 py-2">
-              <p className="text-xs text-pink-200">{statsError}</p>
+            <div
+              className={`rounded-xl border px-4 py-2 ${
+                isLight
+                  ? "border-pink-200 bg-pink-50"
+                  : "border-pink-500/20 bg-pink-500/10"
+              }`}
+            >
+              <p className={`text-xs ${isLight ? "text-pink-600" : "text-pink-200"}`}>
+                {statsError}
+              </p>
             </div>
           )}
         </div>
@@ -1140,52 +1167,76 @@ export default function ProfilePage() {
       />
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Problems Solved" value={user.totalSolved ?? 0} />
-        <StatCard label="Coding Streak" value={`${user.currentStreak ?? 0} days`} />
-        <StatCard label="Skill Tier" value={user.rank || DEFAULT_RANK} />
-        <StatCard label="Learning XP" value={learningSnapshot.totalLearningXp} />
+        <StatCard label="Problems Solved" value={user.totalSolved ?? 0} isLight={isLight} />
+        <StatCard label="Coding Streak" value={`${user.currentStreak ?? 0} days`} isLight={isLight} />
+        <StatCard label="Skill Tier" value={user.rank || DEFAULT_RANK} isLight={isLight} />
+        <StatCard label="Learning XP" value={learningSnapshot.totalLearningXp} isLight={isLight} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
         <div className="space-y-4">
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+          <div
+            className={`rounded-2xl border p-5 ${
+              isLight
+                ? "border-gray-200 bg-white shadow-sm"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-base font-semibold text-white">
+                <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                   Learning Snapshot
                 </h2>
-                <p className="mt-0.5 text-[10px] text-gray-500">
+                <p className={`mt-0.5 text-[10px] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
                   Your progress inside the CodeMaster learning hub.
                 </p>
               </div>
-              <div className="rounded-xl border border-pink-500/20 bg-pink-500/10 p-2 text-pink-300">
+              <div
+                className={`rounded-xl border p-2 ${
+                  isLight
+                    ? "border-pink-200 bg-pink-50 text-pink-600"
+                    : "border-pink-500/20 bg-pink-500/10 text-pink-300"
+                }`}
+              >
                 <BookOpen className="h-4 w-4" />
               </div>
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatCard label="Started" value={learningSnapshot.startedCourses} />
-              <StatCard label="Completed" value={learningSnapshot.completedCourses} />
-              <StatCard label="Steps Done" value={learningSnapshot.completedSteps} />
-              <StatCard label="XP" value={learningSnapshot.totalLearningXp} />
+              <StatCard label="Started" value={learningSnapshot.startedCourses} isLight={isLight} />
+              <StatCard label="Completed" value={learningSnapshot.completedCourses} isLight={isLight} />
+              <StatCard label="Steps Done" value={learningSnapshot.completedSteps} isLight={isLight} />
+              <StatCard label="XP" value={learningSnapshot.totalLearningXp} isLight={isLight} />
             </div>
 
-            <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <div
+              className={`mt-4 rounded-xl border p-4 ${
+                isLight
+                  ? "border-gray-200 bg-gray-50"
+                  : "border-white/10 bg-white/[0.03]"
+              }`}
+            >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+                  <p className={`text-[10px] uppercase tracking-[0.2em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
                     Strongest Area
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-white">
+                  <p className={`mt-1 text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                     {learningSnapshot.strongestCategory}
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                <div
+                  className={`rounded-xl border px-3 py-2 ${
+                    isLight
+                      ? "border-gray-200 bg-white"
+                      : "border-white/10 bg-white/[0.03]"
+                  }`}
+                >
                   <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
                     Learning State
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-white">
+                  <p className={`mt-1 text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                     {skillIdentity.learningState}
                   </p>
                 </div>
@@ -1193,38 +1244,50 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+          <div
+            className={`rounded-2xl border p-5 ${
+              isLight
+                ? "border-gray-200 bg-white shadow-sm"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-base font-semibold text-white">
+                <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                   Current Learning Focus
                 </h2>
                 <p className="mt-0.5 text-[10px] text-gray-500">
                   Pick up where your growth path currently stands.
                 </p>
               </div>
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2 text-emerald-300">
+              <div
+                className={`rounded-xl border p-2 ${
+                  isLight
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                    : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                }`}
+              >
                 <Sparkles className="h-4 w-4" />
               </div>
             </div>
 
             {learningSnapshot.activeCourse ? (
               <div className="mt-4">
-                <p className="text-lg font-semibold text-white">
+                <p className={`text-lg font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                   {learningSnapshot.activeCourse.title}
                 </p>
-                <p className="mt-1 max-w-2xl text-xs leading-6 text-gray-400">
+                <p className={`mt-1 max-w-2xl text-xs leading-6 ${isLight ? "text-gray-600" : "text-gray-400"}`}>
                   {learningSnapshot.activeCourse.subtitle}
                 </p>
 
                 <div className="mt-4">
                   <div className="mb-1.5 flex items-center justify-between text-[10px]">
-                    <p className="text-gray-400">Progress</p>
-                    <p className="font-bold text-pink-400">
+                    <p className={isLight ? "text-gray-500" : "text-gray-400"}>Progress</p>
+                    <p className="font-bold text-pink-500">
                       {learningSnapshot.activeCourse.percent}%
                     </p>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                  <div className={`h-1.5 w-full overflow-hidden rounded-full ${isLight ? "bg-gray-200" : "bg-white/5"}`}>
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all duration-500"
                       style={{
@@ -1235,21 +1298,33 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <div
+                    className={`rounded-xl border p-3 ${
+                      isLight
+                        ? "border-gray-200 bg-gray-50"
+                        : "border-white/10 bg-white/[0.03]"
+                    }`}
+                  >
                     <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
                       Next Step
                     </p>
-                    <p className="mt-1 text-xs font-medium text-white">
+                    <p className={`mt-1 text-xs font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
                       {learningSnapshot.activeCourse.nextStepTitle ||
                         "Continue your course"}
                     </p>
                   </div>
 
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <div
+                    className={`rounded-xl border p-3 ${
+                      isLight
+                        ? "border-gray-200 bg-gray-50"
+                        : "border-white/10 bg-white/[0.03]"
+                    }`}
+                  >
                     <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
                       Focus Area
                     </p>
-                    <p className="mt-1 text-xs font-medium text-white">
+                    <p className={`mt-1 text-xs font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
                       {learningSnapshot.activeCourse.category}
                     </p>
                   </div>
@@ -1262,7 +1337,11 @@ export default function ProfilePage() {
                         `/dashboard/learning/${learningSnapshot.activeCourse?.id}`
                       )
                     }
-                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-black transition hover:bg-gray-200"
+                    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition ${
+                      isLight
+                        ? "border border-gray-300 bg-gray-900 text-white hover:bg-black"
+                        : "border border-white/10 bg-white text-black hover:bg-gray-200"
+                    }`}
                     type="button"
                   >
                     Continue Learning
@@ -1276,7 +1355,11 @@ export default function ProfilePage() {
                           `/dashboard/challenges/${learningSnapshot.activeCourse?.relatedChallengeId}`
                         )
                       }
-                      className="inline-flex items-center gap-2 rounded-lg border border-pink-500/20 bg-pink-500/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-pink-200 transition hover:bg-pink-500/15"
+                      className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition ${
+                        isLight
+                          ? "border-pink-200 bg-pink-50 text-pink-700 hover:bg-pink-100"
+                          : "border-pink-500/20 bg-pink-500/10 text-pink-200 hover:bg-pink-500/15"
+                      }`}
                       type="button"
                     >
                       Linked Challenge
@@ -1286,17 +1369,27 @@ export default function ProfilePage() {
                 </div>
               </div>
             ) : (
-              <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6">
-                <p className="text-sm font-medium text-white">
+              <div
+                className={`mt-4 rounded-xl border px-4 py-6 ${
+                  isLight
+                    ? "border-gray-200 bg-gray-50"
+                    : "border-white/10 bg-white/[0.03]"
+                }`}
+              >
+                <p className={`text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
                   No active course yet
                 </p>
-                <p className="mt-1 text-xs leading-6 text-gray-400">
+                <p className={`mt-1 text-xs leading-6 ${isLight ? "text-gray-600" : "text-gray-400"}`}>
                   Start a learning path so your profile reflects both knowledge growth and challenge readiness.
                 </p>
 
                 <button
                   onClick={() => router.push("/dashboard/learning")}
-                  className="mt-4 rounded-lg border border-white/10 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-black transition hover:bg-gray-200"
+                  className={`mt-4 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition ${
+                    isLight
+                      ? "border border-gray-300 bg-gray-900 text-white hover:bg-black"
+                      : "border border-white/10 bg-white text-black hover:bg-gray-200"
+                  }`}
                   type="button"
                 >
                   Explore Learning Hub
@@ -1305,10 +1398,16 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+          <div
+            className={`rounded-2xl border p-5 ${
+              isLight
+                ? "border-gray-200 bg-white shadow-sm"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-base font-semibold text-white">
+                <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                   Account Information
                 </h2>
                 <p className="mt-0.5 text-[10px] text-gray-500">
@@ -1318,8 +1417,8 @@ export default function ProfilePage() {
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <InfoItem label="Email" value={user.email} />
-              <InfoItem label="Username" value={user.username} />
+              <InfoItem label="Email" value={user.email} isLight={isLight} />
+              <InfoItem label="Username" value={user.username} isLight={isLight} />
               <InfoItem
                 label="Country"
                 value={
@@ -1327,14 +1426,16 @@ export default function ProfilePage() {
                     ? `${getCountryFlag(user.country)} ${user.country}`
                     : "Not specified"
                 }
+                isLight={isLight}
               />
-              <InfoItem label="Member Since" value={displayJoinDate} />
-              <InfoItem label="User ID" value={user.id || "Not available yet"} />
+              <InfoItem label="Member Since" value={displayJoinDate} isLight={isLight} />
+              <InfoItem label="User ID" value={user.id || "Not available yet"} isLight={isLight} />
               {referralLink && (
                 <InfoItem
                   label="Referral Link"
                   value={referralLink}
                   isReferral={true}
+                  isLight={isLight}
                 />
               )}
             </div>
@@ -1342,12 +1443,24 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+          <div
+            className={`rounded-2xl border p-5 ${
+              isLight
+                ? "border-gray-200 bg-white shadow-sm"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
+          >
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white">
+              <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                 Skill Identity
               </h2>
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2 text-pink-300">
+              <div
+                className={`rounded-xl border p-2 ${
+                  isLight
+                    ? "border-pink-200 bg-pink-50 text-pink-600"
+                    : "border-white/10 bg-white/[0.03] text-pink-300"
+                }`}
+              >
                 <BrainCircuit className="h-4 w-4" />
               </div>
             </div>
@@ -1356,32 +1469,49 @@ export default function ProfilePage() {
               <SkillSignal
                 label="Strongest area"
                 value={skillIdentity.strongestArea}
+                isLight={isLight}
               />
               <SkillSignal
                 label="Challenge momentum"
                 value={skillIdentity.growthState}
+                isLight={isLight}
               />
               <SkillSignal
                 label="Consistency"
                 value={skillIdentity.consistencyState}
+                isLight={isLight}
               />
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+          <div
+            className={`rounded-2xl border p-5 ${
+              isLight
+                ? "border-gray-200 bg-white shadow-sm"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
+          >
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white">
+              <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                 Challenge Recommendation
               </h2>
-              <span className="text-[10px] text-pink-300">Adaptive</span>
+              <span className={`text-[10px] ${isLight ? "text-pink-600" : "text-pink-300"}`}>
+                Adaptive
+              </span>
             </div>
 
             {recommendedChallenge ? (
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="text-sm font-semibold text-white">
+              <div
+                className={`mt-4 rounded-2xl border p-4 ${
+                  isLight
+                    ? "border-gray-200 bg-gray-50"
+                    : "border-white/10 bg-white/[0.03]"
+                }`}
+              >
+                <p className={`text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                   {recommendedChallenge.title || "Next recommended challenge"}
                 </p>
-                <p className="mt-1 text-xs leading-6 text-gray-400">
+                <p className={`mt-1 text-xs leading-6 ${isLight ? "text-gray-600" : "text-gray-400"}`}>
                   {recommendedChallenge.reason}
                 </p>
 
@@ -1389,7 +1519,11 @@ export default function ProfilePage() {
                   onClick={() =>
                     router.push(`/dashboard/challenges/${recommendedChallenge.challengeId}`)
                   }
-                  className="mt-4 inline-flex items-center gap-2 rounded-lg border border-pink-500/20 bg-pink-500/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-pink-200 transition hover:bg-pink-500/15"
+                  className={`mt-4 inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition ${
+                    isLight
+                      ? "border-pink-200 bg-pink-50 text-pink-700 hover:bg-pink-100"
+                      : "border-pink-500/20 bg-pink-500/10 text-pink-200 hover:bg-pink-500/15"
+                  }`}
                   type="button"
                 >
                   Solve Challenge
@@ -1397,17 +1531,29 @@ export default function ProfilePage() {
                 </button>
               </div>
             ) : (
-              <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6">
-                <p className="text-xs text-gray-400">
+              <div
+                className={`mt-4 rounded-xl border px-4 py-6 ${
+                  isLight
+                    ? "border-gray-200 bg-gray-50"
+                    : "border-white/10 bg-white/[0.03]"
+                }`}
+              >
+                <p className={`text-xs ${isLight ? "text-gray-600" : "text-gray-400"}`}>
                   Start learning or solving more challenges so CodeMaster can recommend the next best battle for you.
                 </p>
               </div>
             )}
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+          <div
+            className={`rounded-2xl border p-5 ${
+              isLight
+                ? "border-gray-200 bg-white shadow-sm"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
+          >
             <div className="mb-3">
-              <h2 className="text-base font-semibold text-white">
+              <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                 Profile Strength
               </h2>
               <p className="mt-0.5 text-[10px] text-gray-500">
@@ -1417,12 +1563,10 @@ export default function ProfilePage() {
 
             <div className="mb-4">
               <div className="mb-1.5 flex items-center justify-between text-[10px]">
-                <p className="text-gray-400">Completion</p>
-                <p className="font-bold text-pink-500">
-                  {profileCompleteness}%
-                </p>
+                <p className={isLight ? "text-gray-500" : "text-gray-400"}>Completion</p>
+                <p className="font-bold text-pink-500">{profileCompleteness}%</p>
               </div>
-              <div className="h-1 w-full overflow-hidden rounded-full bg-white/5">
+              <div className={`h-1 w-full overflow-hidden rounded-full ${isLight ? "bg-gray-200" : "bg-white/5"}`}>
                 <div
                   className="h-full rounded-full bg-pink-500 transition-all duration-500"
                   style={{ width: `${profileCompleteness}%` }}
@@ -1437,37 +1581,64 @@ export default function ProfilePage() {
                   title={item.title}
                   description={item.description}
                   tone={item.tone}
+                  isLight={isLight}
                 />
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+          <div
+            className={`rounded-2xl border p-5 ${
+              isLight
+                ? "border-gray-200 bg-white shadow-sm"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
+          >
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white">Smart Tips</h2>
-              <span className="text-[10px] text-pink-300">Adaptive</span>
+              <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+                Smart Tips
+              </h2>
+              <span className={`text-[10px] ${isLight ? "text-pink-600" : "text-pink-300"}`}>
+                Adaptive
+              </span>
             </div>
 
             <div className="mt-4 space-y-2">
               {recommendedActions.map((action, index) => (
                 <div
                   key={`${action}-${index}`}
-                  className="rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                  className={`rounded-xl border p-3 ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50"
+                      : "border-white/10 bg-white/[0.03]"
+                  }`}
                 >
-                  <p className="text-[11px] text-gray-200">{action}</p>
+                  <p className={`text-[11px] ${isLight ? "text-gray-700" : "text-gray-200"}`}>
+                    {action}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-5">
+          <div
+            className={`rounded-2xl border p-5 ${
+              isLight
+                ? "border-gray-200 bg-white shadow-sm"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
+          >
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white">
+              <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                 Recent Activity
               </h2>
               <button
                 onClick={() => router.push("/dashboard/challenges")}
-                className="text-xs text-pink-300 transition hover:text-pink-200"
+                className={`text-xs transition ${
+                  isLight
+                    ? "text-pink-600 hover:text-pink-700"
+                    : "text-pink-300 hover:text-pink-200"
+                }`}
                 type="button"
               >
                 View all
@@ -1476,8 +1647,16 @@ export default function ProfilePage() {
 
             <div className="mt-4 space-y-2">
               {recentActivity.length === 0 ? (
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center">
-                  <p className="text-xs text-gray-400">No activity yet.</p>
+                <div
+                  className={`rounded-xl border px-4 py-6 text-center ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50"
+                      : "border-white/10 bg-white/[0.03]"
+                  }`}
+                >
+                  <p className={`text-xs ${isLight ? "text-gray-600" : "text-gray-400"}`}>
+                    No activity yet.
+                  </p>
                 </div>
               ) : (
                 recentActivity.slice(0, 3).map((item, index) => (
@@ -1487,6 +1666,7 @@ export default function ProfilePage() {
                     status={item.status || "Completed"}
                     date={item.date || ""}
                     score={item.score ?? 0}
+                    isLight={isLight}
                   />
                 ))
               )}
@@ -1519,26 +1699,36 @@ function InsightCard({
   title,
   description,
   tone,
+  isLight,
 }: {
   title: string;
   description: string;
   tone: InsightTone;
+  isLight: boolean;
 }) {
   const toneClass =
     tone === "good"
-      ? "text-emerald-400"
+      ? "text-emerald-500"
       : tone === "warning"
-      ? "text-amber-400"
-      : "text-blue-400";
+      ? "text-amber-500"
+      : "text-blue-500";
 
   return (
-    <div className="flex items-start gap-2 rounded-xl border border-white/5 bg-white/[0.01] p-2.5">
+    <div
+      className={`flex items-start gap-2 rounded-xl border p-2.5 ${
+        isLight
+          ? "border-gray-200 bg-gray-50"
+          : "border-white/5 bg-white/[0.01]"
+      }`}
+    >
       <div
         className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current ${toneClass}`}
       />
       <div>
-        <p className="text-[11px] font-bold text-white">{title}</p>
-        <p className="mt-0.5 text-[10px] leading-relaxed text-gray-500">
+        <p className={`text-[11px] font-bold ${isLight ? "text-gray-900" : "text-white"}`}>
+          {title}
+        </p>
+        <p className={`mt-0.5 text-[10px] leading-relaxed ${isLight ? "text-gray-600" : "text-gray-500"}`}>
           {description}
         </p>
       </div>
@@ -1549,16 +1739,24 @@ function InsightCard({
 function StatCard({
   label,
   value,
+  isLight,
 }: {
   label: string;
   value: string | number;
+  isLight: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] p-4 text-center transition-all hover:border-pink-500/20">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
+    <div
+      className={`rounded-2xl border p-4 text-center transition-all hover:border-pink-500/20 ${
+        isLight
+          ? "border-gray-200 bg-white shadow-sm"
+          : "border-white/10 bg-[#0a0a0a]"
+      }`}
+    >
+      <p className={`text-[10px] uppercase tracking-[0.18em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
         {label}
       </p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight text-white">
+      <p className={`mt-2 text-2xl font-semibold tracking-tight ${isLight ? "text-gray-900" : "text-white"}`}>
         {value}
       </p>
     </div>
@@ -1568,16 +1766,26 @@ function StatCard({
 function SkillSignal({
   label,
   value,
+  isLight,
 }: {
   label: string;
   value: string;
+  isLight: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+    <div
+      className={`rounded-xl border p-3 ${
+        isLight
+          ? "border-gray-200 bg-gray-50"
+          : "border-white/10 bg-white/[0.03]"
+      }`}
+    >
       <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
         {label}
       </p>
-      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
+      <p className={`mt-1 text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -1586,10 +1794,12 @@ function InfoItem({
   label,
   value,
   isReferral = false,
+  isLight,
 }: {
   label: string;
   value: string | null | undefined;
   isReferral?: boolean;
+  isLight: boolean;
 }) {
   const isUrl = /^https?:\/\//i.test(value || "");
   const isUserId = label === "User ID";
@@ -1634,14 +1844,18 @@ function InfoItem({
             href={displayValue}
             target="_blank"
             rel="noreferrer"
-            className="block max-w-[180px] truncate text-xs text-white underline-offset-4 hover:underline"
+            className={`block max-w-[180px] truncate text-xs underline-offset-4 hover:underline ${
+              isLight ? "text-gray-800" : "text-white"
+            }`}
             title={displayValue}
           >
             {displayValue}
           </a>
         ) : (
           <p
-            className="max-w-[180px] truncate text-xs text-white"
+            className={`max-w-[180px] truncate text-xs ${
+              isLight ? "text-gray-800" : "text-white"
+            }`}
             title={displayValue}
           >
             {displayValue}
@@ -1651,12 +1865,23 @@ function InfoItem({
           <>
             <button
               onClick={handleCopy}
-              className="relative text-gray-500 transition-colors hover:text-white"
+              className={`relative transition-colors ${
+                isLight
+                  ? "text-gray-500 hover:text-gray-900"
+                  : "text-gray-500 hover:text-white"
+              }`}
               title="Copy"
+              type="button"
             >
               <Copy size={12} />
               {copied && (
-                <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-1.5 py-0.5 text-[9px] text-white shadow-xl">
+                <span
+                  className={`absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded px-1.5 py-0.5 text-[9px] shadow-xl ${
+                    isLight
+                      ? "bg-gray-900 text-white"
+                      : "bg-gray-800 text-white"
+                  }`}
+                >
                   Copied!
                 </span>
               )}
@@ -1667,6 +1892,7 @@ function InfoItem({
                   onClick={shareOnWhatsApp}
                   className="text-gray-500 transition-colors hover:text-green-500"
                   title="Share on WhatsApp"
+                  type="button"
                 >
                   <MessageCircle size={12} />
                 </button>
@@ -1674,6 +1900,7 @@ function InfoItem({
                   onClick={shareOnLinkedIn}
                   className="text-gray-500 transition-colors hover:text-blue-500"
                   title="Share on LinkedIn"
+                  type="button"
                 >
                   <Share2 size={12} />
                 </button>
@@ -1691,11 +1918,13 @@ function ActivityItem({
   status,
   date,
   score,
+  isLight,
 }: {
   title: string;
   status: string;
   date: string;
   score: number;
+  isLight: boolean;
 }) {
   const normalizedStatus = status.toLowerCase();
   const isSuccess =
@@ -1704,16 +1933,24 @@ function ActivityItem({
     normalizedStatus === "passed";
 
   return (
-    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3 transition-all hover:border-pink-500/15">
+    <div
+      className={`flex items-center justify-between rounded-xl border p-3 transition-all hover:border-pink-500/15 ${
+        isLight
+          ? "border-gray-200 bg-gray-50"
+          : "border-white/10 bg-white/[0.03]"
+      }`}
+    >
       <div className="min-w-0">
-        <p className="truncate text-xs font-medium text-white">{title}</p>
+        <p className={`truncate text-xs font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
+          {title}
+        </p>
         <p className="mt-0.5 text-[10px] text-gray-500">{date || "Recent"}</p>
       </div>
 
       <div className="ml-4 text-right">
         <p
           className={`text-[10px] font-bold ${
-            isSuccess ? "text-emerald-400" : "text-amber-400"
+            isSuccess ? "text-emerald-500" : "text-amber-500"
           }`}
         >
           {status}

@@ -17,6 +17,7 @@ import LearningContent from "../LearningContent";
 import LearningEngagement from "../LearningEngagement";
 import LearningOutline from "../LearningOutline";
 import { LEARNING_PATHS } from "../data";
+import { useTheme } from "@/app/context/ThemeContext";
 
 const PROGRESS_KEY = "codemaster_learning_progress_v1";
 
@@ -36,6 +37,8 @@ interface UserProgress {
 export default function LearningPathEngine() {
   const router = useRouter();
   const params = useParams();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const pathId = params.pathId as string;
 
   const [userProgress, setUserProgress] = useState<UserProgress>({
@@ -218,7 +221,11 @@ export default function LearningPathEngine() {
 
   if (loading || !path) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#020202]">
+      <div
+        className={`flex min-h-screen items-center justify-center ${
+          isLight ? "bg-[#f8fafc]" : "bg-[#020202]"
+        }`}
+      >
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
       </div>
     );
@@ -267,7 +274,13 @@ export default function LearningPathEngine() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#020202] text-white">
+    <div
+      className={`min-h-screen ${
+        isLight
+          ? "bg-[#f8fafc] text-gray-900"
+          : "bg-[#020202] text-white"
+      }`}
+    >
       <AnimatePresence>
         {showXpPopup && (
           <motion.div
@@ -284,34 +297,56 @@ export default function LearningPathEngine() {
         )}
       </AnimatePresence>
 
-      <div className="mt-[-30px] mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto mt-[-30px] max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <button
             onClick={() => router.push("/dashboard/learning")}
-            className="group inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 transition-colors hover:text-white"
+            className={`group inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+              isLight ? "text-gray-500 hover:text-gray-900" : "text-gray-500 hover:text-white"
+            }`}
           >
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
             Back to Learning Hub
           </button>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-amber-400">
+            <div
+              className={`flex items-center gap-2 rounded-xl border px-4 py-2 ${
+                isLight
+                  ? "border-amber-200 bg-amber-50 text-amber-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
+                  : "border-amber-500/20 bg-amber-500/10 text-amber-400"
+              }`}
+            >
               <Zap className="h-4 w-4 fill-current" />
               <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">
                 Mastery: {userProgress.totalXp || 0} XP
               </span>
             </div>
 
-            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+            <div
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 ${
+                isLight
+                  ? "border-gray-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
+                  : "border-white/10 bg-white/[0.03]"
+              }`}
+            >
               <button
                 onClick={handlePrev}
                 disabled={activeStepIndex === 0}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
+                className={`flex h-9 w-9 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                  isLight
+                    ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+                    : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                }`}
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
 
-              <span className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <span
+                className={`px-2 text-[11px] font-semibold uppercase tracking-[0.16em] ${
+                  isLight ? "text-gray-500" : "text-gray-500"
+                }`}
+              >
                 Step {activeStepIndex + 1} of {totalStepsCount}
               </span>
 
@@ -321,7 +356,11 @@ export default function LearningPathEngine() {
                   activeStepIndex === totalStepsCount - 1 ||
                   isStepLocked(path.steps[activeStepIndex + 1]?.id)
                 }
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
+                className={`flex h-9 w-9 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                  isLight
+                    ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+                    : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                }`}
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -334,26 +373,62 @@ export default function LearningPathEngine() {
             <LearningHero path={heroPath} />
 
             {activeStep && contentPath && (
-              <div className="overflow-hidden rounded-[28px] border-t border-white/10">
-                <div className="border-b border-white/5 px-6 py-5 sm:px-8">
+              <div
+                className={`overflow-hidden rounded-[28px] border ${
+                  isLight
+                    ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
+                    : "border-white/10 bg-[#09090c]"
+                }`}
+              >
+                <div
+                  className={`border-b px-6 py-5 sm:px-8 ${
+                    isLight ? "border-gray-200" : "border-white/5"
+                  }`}
+                >
                   <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-pink-300">
+                      <p
+                        className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${
+                          isLight ? "text-pink-600" : "text-pink-300"
+                        }`}
+                      >
                         Lesson Step
                       </p>
-                      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-[2rem]">
+                      <h2
+                        className={`mt-2 text-2xl font-semibold tracking-tight sm:text-[2rem] ${
+                          isLight ? "text-gray-900" : "text-white"
+                        }`}
+                      >
                         {activeStep.title}
                       </h2>
-                      <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-400">
+                      <p
+                        className={`mt-3 max-w-3xl text-sm leading-6 ${
+                          isLight ? "text-gray-600" : "text-gray-400"
+                        }`}
+                      >
                         {activeStep.description}
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                      <p className="text-[10px] uppercase tracking-[0.16em] text-gray-500">
+                    <div
+                      className={`rounded-2xl border px-4 py-3 ${
+                        isLight
+                          ? "border-gray-200 bg-gray-50"
+                          : "border-white/10 bg-white/[0.03]"
+                      }`}
+                    >
+                      <p
+                        className={`text-[10px] uppercase tracking-[0.16em] ${
+                          isLight ? "text-gray-500" : "text-gray-500"
+                        }`}
+                      >
                         Step Progress
                       </p>
-                      <p className="mt-1 text-sm font-semibold text-white">
+                      <p
+                        className={`mt-1 text-sm font-semibold ${
+                          isLight ? "text-gray-900" : "text-white"
+                        }`}
+                      >
                         {completedStepsCount}/{totalStepsCount} completed
                       </p>
                     </div>
@@ -367,13 +442,25 @@ export default function LearningPathEngine() {
                   />
                 </div>
 
-                <div className="border-t border-white/5 px-6 py-6 sm:px-8">
+                <div
+                  className={`border-t px-6 py-6 sm:px-8 ${
+                    isLight ? "border-gray-200" : "border-white/5"
+                  }`}
+                >
                   <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                      <p
+                        className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${
+                          isLight ? "text-gray-500" : "text-gray-500"
+                        }`}
+                      >
                         Step Navigation
                       </p>
-                      <p className="mt-1 text-sm text-gray-400">
+                      <p
+                        className={`mt-1 text-sm ${
+                          isLight ? "text-gray-600" : "text-gray-400"
+                        }`}
+                      >
                         Move through the lesson step by step and complete each
                         section to unlock the next one.
                       </p>
@@ -383,7 +470,11 @@ export default function LearningPathEngine() {
                       <button
                         onClick={handlePrev}
                         disabled={activeStepIndex === 0}
-                        className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
+                        className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                          isLight
+                            ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+                            : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                        }`}
                       >
                         Previous
                       </button>
@@ -394,7 +485,11 @@ export default function LearningPathEngine() {
                           activeStepIndex === totalStepsCount - 1 ||
                           isStepLocked(path.steps[activeStepIndex + 1]?.id)
                         }
-                        className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
+                        className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                          isLight
+                            ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+                            : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                        }`}
                       >
                         Next
                       </button>
@@ -425,7 +520,11 @@ export default function LearningPathEngine() {
             {relatedPaths.length > 0 && (
               <section className="pt-4">
                 <div className="mb-6 flex items-center justify-between">
-                  <h3 className="flex items-center gap-3 text-xl font-semibold text-white">
+                  <h3
+                    className={`flex items-center gap-3 text-xl font-semibold ${
+                      isLight ? "text-gray-900" : "text-white"
+                    }`}
+                  >
                     <BookOpen className="h-5 w-5 text-pink-500" />
                     Recommended Next Courses
                   </h3>
@@ -436,9 +535,17 @@ export default function LearningPathEngine() {
                     <button
                       key={p.id}
                       onClick={() => router.push(`/dashboard/learning/${p.id}`)}
-                      className="group flex items-center gap-4 rounded-[24px] border border-white/10 bg-[#09090c] p-4 text-left transition-all hover:border-pink-500/20 hover:bg-[#0d0d12]"
+                      className={`group flex items-center gap-4 rounded-[24px] border p-4 text-left transition-all ${
+                        isLight
+                          ? "border-gray-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)] hover:border-pink-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.08)]"
+                          : "border-white/10 bg-[#09090c] hover:border-pink-500/20 hover:bg-[#0d0d12]"
+                      }`}
                     >
-                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10">
+                      <div
+                        className={`h-20 w-20 shrink-0 overflow-hidden rounded-2xl border ${
+                          isLight ? "border-gray-200" : "border-white/10"
+                        }`}
+                      >
                         <img
                           src={p.coverImage}
                           alt=""
@@ -447,13 +554,27 @@ export default function LearningPathEngine() {
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-pink-400">
+                        <span
+                          className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                            isLight ? "text-pink-600" : "text-pink-400"
+                          }`}
+                        >
                           {p.category}
                         </span>
-                        <h4 className="mt-1 text-base font-semibold text-white transition-colors group-hover:text-pink-300">
+                        <h4
+                          className={`mt-1 text-base font-semibold transition-colors ${
+                            isLight
+                              ? "text-gray-900 group-hover:text-pink-600"
+                              : "text-white group-hover:text-pink-300"
+                          }`}
+                        >
                           {p.title}
                         </h4>
-                        <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-500">
+                        <div
+                          className={`mt-2 flex items-center gap-3 text-[11px] ${
+                            isLight ? "text-gray-500" : "text-gray-500"
+                          }`}
+                        >
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             {p.readTime}
@@ -461,7 +582,13 @@ export default function LearningPathEngine() {
                         </div>
                       </div>
 
-                      <ChevronRightCircle className="h-6 w-6 text-gray-700 transition-all group-hover:text-pink-500" />
+                      <ChevronRightCircle
+                        className={`h-6 w-6 transition-all ${
+                          isLight
+                            ? "text-gray-300 group-hover:text-pink-500"
+                            : "text-gray-700 group-hover:text-pink-500"
+                        }`}
+                      />
                     </button>
                   ))}
                 </div>
@@ -470,7 +597,7 @@ export default function LearningPathEngine() {
           </div>
 
           <div className="xl:col-span-4 xl:self-start">
-            <div className="p-2 pb-6 pt-4 pr-8 mt-20 lg:fixed xl:top-24 xl:max-h-[calc(100vh-120px)] xl:overflow-y-auto no-scrollbar">
+            <div className="mt-20 p-2 pb-6 pr-8 pt-4 lg:fixed xl:top-24 xl:max-h-[calc(100vh-120px)] xl:overflow-y-auto no-scrollbar">
               <LearningOutline
                 path={{
                   completedSteps: enhancedPath.completedSteps,

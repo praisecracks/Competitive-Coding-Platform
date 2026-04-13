@@ -188,6 +188,7 @@ func GetProfile(c *gin.Context) {
 		"publicProfile":      user.PublicProfile,
 		"emailNotifications": user.EmailNotifications,
 		"challengeReminders": user.ChallengeReminders,
+		"theme":              user.Theme,
 	})
 }
 
@@ -210,6 +211,7 @@ func UpdateProfile(c *gin.Context) {
 		EmailNotifications *bool   `json:"emailNotifications"`
 		ChallengeReminders *bool   `json:"challengeReminders"`
 		PublicProfile      *bool   `json:"publicProfile"`
+		Theme              *string `json:"theme"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -245,6 +247,12 @@ func UpdateProfile(c *gin.Context) {
 	}
 	if input.PublicProfile != nil {
 		updateData["public_profile"] = *input.PublicProfile
+	}
+	if input.Theme != nil {
+		theme := strings.TrimSpace(*input.Theme)
+		if theme == "light" || theme == "dark" {
+			updateData["theme"] = theme
+		}
 	}
 	if input.ProfilePic != nil {
 		updateData["profile_pic"] = normalizeStoredFilePath(*input.ProfilePic)

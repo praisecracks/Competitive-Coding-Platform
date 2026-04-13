@@ -179,6 +179,6 @@ export function getCountryFlag(country: string | undefined): string {
     return COUNTRY_CODES[lowerCode.toUpperCase()];
   }
   
-  // Fallback to globe emoji if not found
-  return "🌍";
+  // Return empty string if not found (caller will show initials)
+  return "";
 }

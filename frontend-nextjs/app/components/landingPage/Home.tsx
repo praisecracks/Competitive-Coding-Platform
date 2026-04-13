@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   motion,
@@ -79,30 +79,16 @@ const credibilityLogos = [
     ),
   },
   {
-    name: "AWS",
-    category: "Infra",
+    name: "LinkedIn",
+    category: "Social",
     svg: (
       <svg
         className="h-10 w-10"
-        viewBox="0 0 64 64"
-        fill="none"
+        viewBox="0 0 24 24"
+        fill="currentColor"
         aria-hidden="true"
       >
-        <path
-          d="M20.44 41.05c-8.05 5.94-19.73 9.1-29.79 9.1-1.41 0-1.62-1.03-.35-1.6 10.86-4.74 24.28-7.6 38.14-7.6 2.09 0 2.44 1.53.5 1.96-2.94.65-5.92 1.33-8.5 2.14Z"
-          fill="#FF9900"
-          transform="translate(17 0)"
-        />
-        <path
-          d="M52.67 38.56c1.03 1.31-.27 6.55-1.23 8.98-.29.72.34 1.03.95.52 3.95-3.3 4.97-10.22 4.15-11.22-.83-1.01-7.7-1.88-11.97 1.1-.65.45-.52 1.06.16.98 2.2-.27 7.09-.86 7.94-.36Z"
-          fill="#FF9900"
-          transform="translate(0 0)"
-        />
-        <path
-          d="M14.72 26.85v-2.02c0-.31.23-.52.51-.52h9.04c.29 0 .52.22.52.52v1.73c0 .29-.24.67-.66 1.24l-4.68 6.68c1.74-.04 3.58.22 5.15 1.1.35.2.44.49.47.79v2.15c0 .29-.31.63-.63.46-2.78-1.46-6.48-1.62-9.55.02-.31.17-.63-.17-.63-.46v-2.04c0-.33 0-.88.34-1.39l5.42-7.78h-4.72c-.29 0-.51-.22-.51-.51Zm-33.07 13.16H13c.29 0 .52-.23.52-.52V24.83c0-.29-.23-.52-.52-.52h-2.75c-.29 0-.52.23-.52.52v11.51l-4.08-11.66c-.08-.23-.3-.37-.54-.37H2.74c-.24 0-.46.15-.54.37L-1.88 36.34V24.83c0-.29-.23-.52-.52-.52H-5.1c-.29 0-.52.23-.52.52v14.66c0 .29.23.52.52.52h4.68c.24 0 .46-.16.53-.38l4.54-12.58 4.54 12.58c.08.23.29.38.53.38Zm46.7-15.7c-4.08 0-6.3 3.5-6.3 7.95 0 4.32 2.45 7.74 6.3 7.74 4 0 6.17-3.5 6.17-8.06 0-4.23-2.22-7.63-6.17-7.63Zm-.03 2.89c2.02 0 2.14 2.76 2.14 4.48 0 1.72.03 5.41-2.11 5.41-2.11 0-2.2-2.95-2.2-4.75 0-1.18.05-2.59.41-3.71.31-.97.93-1.43 1.76-1.43Zm11.69 12.81h2.73c.29 0 .52-.23.52-.52V28.3c0-1.4-.11-3.37.16-4.69.42-2.11 1.61-2.71 2.96-2.71 1.05 0 2.09.37 2.53 1.51.29.73.26 1.95.26 2.8v14.28c0 .29.23.52.52.52h2.73c.29 0 .52-.23.52-.52V24.94c0-2.48.29-6.1-2.79-6.1-1.54 0-3.14.82-4.1 2.6h-.05v-1.87c0-.29-.23-.52-.52-.52h-2.54c-.29 0-.52.23-.52.52v19.93c0 .29.23.52.52.52Z"
-          fill="currentColor"
-          transform="translate(6 0) scale(0.9)"
-        />
+        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451c.979 0 1.771-.773 1.771-1.729V1.729C24 .774 23.204 0 22.225 0z" />
       </svg>
     ),
   },
@@ -122,7 +108,10 @@ export default function Home() {
   const springLeftY = useSpring(leftY, { stiffness: 80, damping: 20 });
   const springRightY = useSpring(rightY, { stiffness: 80, damping: 20 });
   const springRightScale = useSpring(rightScale, { stiffness: 80, damping: 20 });
-  const springRightRotate = useSpring(rightRotate, { stiffness: 80, damping: 20 });
+  const springRightRotate = useSpring(rightRotate, {
+    stiffness: 80,
+    damping: 20,
+  });
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -176,6 +165,28 @@ export default function Home() {
     setTilt({ rotateX: 0, rotateY: 0 });
   };
 
+  const [displayText, setDisplayText] = useState("");
+  const fullText = "Code sharper. Compete smarter. Learn faster.";
+  const typewriterSpeed = 45;
+
+  useEffect(() => {
+    let index = 0;
+    const timer = setInterval(() => {
+      if (index <= fullText.length) {
+        setDisplayText(fullText.slice(0, index));
+        index++;
+      } else {
+        clearInterval(timer);
+      }
+    }, typewriterSpeed);
+    return () => clearInterval(timer);
+  }, []);
+
+  const heroY = useTransform(scrollY, [0, 500], [0, 150]);
+  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
+  const cardY = useTransform(scrollY, [0, 500], [0, -100]);
+  const cardScale = useTransform(scrollY, [0, 300], [1, 0.95]);
+
   return (
     <section
       ref={containerRef}
@@ -200,7 +211,12 @@ export default function Home() {
             y: [0, 28, 0],
             scale: [1, 1.1, 1],
           }}
-          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          transition={{
+            duration: 14,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2,
+          }}
           className="absolute -right-[8%] top-[2%] h-[320px] w-[320px] rounded-full bg-purple-500/12 blur-[120px] sm:h-[360px] sm:w-[360px]"
         />
         <motion.div
@@ -209,7 +225,12 @@ export default function Home() {
             y: [0, 16, 0],
             scale: [1, 1.05, 1],
           }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 4,
+          }}
           className="absolute bottom-[-12%] left-[20%] h-[260px] w-[260px] rounded-full bg-fuchsia-500/10 blur-[110px] sm:h-[300px] sm:w-[300px]"
         />
 
@@ -254,9 +275,9 @@ export default function Home() {
         }}
       />
 
-      <div className="mx-auto flex min-h-[calc(100vh-72px)] max-w-7xl flex-col items-center justify-center px-5 pb-14 pt-10 sm:min-h-[calc(100vh-80px)] sm:px-6 sm:pb-16 sm:pt-12 lg:flex-row lg:gap-14 lg:px-8 lg:pb-20 lg:pt-16">
+      <div className="mx-auto flex min-h-[calc(100vh-72px)] max-w-7xl flex-col items-center justify-start px-5 pb-12 pt-8 sm:min-h-[calc(100vh-80px)] sm:px-6 sm:pb-14 sm:pt-10 lg:flex-row lg:items-center lg:justify-center lg:gap-14 lg:px-8 lg:pb-20 lg:pt-16">
         <motion.div
-          className="max-w-2xl text-center lg:text-left"
+          className="w-full max-w-2xl text-center lg:text-left"
           style={{ y: springLeftY }}
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -273,33 +294,39 @@ export default function Home() {
             </span>
           </motion.div>
 
-          <div className="relative inline-block">
+          <motion.div 
+            className="relative inline-block"
+            style={{ y: heroY, opacity: heroOpacity }}
+          >
             <motion.div
               style={{ background: textGlow }}
               className="pointer-events-none absolute inset-0 blur-3xl opacity-60"
             />
-            <h1 className="relative text-[2.4rem] font-bold leading-[1.02] tracking-tight sm:text-[3.25rem] md:text-[3.7rem] lg:text-[4.5rem]">
-              Code sharper.
-              <br />
-              <span className="text-white/90">Compete smarter.</span>
-              <br />
-              <span className="bg-gradient-to-r from-pink-500 via-fuchsia-400 to-purple-500 bg-clip-text text-transparent">
-                Learn faster.
-              </span>
+            <h1 className="relative text-[2.7rem] font-bold leading-[0.98] tracking-tight sm:text-[3.4rem] md:text-[3.8rem] lg:text-[4.5rem]">
+              <span className="text-white/90">{displayText}</span>
+              <motion.span
+                animate={{ opacity: [1, 0, 1] }}
+                transition={{ duration: 0.8, repeat: Infinity }}
+                className="inline-block h-6 w-0.5 bg-pink-500 ml-1 align-middle"
+              />
             </h1>
-          </div>
+          </motion.div>
 
-          <p className="mx-auto mt-5 max-w-md text-[14px] leading-7 text-white/50 sm:max-w-lg sm:text-base lg:mx-0">
+          <p className="mx-auto mt-4 max-w-[34rem] text-[14px] leading-7 text-white/55 sm:text-[15px] sm:leading-7 lg:mx-0 lg:max-w-lg lg:text-base">
             The competitive coding platform that transforms how you practice,
             analyze, and level up your skills, with real-time feedback,
             immersive missions, and live competition...
           </p>
 
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
-            <motion.div whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <div className="mt-7 flex w-full flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center lg:justify-start">
+            <motion.div
+              whileHover={{ y: -2, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full sm:w-auto"
+            >
               <Link
                 href="/login"
-                className="group inline-flex min-w-[158px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-purple-600 px-6 py-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_0_22px_rgba(236,72,153,0.22)] transition-all duration-300 hover:shadow-[0_0_34px_rgba(168,85,247,0.26)]"
+                className="group inline-flex w-full min-w-0 items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-purple-600 px-6 py-3.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_0_22px_rgba(236,72,153,0.22)] transition-all duration-300 hover:shadow-[0_0_34px_rgba(168,85,247,0.26)] sm:w-auto sm:min-w-[158px]"
               >
                 Start Free
                 <span className="ml-2 transition-transform duration-300 group-hover:translate-x-1">
@@ -308,15 +335,22 @@ export default function Home() {
               </Link>
             </motion.div>
 
-            <Link
+            {/* <Link
               href="#features"
-              className="inline-flex min-w-[158px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-3 text-[12px] font-medium uppercase tracking-[0.16em] text-white backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-white/[0.07]"
+              className="inline-flex w-full min-w-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-3.5 text-[12px] font-medium uppercase tracking-[0.16em] text-white backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-white/[0.07] sm:w-auto sm:min-w-[158px]"
             >
               See How It Works
+            </Link> */}
+
+            <Link
+              href="/challenges/1?guest=true"
+              className="inline-flex w-full min-w-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-red-500/8 px-6 py-3.5 text-[12px] font-medium uppercase tracking-[0.16em] text-emerald-300 backdrop-blur-sm transition-all duration-300 hover:border-emerald-500/40 hover:bg-emerald-500/12 sm:w-auto sm:min-w-[158px]"
+            >
+              Try Instantly
             </Link>
           </div>
 
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-3 text-[10px] uppercase tracking-[0.18em] text-white/35 sm:gap-4 lg:justify-start">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5 text-[10px] uppercase tracking-[0.18em] text-white/35 sm:gap-4 lg:justify-start">
             <span className="flex items-center gap-2">
               <span className="h-1 w-1 rounded-full bg-emerald-400" />
               50K+ Devs
@@ -329,10 +363,10 @@ export default function Home() {
         </motion.div>
 
         <motion.div
-          className="mt-12 w-full max-w-xl lg:mt-0"
+          className="mt-10 w-full max-w-[92vw] sm:mt-12 sm:max-w-xl lg:mt-0 lg:max-w-xl"
           style={{
-            y: springRightY,
-            scale: springRightScale,
+            y: cardY,
+            scale: cardScale,
             rotate: springRightRotate,
           }}
           initial={{ opacity: 0, y: 30 }}
@@ -358,13 +392,18 @@ export default function Home() {
 
             <motion.div
               ref={heroCardRef}
-              className="relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[#050509]/98 shadow-[0_0_50px_rgba(15,23,42,0.78)] backdrop-blur-xl select-none [webkit-touch-callout:none] cursor-default"
+              className="relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-[#050509]/98 shadow-[0_0_40px_rgba(15,23,42,0.72)] backdrop-blur-xl select-none [webkit-touch-callout:none] cursor-default"
               whileHover={{ y: -3 }}
               animate={{
                 rotateX: tilt.rotateX,
                 rotateY: tilt.rotateY,
               }}
-              transition={{ type: "spring", stiffness: 85, damping: 16, mass: 0.7 }}
+              transition={{
+                type: "spring",
+                stiffness: 85,
+                damping: 16,
+                mass: 0.7,
+              }}
               style={{ transformStyle: "preserve-3d" }}
             >
               <motion.div
@@ -399,7 +438,7 @@ export default function Home() {
                 </motion.div>
               </div>
 
-              <div className="relative z-[2] grid gap-4 px-4 py-4 sm:px-5 sm:py-4.5 md:grid-cols-[1.4fr_0.85fr]">
+              <div className="relative z-[2] grid gap-3 px-3.5 py-3.5 sm:gap-4 sm:px-5 sm:py-4.5 md:grid-cols-[1.4fr_0.85fr]">
                 <div
                   className="space-y-3.5"
                   style={{
@@ -503,7 +542,9 @@ export default function Home() {
                           key={stat.label}
                           className="flex items-center justify-between rounded-lg border border-white/[0.04] bg-black/30 px-2.5 py-2"
                         >
-                          <span className="text-[10px] text-white/45">{stat.label}</span>
+                          <span className="text-[10px] text-white/45">
+                            {stat.label}
+                          </span>
                           <span className="text-[11px] font-semibold text-white">
                             {stat.value}
                           </span>
@@ -520,7 +561,8 @@ export default function Home() {
                       Duel Queue
                     </p>
                     <p className="mt-1.5 text-xs text-white/50">
-                      <span className="font-semibold text-pink-400">18</span> developers ready
+                      <span className="font-semibold text-pink-400">18</span>{" "}
+                      developers ready
                     </p>
                     <div className="mt-3 flex items-center justify-between">
                       <div className="flex -space-x-2">
@@ -549,7 +591,7 @@ export default function Home() {
             </motion.div>
 
             <motion.div
-              className="absolute -right-2 -top-4 rounded-2xl border border-pink-500/35 bg-[#050509]/98 px-3.5 py-2 text-[10px] shadow-[0_0_22px_rgba(236,72,153,0.38)] backdrop-blur-xl sm:-right-3 sm:-top-5 sm:px-4 sm:py-2.5"
+              className="absolute -right-1 top-3 rounded-2xl border border-pink-500/35 bg-[#050509]/98 px-3 py-2 text-[10px] shadow-[0_0_22px_rgba(236,72,153,0.38)] backdrop-blur-xl sm:-right-3 sm:-top-5 sm:px-4 sm:py-2.5"
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.35 }}
@@ -566,7 +608,7 @@ export default function Home() {
             <motion.div
               animate={{ y: [0, -8, 0] }}
               transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -left-2 bottom-6 hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] px-3.5 py-2.5 text-[10px] shadow-[0_0_24px_rgba(168,85,247,0.18)] backdrop-blur-xl lg:block"
+              className="absolute left-3 bottom-3 hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] px-3.5 py-2.5 text-[10px] shadow-[0_0_24px_rgba(168,85,247,0.18)] backdrop-blur-xl lg:block"
               style={{ WebkitUserSelect: "none", userSelect: "none" }}
             >
               <p className="text-[8px] uppercase tracking-[0.15em] text-white/38">
@@ -591,11 +633,11 @@ export default function Home() {
           <div className="absolute left-1/2 top-0 h-24 w-40 -translate-x-1/2 rounded-full" />
 
           <div className="relative z-10 text-center">
-            <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/40 ">
+            <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/40">
               Built around tools developers already trust
             </p>
 
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-16 gap-y-10">
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-10 gap-y-8 sm:gap-x-16 sm:gap-y-10">
               {credibilityLogos.map((logo, index) => (
                 <motion.div
                   key={logo.name}

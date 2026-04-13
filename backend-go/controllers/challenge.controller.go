@@ -129,33 +129,33 @@ func normalizeChallengeInput(input *models.Challenge) {
 
 func validateChallengeInput(input models.Challenge) string {
 	if input.Title == "" {
-		return "TITLE_REQUIRED"
+		return "Please enter a challenge title"
 	}
 	if input.Duration <= 0 {
-		return "INVALID_DURATION"
+		return "Please enter a valid duration in minutes"
 	}
 	if input.FunctionName == "" {
-		return "FUNCTION_NAME_REQUIRED"
+		return "Please enter the function name that users will implement"
 	}
 	if input.ValidatorType == "" {
-		return "VALIDATOR_TYPE_REQUIRED"
+		return "Please select a validator type"
 	}
 	if input.InputType == "" {
-		return "INPUT_TYPE_REQUIRED"
+		return "Please enter the input type for the function"
 	}
 	if input.ReturnType == "" {
-		return "RETURN_TYPE_REQUIRED"
+		return "Please enter the return type"
 	}
 	if len(input.TestCases) == 0 {
-		return "TEST_CASES_REQUIRED"
+		return "Please add at least one test case"
 	}
 
 	for _, tc := range input.TestCases {
 		if tc.InputJSON == "" {
-			return "TEST_CASE_INPUT_REQUIRED"
+			return "Please provide input for all test cases"
 		}
 		if tc.ExpectedOutputJSON == "" {
-			return "TEST_CASE_EXPECTED_OUTPUT_REQUIRED"
+			return "Please provide expected output for all test cases"
 		}
 	}
 

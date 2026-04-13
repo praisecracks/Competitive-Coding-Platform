@@ -10,9 +10,12 @@ import {
   SearchUser,
   SearchChallenge,
 } from "@/lib/search";
+import { useTheme } from "@/app/context/ThemeContext";
 
 export default function SearchBar() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults>({ users: [], challenges: [] });
   const [loading, setLoading] = useState(false);
@@ -132,12 +135,18 @@ export default function SearchBar() {
           onKeyDown={handleKeyDown}
           onFocus={() => query && setIsOpen(true)}
           placeholder="Search users, challenges..."
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 pr-10 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-pink-500/50 focus:bg-white/10"
+          className={`w-full rounded-lg border px-4 py-3 pr-10 text-sm outline-none transition ${
+            isLight
+              ? "border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-pink-500 focus:bg-white"
+              : "border-white/10 bg-white/5 text-white placeholder:text-gray-500 focus:border-pink-500/50 focus:bg-white/10"
+          }`}
         />
 
         {/* Search Icon */}
         <svg
-          className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+          className={`absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 ${
+            isLight ? "text-gray-400" : "text-gray-500"
+          }`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -160,18 +169,22 @@ export default function SearchBar() {
 
       {/* Dropdown Results */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 z-[100] mt-2 rounded-lg border border-white/10 bg-[#0a0a0a] backdrop-blur-xl shadow-2xl">
+        <div className={`absolute top-full left-0 right-0 z-[100] mt-2 rounded-lg border backdrop-blur-xl shadow-2xl ${
+          isLight
+            ? "border-gray-200 bg-white shadow-[0_25px_50px_rgba(15,23,42,0.12)]"
+            : "border-white/10 bg-[#0a0a0a]"
+        }`}>
           {/* Loading State */}
           {loading && !hasResults && (
             <div className="flex items-center justify-center px-4 py-8">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-pink-500/30 border-t-pink-500"></div>
             </div>
           )}
-Search Results
+          
           {/* Error State */}
           {error && (
             <div className="px-4 py-4 text-center">
-              <p className="text-sm text-red-400">{error}</p>
+              <p className={`text-sm ${isLight ? "text-red-600" : "text-red-400"}`}>{error}</p>
             </div>
           )}
 
@@ -179,7 +192,7 @@ Search Results
           {!loading && !error && query && !hasResults && (
             <div className="px-4 py-8 text-center">
               <svg
-                className="mx-auto h-8 w-8 text-gray-600 mb-2"
+                className={`mx-auto h-8 w-8 mb-2 ${isLight ? "text-gray-400" : "text-gray-600"}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -191,8 +204,8 @@ Search Results
                   d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <p className="text-sm text-gray-500">
-                No results found for "<span className="text-white">{query}</span>"
+              <p className={`text-sm ${isLight ? "text-gray-600" : "text-gray-500"}`}>
+                No results found for &quot;<span className={isLight ? "text-gray-900" : "text-white"}>{query}</span>&quot;
               </p>
             </div>
           )}
@@ -202,9 +215,9 @@ Search Results
             <div className="max-h-[420px] overflow-y-auto">
               {/* Users Section */}
               {results.users.length > 0 && (
-                <div className="border-b border-white/5 py-2">
+                <div className={`border-b py-2 ${isLight ? "border-gray-100" : "border-white/5"}`}>
                   <div className="px-4 py-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    <p className={`text-xs font-semibold uppercase tracking-wider ${isLight ? "text-gray-500" : "text-gray-600"}`}>
                       Users
                     </p>
                   </div>
@@ -213,7 +226,9 @@ Search Results
                       <button
                         key={user.id}
                         onClick={() => handleUserClick(user.id, user.username)}
-                        className="w-full px-4 py-3 text-left transition hover:bg-white/5"
+                        className={`w-full px-4 py-3 text-left transition ${
+                          isLight ? "hover:bg-gray-50" : "hover:bg-white/5"
+                        }`}
                       >
                         <div className="flex items-center gap-3">
                           {/* Avatar */}
@@ -221,7 +236,9 @@ Search Results
                             <img
                               src={user.profile_pic}
                               alt={user.username}
-                              className="h-8 w-8 rounded-lg border border-white/10 object-cover"
+                              className={`h-8 w-8 rounded-lg object-cover ${
+                                isLight ? "border border-gray-200" : "border border-white/10"
+                              }`}
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
@@ -229,18 +246,22 @@ Search Results
                               }}
                             />
                           ) : (
-                            <div className="hidden flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-gradient-to-br from-pink-500/20 to-purple-500/20 text-xs font-bold text-pink-400">
+                            <div className={`hidden flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
+                              isLight 
+                                ? "border border-gray-200 bg-gray-100 text-gray-600"
+                                : "border border-white/10 bg-gradient-to-br from-pink-500/20 to-purple-500/20 text-pink-400"
+                            }`}>
                               {getInitials(user.username)}
                             </div>
                           )}
 
                           {/* User Info */}
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-white">
+                            <p className={`truncate text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
                               {user.username}
                             </p>
                             {user.rank && (
-                              <p className="text-xs text-gray-500">{user.rank}</p>
+                              <p className={`text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>{user.rank}</p>
                             )}
                           </div>
                         </div>
@@ -254,7 +275,7 @@ Search Results
               {results.challenges.length > 0 && (
                 <div className="py-2">
                   <div className="px-4 py-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    <p className={`text-xs font-semibold uppercase tracking-wider ${isLight ? "text-gray-500" : "text-gray-600"}`}>
                       Challenges
                     </p>
                   </div>
@@ -263,10 +284,12 @@ Search Results
                       <button
                         key={challenge.id}
                         onClick={() => handleChallengeClick(challenge.id)}
-                        className="w-full px-4 py-3 text-left transition hover:bg-white/5"
+                        className={`w-full px-4 py-3 text-left transition ${
+                          isLight ? "hover:bg-gray-50" : "hover:bg-white/5"
+                        }`}
                       >
                         <div className="space-y-1">
-                          <p className="truncate text-sm font-medium text-white">
+                          <p className={`truncate text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
                             {challenge.title}
                           </p>
                           <div className="flex items-center gap-2">
@@ -274,17 +297,17 @@ Search Results
                               <span
                                 className={`inline-flex text-xs font-medium px-2 py-0.5 rounded-full ${
                                   challenge.difficulty === "Easy"
-                                    ? "bg-emerald-500/10 text-emerald-400"
+                                    ? isLight ? "bg-emerald-50 text-emerald-700" : "bg-emerald-500/10 text-emerald-400"
                                     : challenge.difficulty === "Medium"
-                                    ? "bg-yellow-500/10 text-yellow-400"
-                                    : "bg-red-500/10 text-red-400"
+                                    ? isLight ? "bg-yellow-50 text-yellow-700" : "bg-yellow-500/10 text-yellow-400"
+                                    : isLight ? "bg-red-50 text-red-700" : "bg-red-500/10 text-red-400"
                                 }`}
                               >
                                 {challenge.difficulty}
                               </span>
                             )}
                             {challenge.category && (
-                              <span className="text-xs text-gray-500">
+                              <span className={`text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>
                                 {challenge.category}
                               </span>
                             )}
@@ -298,8 +321,8 @@ Search Results
 
               {/* Show more results indicator */}
               {totalResults >= 5 && (
-                <div className="border-t border-white/5 px-4 py-2 text-center">
-                  <p className="text-xs text-gray-600">
+                <div className={`border-t px-4 py-2 text-center ${isLight ? "border-gray-100" : "border-white/5"}`}>
+                  <p className={`text-xs ${isLight ? "text-gray-500" : "text-gray-600"}`}>
                     Showing {totalResults} result{totalResults !== 1 ? "s" : ""}
                   </p>
                 </div>

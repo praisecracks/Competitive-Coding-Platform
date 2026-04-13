@@ -428,6 +428,9 @@ function SignupForm() {
                       <p className="mb-3 text-sm uppercase tracking-[0.24em] text-white/50">
                         Welcome to CODEMASTER
                       </p>
+                      <p className="mt-4 text-sm leading-relaxed text-white/45 xl:text-base">
+                        Be among the first
+                      </p>
                       <h2 className="bg-gradient-to-br from-white to-white/60 bg-clip-text text-3xl font-bold leading-[1.15] text-transparent xl:text-4xl">
                         Start your <br /> coding <span className="text-fuchsia-400">mastery</span>.
                       </h2>
@@ -466,8 +469,9 @@ function SignupForm() {
                         Create account
                       </h3>
                       <p className="mt-2 text-sm text-white/45">
-                        Join the competitive coding community.
+                        Join the competitive coding community, be among the first.
                       </p>
+                      
                     </div>
 
                     <div className="mb-5">

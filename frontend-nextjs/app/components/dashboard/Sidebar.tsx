@@ -10,6 +10,7 @@ import {
   getStoredUser,
   normalizeProfileImageUrl,
 } from "@/lib/auth";
+import { useTheme } from "../../context/ThemeContext";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -86,13 +87,22 @@ function readCachedSidebarUser(): SidebarUser {
     profile_pic: savedUser?.profile_pic || null,
     rank: (savedUser as any)?.rank || "Beginner",
     role: savedUser?.role || "user",
-    totalSolved: typeof (savedUser as any)?.totalSolved === "number" ? (savedUser as any).totalSolved : 0,
+    totalSolved:
+      typeof (savedUser as any)?.totalSolved === "number"
+        ? (savedUser as any).totalSolved
+        : 0,
     currentStreak:
       typeof (savedUser as any)?.currentStreak === "number"
         ? (savedUser as any).currentStreak
         : 0,
-    duelsWon: typeof (savedUser as any)?.duelsWon === "number" ? (savedUser as any).duelsWon : 0,
-    winRate: typeof (savedUser as any)?.winRate === "number" ? (savedUser as any).winRate : 0,
+    duelsWon:
+      typeof (savedUser as any)?.duelsWon === "number"
+        ? (savedUser as any).duelsWon
+        : 0,
+    winRate:
+      typeof (savedUser as any)?.winRate === "number"
+        ? (savedUser as any).winRate
+        : 0,
   };
 }
 
@@ -130,6 +140,8 @@ function persistSidebarUser(user: SidebarUser) {
 
 export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
 
   const [userData, setUserData] = useState<SidebarUser>({
     name: "Developer",
@@ -182,9 +194,10 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
           ...nextUser,
           name: profile.username || cached.name || "Developer",
           email: profile.email || cached.email || "",
-          profile_pic: normalizeProfileImageUrl(
-            profile.profile_pic || cached.profile_pic || ""
-          ) || null,
+          profile_pic:
+            normalizeProfileImageUrl(
+              profile.profile_pic || cached.profile_pic || ""
+            ) || null,
           rank: profile.rank || cached.rank || "Beginner",
           role: profile.role || cached.role || "user",
         };
@@ -334,12 +347,9 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
         </svg>
       ),
     },
-
-
-    
     {
-      name: "Learning", 
-      href: "/dashboard/learning", 
+      name: "Learning",
+      href: "/dashboard/learning",
       icon: (
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -361,12 +371,6 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
         </svg>
       ),
     },
-
-
-
-
-
-
     {
       name: "Leaderboard",
       href: "/dashboard/leaderboard",
@@ -481,12 +485,22 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
       roles: ["super_admin", "sub_admin"],
       icon: (
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+          />
         </svg>
       ),
       activeIcon: (
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+          />
         </svg>
       ),
     },
@@ -496,7 +510,12 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
       roles: ["super_admin"],
       icon: (
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+          />
         </svg>
       ),
     },
@@ -515,11 +534,27 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   };
 
   const sidebarContent = (
-    <div className="flex h-full flex-col border-r border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
-      <div className="border-b border-white/10 p-5">
+    <div
+      className={`flex h-full flex-col border-r ${
+        isLight
+          ? "border-gray-200 bg-[#f8fafc]"
+          : "border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl"
+      }`}
+    >
+      <div
+        className={`border-b p-5 ${
+          isLight ? "border-gray-200 bg-white shadow-sm" : "border-white/10"
+        }`}
+      >
         <div className="flex items-center gap-3">
           <div className="relative h-11 w-11 shrink-0 overflow-visible rounded-full">
-            <div className="h-11 w-11 overflow-hidden rounded-full border-2 border-white/10 bg-gradient-to-br from-pink-500/20 to-purple-500/20 shadow-[0_0_20px_rgba(236,72,153,0.15)]">
+            <div
+              className={`h-11 w-11 overflow-hidden rounded-full border-2 ${
+                isLight
+                  ? "border-gray-200 bg-gradient-to-br from-pink-100 to-purple-100 shadow-[0_8px_24px_rgba(236,72,153,0.12)]"
+                  : "border-white/10 bg-gradient-to-br from-pink-500/20 to-purple-500/20 shadow-[0_0_20px_rgba(236,72,153,0.15)]"
+              }`}
+            >
               {resolvedProfilePic ? (
                 <img
                   src={resolvedProfilePic}
@@ -528,54 +563,117 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
-                  <span className="text-sm font-bold text-white">{initials}</span>
+                  <span
+                    className={`text-sm font-bold ${
+                      isLight ? "text-gray-800" : "text-white"
+                    }`}
+                  >
+                    {initials}
+                  </span>
                 </div>
               )}
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 z-10 h-3.5 w-3.5 rounded-full border-2 border-[#0a0a0a] bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.55)]" />
+
+            <span
+              className={`absolute -bottom-0.5 -right-0.5 z-10 h-3.5 w-3.5 rounded-full border-2 ${
+                isLight ? "border-white" : "border-[#0a0a0a]"
+              } bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.55)]`}
+            />
           </div>
 
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-sm font-semibold text-white">
+            <h3
+              className={`truncate text-sm font-semibold ${
+                isLight ? "text-gray-900" : "text-white"
+              }`}
+            >
               {userData.name || "Developer"}
             </h3>
-            <p className="truncate text-[11px] text-gray-500">
+            <p
+              className={`truncate text-[11px] ${
+                isLight ? "text-gray-500" : "text-gray-400"
+              }`}
+            >
               {memberLabel}
             </p>
           </div>
         </div>
 
-        <div className="mt-6 rounded-[20px] border border-white/5 bg-white/[0.02] p-4 shadow-inner">
+        <div
+          className={`mt-6 rounded-[20px] border p-4 ${
+            isLight
+              ? "border-gray-200 bg-white shadow-[0_10px_25px_rgba(15,23,42,0.05)]"
+              : "border-white/5 bg-white/[0.02] shadow-inner"
+          }`}
+        >
           <div className="mb-3 flex items-center justify-between px-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-pink-500/80">
               Battle Stats
             </p>
             <div className="h-1 w-1 animate-pulse rounded-full bg-pink-500" />
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="group relative">
-              <p className="text-[10px] text-gray-500 transition-colors group-hover:text-gray-400">
+              <p
+                className={`text-[10px] transition-colors ${
+                  isLight
+                    ? "text-gray-500 group-hover:text-gray-600"
+                    : "text-gray-500 group-hover:text-gray-400"
+                }`}
+              >
                 Victories
               </p>
               <div className="mt-1 flex items-baseline gap-1.5">
-                <p className="text-xl font-bold text-white">{userData.duelsWon}</p>
+                <p
+                  className={`text-xl font-bold ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
+                  {userData.duelsWon}
+                </p>
                 <span className="text-[10px]">🏆</span>
               </div>
             </div>
+
             <div className="group relative">
-              <p className="text-[10px] text-gray-500 transition-colors group-hover:text-gray-400">
+              <p
+                className={`text-[10px] transition-colors ${
+                  isLight
+                    ? "text-gray-500 group-hover:text-gray-600"
+                    : "text-gray-500 group-hover:text-gray-400"
+                }`}
+              >
                 Win Rate
               </p>
               <div className="mt-1 flex items-baseline gap-1.5">
-                <p className="text-xl font-bold text-white">{Number(userData.winRate || 0).toFixed(1)}%</p>
+                <p
+                  className={`text-xl font-bold ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
+                  {Number(userData.winRate || 0).toFixed(1)}%
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 border-t border-white/5 pt-3">
+          <div
+            className={`mt-4 border-t pt-3 ${
+              isLight ? "border-gray-200" : "border-white/5"
+            }`}
+          >
             <div className="flex items-center justify-between text-[10px]">
-              <span className="text-gray-500">Current Rank</span>
-              <span className="font-medium text-pink-400">{userData.rank}</span>
+              <span className={isLight ? "text-gray-500" : "text-gray-500"}>
+                Current Rank
+              </span>
+              <span
+                className={`font-medium ${
+                  isLight ? "text-pink-600" : "text-pink-400"
+                }`}
+              >
+                {userData.rank}
+              </span>
             </div>
           </div>
         </div>
@@ -592,8 +690,12 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
               onClick={() => isMobile && onClose()}
               className={`group relative mx-3 mb-1.5 flex items-center gap-3.5 rounded-xl px-4 py-3 transition-all duration-300 ${
                 active
-                  ? "bg-white/[0.03] text-white shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]"
-                  : "text-gray-500 hover:bg-white/[0.02] hover:text-gray-200"
+                  ? isLight
+                    ? "border border-pink-200 bg-pink-50 shadow-[0_8px_18px_rgba(236,72,153,0.10)]"
+                    : "bg-white/[0.03] text-white shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]"
+                  : isLight
+                  ? "text-gray-700 hover:bg-white hover:shadow-sm"
+                  : "text-gray-400 hover:bg-white/[0.02] hover:text-gray-200"
               }`}
             >
               {active && (
@@ -606,7 +708,11 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
               <span
                 className={`transition-all duration-300 ${
                   active
-                    ? "scale-110 text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.4)]"
+                    ? isLight
+                      ? "scale-110 text-pink-600"
+                      : "scale-110 text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.4)]"
+                    : isLight
+                    ? "text-gray-700 group-hover:scale-105 group-hover:text-gray-900"
                     : "group-hover:scale-105 group-hover:text-white"
                 }`}
               >
@@ -615,14 +721,26 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
 
               <span
                 className={`text-sm font-medium transition-all duration-300 ${
-                  active ? "opacity-100" : "opacity-70 group-hover:opacity-100"
+                  active
+                    ? isLight
+                      ? "text-pink-700 opacity-100"
+                      : "text-white opacity-100"
+                    : isLight
+                    ? "text-gray-800 opacity-100 group-hover:text-gray-900"
+                    : "text-gray-400 opacity-85 group-hover:opacity-100 group-hover:text-white"
                 }`}
               >
                 {item.name}
               </span>
 
               {item.badge && !active && (
-                <span className="ml-auto rounded-lg border border-pink-500/20 bg-pink-500/10 px-2 py-0.5 text-[10px] text-pink-300">
+                <span
+                  className={`ml-auto rounded-lg border px-2 py-0.5 text-[10px] ${
+                    isLight
+                      ? "border-pink-200 bg-pink-50 text-pink-600"
+                      : "border-pink-500/20 bg-pink-500/10 text-pink-300"
+                  }`}
+                >
                   {item.badge}
                 </span>
               )}
@@ -631,14 +749,22 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
         })}
       </nav>
 
-      <div className="border-t border-white/10 p-5">
+      <div
+        className={`border-t p-5 ${
+          isLight ? "border-gray-200 bg-white" : "border-white/10"
+        }`}
+      >
         {!isMobile && onToggle && (
           <button
             onClick={onToggle}
-            className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
+            className={`mb-3 flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 transition-colors ${
+              isLight
+                ? "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                : "text-gray-400 hover:bg-white/5 hover:text-white"
+            }`}
             type="button"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`h-4 w-4 ${isLight ? "text-gray-600" : "text-gray-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -650,8 +776,20 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
           </button>
         )}
 
-        <p className="text-center text-[10px] text-gray-600">CODEMASTER v2.0</p>
-        <p className="mt-1 text-center text-[9px] text-gray-700">© 2026</p>
+        <p
+          className={`text-center text-[10px] ${
+            isLight ? "text-gray-500" : "text-gray-600"
+          }`}
+        >
+          CODEMASTER v2.0
+        </p>
+        <p
+          className={`mt-1 text-center text-[9px] ${
+            isLight ? "text-gray-400" : "text-gray-700"
+          }`}
+        >
+          © 2026
+        </p>
       </div>
     </div>
   );
@@ -662,15 +800,29 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
         initial={false}
         animate={{ width: isOpen ? 256 : 84 }}
         transition={{ duration: 0.22, ease: "easeInOut" }}
-        className="fixed bottom-0 left-0 top-16 z-40 overflow-hidden border-r border-white/10 bg-[#0a0a0a]"
+        className={`fixed bottom-0 left-0 top-16 z-40 overflow-hidden border-r ${
+          isLight
+            ? "border-gray-200 bg-white shadow-[4px_0_24px_rgba(15,23,42,0.06)]"
+            : "border-white/10 bg-[#0a0a0a]"
+        }`}
       >
         <div className="no-scrollbar h-full overflow-y-auto">
           {isOpen ? (
             sidebarContent
           ) : (
-            <div className="flex flex-col items-center py-4">
+            <div
+              className={`flex h-full flex-col items-center py-4 ${
+                isLight ? "bg-white" : "bg-[#0a0a0a]"
+              }`}
+            >
               <div className="relative mb-4 h-11 w-11 overflow-visible rounded-full">
-                <div className="h-11 w-11 overflow-hidden rounded-full border border-white/10 bg-gradient-to-r from-pink-500 to-purple-500">
+                <div
+                  className={`h-11 w-11 overflow-hidden rounded-full border ${
+                    isLight
+                      ? "border-gray-200 bg-gradient-to-br from-pink-100 to-purple-100 shadow-[0_8px_20px_rgba(236,72,153,0.10)]"
+                      : "border-white/10 bg-gradient-to-r from-pink-500 to-purple-500"
+                  }`}
+                >
                   {resolvedProfilePic ? (
                     <img
                       src={resolvedProfilePic}
@@ -679,52 +831,86 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
-                      <span className="text-sm font-bold text-white">{initials}</span>
+                      <span
+                        className={`text-sm font-bold ${
+                          isLight ? "text-gray-800" : "text-white"
+                        }`}
+                      >
+                        {initials}
+                      </span>
                     </div>
                   )}
                 </div>
 
-                <span className="absolute -bottom-0.5 -right-0.5 z-10 h-3.5 w-3.5 rounded-full border-2 border-[#0a0a0a] bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.55)]" />
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 z-10 h-3.5 w-3.5 rounded-full border-2 ${
+                    isLight ? "border-white" : "border-[#0a0a0a]"
+                  } bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.55)]`}
+                />
               </div>
 
-              {filteredNavItems.map((item) => {
-                const active = isActive(item.href);
+              <div className="flex flex-col items-center gap-1.5">
+                {filteredNavItems.map((item) => {
+                  const active = isActive(item.href);
 
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`my-1 flex h-12 w-12 items-center justify-center rounded-lg transition-all duration-200 ${
-                      active
-                        ? "bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-400"
-                        : "text-gray-400 hover:bg-white/5 hover:text-white"
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`relative flex h-12 w-12 items-center justify-center rounded-xl border transition-all duration-200 ${
+                        active
+                          ? isLight
+                            ? "border-pink-200 bg-pink-50 text-pink-600 shadow-[0_8px_18px_rgba(236,72,153,0.10)]"
+                            : "border-white/10 bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-400"
+                          : isLight
+                          ? "border-transparent bg-transparent text-gray-700 hover:border-gray-200 hover:bg-white hover:text-gray-900 hover:shadow-sm"
+                          : "border-transparent text-gray-400 hover:bg-white/5 hover:text-white"
+                      }`}
+                      title={item.name}
+                    >
+                      {active && (
+                        <span className="absolute left-0 h-5 w-1 rounded-r-full bg-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.8)]" />
+                      )}
+
+                      <span className={`h-5 w-5 ${
+                        active
+                          ? isLight
+                            ? "text-pink-600"
+                            : "text-pink-400"
+                          : isLight
+                          ? "text-gray-700"
+                          : "text-gray-400"
+                      }`}>
+                        {active ? item.activeIcon || item.icon : item.icon}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="mt-auto flex flex-col items-center">
+                {onToggle && (
+                  <button
+                    onClick={onToggle}
+                    className={`mt-4 flex h-12 w-12 items-center justify-center rounded-xl border transition-colors ${
+                      isLight
+                        ? "border-transparent text-gray-700 hover:border-gray-200 hover:bg-white hover:text-gray-900 hover:shadow-sm"
+                        : "border-transparent text-gray-400 hover:bg-white/5 hover:text-white"
                     }`}
-                    title={item.name}
+                    title="Expand"
+                    type="button"
                   >
-                    <span className="h-5 w-5">
-                      {active ? item.activeIcon || item.icon : item.icon}
-                    </span>
-                  </Link>
-                );
-              })}
-
-              {onToggle && (
-                <button
-                  onClick={onToggle}
-                  className="mt-4 flex h-12 w-12 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
-                  title="Expand"
-                  type="button"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-              )}
+                    <svg className={`h-4 w-4 ${isLight ? "text-gray-700" : "text-gray-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -740,7 +926,9 @@ export default function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/80"
+            className={`fixed inset-0 z-40 ${
+              isLight ? "bg-slate-900/15 backdrop-blur-[1px]" : "bg-black/80"
+            }`}
             onClick={onClose}
           />
           <motion.aside

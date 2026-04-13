@@ -7,6 +7,7 @@ import Logo from "../logo";
 import Notifications from "./Notifications";
 import SearchBar from "../SearchBar";
 import { clearUserSession } from "@/lib/auth";
+import { useTheme } from "../../context/ThemeContext";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -67,6 +68,8 @@ function ProfileAvatarIcon() {
 
 export default function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
 
   const [scrolled, setScrolled] = useState(false);
   const [username, setUsername] = useState("");
@@ -158,8 +161,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
     <header
       className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "border-b border-white/10 bg-black/95 shadow-lg backdrop-blur-xl"
-          : "border-b border-white/5 bg-black/80 backdrop-blur-md"
+          ? isLight
+            ? "border-b border-gray-200 bg-white shadow-md"
+            : "border-b border-white/10 bg-black/95 shadow-lg backdrop-blur-xl"
+          : isLight
+            ? "border-b border-gray-200 bg-white"
+            : "border-b border-white/5 bg-black/80 backdrop-blur-md"
       }`}
     >
       <div className="mx-auto w-full pr-4 sm:pr-6 lg:pr-8">
@@ -169,7 +176,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <div className="flex w-10 sm:w-12 items-center justify-center lg:flex">
               <button
                 onClick={onMenuClick}
-                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+                className={`rounded-lg p-2 transition-colors ${
+                  isLight
+                    ? "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    : "text-gray-400 hover:bg-white/10 hover:text-white"
+                }`}
                 aria-label="Toggle sidebar"
                 type="button"
               >
@@ -226,7 +237,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 type="button"
                 aria-label="Open user menu"
               >
-                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-gradient-to-r from-pink-500 to-purple-500 shadow-lg">
+                <div className={`flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border shadow-lg ${
+                  isLight
+                    ? "border-gray-200 bg-gray-100"
+                    : "border-white/10 bg-gradient-to-r from-pink-500 to-purple-500"
+                }`}>
                   {resolvedProfilePic ? (
                     <img
                       src={resolvedProfilePic}
@@ -238,7 +253,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   )}
                 </div>
 
-                <span className="hidden text-sm font-medium text-white sm:block">
+                <span className={`hidden text-sm font-medium sm:block ${
+                  isLight ? "text-gray-700" : "text-white"
+                }`}>
                   {username || "Profile"}
                 </span>
 
@@ -259,43 +276,69 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 </svg>
               </button>
 
-              {userMenuOpen && (
-                <div className="absolute right-0 z-50 mt-2 w-52 rounded-lg border border-white/10 bg-[#0a0a0a] py-1 shadow-xl">
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
-                  >
+             {userMenuOpen && (
+              <div
+                className={`absolute right-0 z-[120] mt-2 w-56 overflow-hidden rounded-xl border shadow-[0_10px_40px_rgba(0,0,0,0.15)] ${
+                  isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#0a0a0a]"
+                }`}
+              >
+                <Link
+                  href="/dashboard"
+                  onClick={() => setUserMenuOpen(false)}
+                  className={`flex items-center px-4 py-3 text-sm font-medium transition-colors ${
+                    isLight
+                      ? "!text-gray-900 bg-white hover:bg-gray-100"
+                      : "!text-white hover:bg-white/5"
+                  }`}
+                >
+                  <span className={isLight ? "!text-gray-900" : "!text-white"}>
                     Dashboard
-                  </Link>
+                  </span>
+                </Link>
 
-                  <Link
-                    href="/dashboard/profile"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
-                  >
+                <Link
+                  href="/dashboard/profile"
+                  onClick={() => setUserMenuOpen(false)}
+                  className={`flex items-center px-4 py-3 text-sm font-medium transition-colors ${
+                    isLight
+                      ? "!text-gray-900 bg-white hover:bg-gray-100"
+                      : "!text-white hover:bg-white/5"
+                  }`}
+                >
+                  <span className={isLight ? "!text-gray-900" : "!text-white"}>
                     Profile Settings
-                  </Link>
+                  </span>
+                </Link>
 
-                  <Link
-                    href="/dashboard/challenges"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
-                  >
+                <Link
+                  href="/dashboard/challenges"
+                  onClick={() => setUserMenuOpen(false)}
+                  className={`flex items-center px-4 py-3 text-sm font-medium transition-colors ${
+                    isLight
+                      ? "!text-gray-900 bg-white hover:bg-gray-100"
+                      : "!text-white hover:bg-white/5"
+                  }`}
+                >
+                  <span className={isLight ? "!text-gray-900" : "!text-white"}>
                     My Challenges
-                  </Link>
+                  </span>
+                </Link>
 
-                  <div className="my-1 border-t border-white/10" />
+                <div className={`my-1 border-t ${isLight ? "border-gray-200" : "border-white/10"}`} />
 
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full px-4 py-2 text-left text-sm text-red-400 transition-colors hover:bg-white/10 hover:text-red-300"
-                    type="button"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              )}
+                <button
+                  onClick={handleLogout}
+                  className={`block w-full px-4 py-3 text-left text-sm font-medium transition-colors ${
+                    isLight
+                      ? "text-red-500 hover:bg-red-50"
+                      : "text-red-400 hover:bg-red-500/10"
+                  }`}
+                  type="button"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
             </div>
           </div>
         </div>

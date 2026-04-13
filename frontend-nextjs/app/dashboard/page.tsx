@@ -10,6 +10,7 @@ import RankModal from "../components/dashboard/RankModal";
 import WelcomeOnboardingModal from "../components/dashboard/WelcomeOnboardingModal";
 import { clearUserSession } from "@/lib/auth";
 import { Copy, Check } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 interface DashboardData {
   stats: {
@@ -59,6 +60,9 @@ const defaultData: DashboardData = {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
   const [data, setData] = useState<DashboardData>(defaultData);
@@ -66,17 +70,24 @@ export default function DashboardPage() {
   const [isRankModalOpen, setIsRankModalOpen] = useState(false);
   const [isCopied, setIsCheck] = useState(false);
 
-  const tips = useMemo(() => [
-    "Clean code is not written, it is rewritten.",
-    "The best way to learn a new language is to build something with it.",
-    "Documentation is a love letter that you write to your future self.",
-    "Before you start coding, spend time understanding the problem.",
-    "Consistency beats intensity. Small daily steps lead to big results.",
-    "Don't just solve problems, understand why the solution works.",
-  ], []);
+  const tips = useMemo(
+    () => [
+      "Clean code is not written, it is rewritten.",
+      "The best way to learn a new language is to build something with it.",
+      "Documentation is a love letter that you write to your future self.",
+      "Before you start coding, spend time understanding the problem.",
+      "Consistency beats intensity. Small daily steps lead to big results.",
+      "Don't just solve problems, understand why the solution works.",
+    ],
+    []
+  );
 
   const dailyTip = useMemo(() => {
-    const dayOfYear = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+    const dayOfYear = Math.floor(
+      (new Date().getTime() -
+        new Date(new Date().getFullYear(), 0, 0).getTime()) /
+        (1000 * 60 * 60 * 24)
+    );
     return tips[dayOfYear % tips.length];
   }, [tips]);
 
@@ -108,7 +119,7 @@ export default function DashboardPage() {
 
     fetchDashboardData(token);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run on mount
+  }, []);
 
   const fetchDashboardData = async (token: string) => {
     try {
@@ -122,13 +133,19 @@ export default function DashboardPage() {
 
       if (res.status === 401 || res.status === 403) {
         clearUserSession();
-        router.replace("/login?message=Your session has expired. Please sign in again.&redirect=/dashboard");
+        router.replace(
+          "/login?message=Your session has expired. Please sign in again.&redirect=/dashboard"
+        );
         return;
       }
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => "");
-        console.error("Dashboard stats request failed:", res.status, errorText);
+        console.error(
+          "Dashboard stats request failed:",
+          res.status,
+          errorText
+        );
         setData(defaultData);
         setStatsError("Live dashboard stats are unavailable right now.");
         return;
@@ -193,30 +210,44 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <WelcomeOnboardingModal />
-      
+
       <WelcomeSection
-  userName={userName || "Developer"}
-  actionTitle={
-    data.recentSubmissions.length > 0
-      ? `Continue: ${data.recentSubmissions[0].title}`
-      : "Start your next challenge"
-  }
-  actionSubtitle={
-    data.recentSubmissions.length > 0
-      ? "Jump back into your most recent learning activity and keep the momentum going."
-      : "Explore challenges and begin building your progress with a focused first step."
-  }
-  actionButtonLabel={
-    data.recentSubmissions.length > 0 ? "Continue Learning" : "Start Learning"
-  }
-  secondaryButtonLabel="Explore Challenges"
-  onActionClick={() => router.push("/dashboard/learning")}
-  onSecondaryActionClick={() => router.push("/dashboard/challenges")}
-/>
+        userName={userName || "Developer"}
+        actionTitle={
+          data.recentSubmissions.length > 0
+            ? `Continue: ${data.recentSubmissions[0].title}`
+            : "Start your next challenge"
+        }
+        actionSubtitle={
+          data.recentSubmissions.length > 0
+            ? "Jump back into your most recent learning activity and keep the momentum going."
+            : "Explore challenges and begin building your progress with a focused first step."
+        }
+        actionButtonLabel={
+          data.recentSubmissions.length > 0
+            ? "Continue Learning"
+            : "Start Learning"
+        }
+        secondaryButtonLabel="Explore Challenges"
+        onActionClick={() => router.push("/dashboard/learning")}
+        onSecondaryActionClick={() => router.push("/dashboard/challenges")}
+      />
 
       {statsError && (
-        <div className="rounded-lg border border-pink-500/20 bg-pink-500/10 px-4 py-3">
-          <p className="text-sm text-pink-300">{statsError}</p>
+        <div
+          className={`rounded-lg border px-4 py-3 ${
+            isLight
+              ? "border-pink-200 bg-pink-50"
+              : "border-pink-500/20 bg-pink-500/10"
+          }`}
+        >
+          <p
+            className={`text-sm ${
+              isLight ? "text-pink-700" : "text-pink-300"
+            }`}
+          >
+            {statsError}
+          </p>
         </div>
       )}
 
@@ -244,8 +275,18 @@ export default function DashboardPage() {
             }}
           />
 
-          <div className="rounded-lg border border-white/10 bg-[#0a0a0a] p-5">
-            <h2 className="mb-4 text-sm font-semibold text-white">
+          <div
+            className={`rounded-xl border p-5 ${
+              isLight
+                ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
+          >
+            <h2
+              className={`mb-4 text-sm font-semibold ${
+                isLight ? "text-gray-900" : "text-white"
+              }`}
+            >
               Quick Actions
             </h2>
 
@@ -275,10 +316,26 @@ export default function DashboardPage() {
                 <button
                   key={item.title}
                   onClick={() => router.push(item.route)}
-                  className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-left transition hover:bg-white/[0.05]"
+                  className={`rounded-lg border p-3 text-left transition ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50 hover:bg-gray-100"
+                      : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05]"
+                  }`}
                 >
-                  <p className="text-sm font-medium text-white">{item.title}</p>
-                  <p className="mt-1 text-xs text-gray-500">{item.desc}</p>
+                  <p
+                    className={`text-sm font-medium ${
+                      isLight ? "text-gray-900" : "text-white"
+                    }`}
+                  >
+                    {item.title}
+                  </p>
+                  <p
+                    className={`mt-1 text-xs ${
+                      isLight ? "text-gray-500" : "text-gray-500"
+                    }`}
+                  >
+                    {item.desc}
+                  </p>
                 </button>
               ))}
             </div>
@@ -288,27 +345,49 @@ export default function DashboardPage() {
         <div className="space-y-6">
           <SocialsNews />
 
-          <div className="group relative rounded-xl border border-white/10 bg-[#0a0a0a] p-5 transition-all hover:border-fuchsia-500/30">
+          <div
+            className={`group relative rounded-xl border p-5 transition-all ${
+              isLight
+                ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] hover:border-fuchsia-300"
+                : "border-white/10 bg-[#0a0a0a] hover:border-fuchsia-500/30"
+            }`}
+          >
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-400">
+              <span
+                className={`text-[10px] font-bold uppercase tracking-[0.2em] ${
+                  isLight ? "text-fuchsia-600" : "text-fuchsia-400"
+                }`}
+              >
                 Daily Insight
               </span>
               <button
                 onClick={handleCopyTip}
-                className="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-white/5 hover:text-white"
+                className={`rounded-md p-1.5 transition-colors ${
+                  isLight
+                    ? "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                    : "text-gray-500 hover:bg-white/5 hover:text-white"
+                }`}
                 title="Copy to clipboard"
               >
                 {isCopied ? (
-                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
                 ) : (
-                  <Copy className="h-3.5 w-3.5" />
+                  <Copy
+                    className={`h-3.5 w-3.5 ${
+                      isLight ? "text-gray-500" : ""
+                    }`}
+                  />
                 )}
               </button>
             </div>
-            <p className="text-sm leading-relaxed text-gray-300">
+            <p
+              className={`text-sm leading-relaxed ${
+                isLight ? "text-gray-700" : "text-gray-300"
+              }`}
+            >
               {dailyTip}
             </p>
-</div>
+          </div>
         </div>
       </div>
     </div>

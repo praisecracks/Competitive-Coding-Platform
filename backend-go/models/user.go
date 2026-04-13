@@ -23,6 +23,7 @@ type User struct {
 	EmailNotifications bool               `bson:"email_notifications" json:"emailNotifications"`
 	ChallengeReminders bool               `bson:"challenge_reminders" json:"challengeReminders"`
 	PublicProfile      bool               `bson:"public_profile" json:"publicProfile"`
+	Theme              string             `bson:"theme" json:"theme"`
 	TotalSolved        int                `bson:"total_solved" json:"totalSolved"`
 	ChallengesWon      int                `bson:"challenges_won" json:"challengesWon"`
 	ChallengesPlayed   int                `bson:"challenges_played" json:"challengesPlayed"`

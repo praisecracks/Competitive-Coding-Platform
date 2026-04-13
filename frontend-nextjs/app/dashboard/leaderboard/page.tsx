@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getCountryFlag } from "@/lib/flags";
 import { normalizeProfileImageUrl } from "@/lib/auth";
+import { useTheme } from "@/app/context/ThemeContext";
+import { ReportButton } from "@/app/components/ReportButton";
 
 type LeaderboardEntry = {
   rank: number;
@@ -89,6 +91,9 @@ function humanizeLastActive(date?: string) {
 const ENTRIES_PER_PAGE = 10;
 
 export default function LeaderboardPage() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -294,7 +299,11 @@ export default function LeaderboardPage() {
     <button
       type="button"
       onClick={() => toggleSort(value)}
-      className={`inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.16em] text-gray-500 transition hover:text-gray-300 ${
+      className={`inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.16em] transition ${
+        isLight
+          ? "text-gray-500 hover:text-gray-900"
+          : "text-gray-500 hover:text-gray-300"
+      } ${
         align === "center"
           ? "justify-center"
           : align === "right"
@@ -310,21 +319,49 @@ export default function LeaderboardPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#050507] text-white">
+    <div
+      className={`min-h-screen ${
+        isLight ? "bg-[#f8fafc] text-gray-900" : "bg-[#050507] text-white"
+      }`}
+    >
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <div className="mb-6 overflow-hidden rounded-[28px] border border-white/10 bg-[#0a0a0a]">
-          <div className="border-b border-white/10 px-5 py-5 sm:px-6 sm:py-6">
+        <div
+          className={`mb-6 overflow-hidden rounded-[28px] border ${
+            isLight
+              ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
+              : "border-white/10 bg-[#0a0a0a]"
+          }`}
+        >
+          <div
+            className={`border-b px-5 py-5 sm:px-6 sm:py-6 ${
+              isLight ? "border-gray-200" : "border-white/10"
+            }`}
+          >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
-                <span className="inline-flex rounded-full border border-pink-500/20 bg-pink-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-pink-200">
+                <span
+                  className={`inline-flex rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.16em] ${
+                    isLight
+                      ? "border-pink-200 bg-pink-50 text-pink-600"
+                      : "border-pink-500/20 bg-pink-500/10 text-pink-200"
+                  }`}
+                >
                   Global Ranking
                 </span>
 
-                <h1 className="mt-4 text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                <h1
+                  className={`mt-4 text-xl font-semibold tracking-tight sm:text-2xl ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
                   CODEMASTER Leaderboard
                 </h1>
 
-                <p className="mt-2 max-w-2xl text-xs leading-6 text-gray-400 sm:text-sm">
+                <p
+                  className={`mt-2 max-w-2xl text-xs leading-6 sm:text-sm ${
+                    isLight ? "text-gray-600" : "text-gray-400"
+                  }`}
+                >
                   Clean rankings • Compete on points • Build streaks
                 </p>
               </div>
@@ -332,7 +369,11 @@ export default function LeaderboardPage() {
               <div className="flex flex-wrap gap-2">
                 <Link
                   href="/dashboard"
-                  className="inline-flex h-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-medium text-white transition hover:bg-white/[0.08]"
+                  className={`inline-flex h-10 items-center justify-center rounded-lg border px-3 text-xs font-medium transition ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
+                      : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                  }`}
                 >
                   Dashboard
                 </Link>
@@ -348,38 +389,94 @@ export default function LeaderboardPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-3 px-5 py-5 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-gray-500">
+            <div
+              className={`rounded-xl border px-3 py-2.5 ${
+                isLight
+                  ? "border-gray-200 bg-gray-50"
+                  : "border-white/10 bg-white/[0.03]"
+              }`}
+            >
+              <p
+                className={`text-[9px] uppercase tracking-[0.16em] ${
+                  isLight ? "text-gray-500" : "text-gray-500"
+                }`}
+              >
                 Users
               </p>
-              <p className="mt-1 text-base font-semibold text-white">
+              <p
+                className={`mt-1 text-base font-semibold ${
+                  isLight ? "text-gray-900" : "text-white"
+                }`}
+              >
                 {filteredEntries.length}
               </p>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-gray-500">
+            <div
+              className={`rounded-xl border px-3 py-2.5 ${
+                isLight
+                  ? "border-gray-200 bg-gray-50"
+                  : "border-white/10 bg-white/[0.03]"
+              }`}
+            >
+              <p
+                className={`text-[9px] uppercase tracking-[0.16em] ${
+                  isLight ? "text-gray-500" : "text-gray-500"
+                }`}
+              >
                 Points
               </p>
-              <p className="mt-1 text-base font-semibold text-white">
+              <p
+                className={`mt-1 text-base font-semibold ${
+                  isLight ? "text-gray-900" : "text-white"
+                }`}
+              >
                 {totals.points}
               </p>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-gray-500">
+            <div
+              className={`rounded-xl border px-3 py-2.5 ${
+                isLight
+                  ? "border-gray-200 bg-gray-50"
+                  : "border-white/10 bg-white/[0.03]"
+              }`}
+            >
+              <p
+                className={`text-[9px] uppercase tracking-[0.16em] ${
+                  isLight ? "text-gray-500" : "text-gray-500"
+                }`}
+              >
                 Solved
               </p>
-              <p className="mt-1 text-base font-semibold text-white">
+              <p
+                className={`mt-1 text-base font-semibold ${
+                  isLight ? "text-gray-900" : "text-white"
+                }`}
+              >
                 {totals.solved}
               </p>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 sm:col-span-2 lg:col-span-1">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-gray-500">
+            <div
+              className={`rounded-xl border px-3 py-2.5 sm:col-span-2 lg:col-span-1 ${
+                isLight
+                  ? "border-gray-200 bg-gray-50"
+                  : "border-white/10 bg-white/[0.03]"
+              }`}
+            >
+              <p
+                className={`text-[9px] uppercase tracking-[0.16em] ${
+                  isLight ? "text-gray-500" : "text-gray-500"
+                }`}
+              >
                 Streak
               </p>
-              <p className="mt-1 text-base font-semibold text-white">
+              <p
+                className={`mt-1 text-base font-semibold ${
+                  isLight ? "text-gray-900" : "text-white"
+                }`}
+              >
                 {totals.streak}
               </p>
             </div>
@@ -388,8 +485,10 @@ export default function LeaderboardPage() {
 
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-medium text-white">Search</p>
-            <p className="mt-0.5 text-xs text-gray-500">
+            <p className={`text-xs font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
+              Search
+            </p>
+            <p className={`mt-0.5 text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>
               Find by username or country
             </p>
           </div>
@@ -401,14 +500,22 @@ export default function LeaderboardPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="w-full rounded-lg border border-white/10 bg-[#0a0a0a] px-3 py-2 text-xs text-white outline-none placeholder:text-gray-500 transition focus:border-pink-500/30"
+                className={`w-full rounded-lg border px-3 py-2 text-xs outline-none transition ${
+                  isLight
+                    ? "border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:border-pink-300 focus:bg-white"
+                    : "border-white/10 bg-[#0a0a0a] text-white placeholder:text-gray-500 focus:border-pink-500/30"
+                }`}
               />
             </div>
 
             <button
               onClick={() => fetchLeaderboard(true)}
               disabled={refreshing}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
+              className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                isLight
+                  ? "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
+                  : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              }`}
               type="button"
             >
               <svg
@@ -430,32 +537,76 @@ export default function LeaderboardPage() {
         </div>
 
         {loading ? (
-          <div className="rounded-[28px] border border-white/10 bg-[#0a0a0a] px-6 py-20 text-center">
-            <p className="text-sm text-gray-400">Loading leaderboard...</p>
+          <div
+            className={`rounded-[28px] border px-6 py-20 text-center ${
+              isLight
+                ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
+          >
+            <p className={`text-sm ${isLight ? "text-gray-600" : "text-gray-400"}`}>
+              Loading leaderboard...
+            </p>
           </div>
         ) : errorMessage ? (
-          <div className="rounded-[28px] border border-red-500/15 bg-red-500/[0.05] px-6 py-16 text-center">
-            <p className="text-sm font-medium text-red-200">
+          <div
+            className={`rounded-[28px] border px-6 py-16 text-center ${
+              isLight
+                ? "border-red-200 bg-red-50"
+                : "border-red-500/15 bg-red-500/[0.05]"
+            }`}
+          >
+            <p
+              className={`text-sm font-medium ${
+                isLight ? "text-red-600" : "text-red-200"
+              }`}
+            >
               Unable to load leaderboard
             </p>
-            <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-gray-300">
+            <p
+              className={`mx-auto mt-2 max-w-xl text-sm leading-7 ${
+                isLight ? "text-gray-600" : "text-gray-300"
+              }`}
+            >
               {errorMessage}
             </p>
           </div>
         ) : sortedEntries.length === 0 ? (
-          <div className="rounded-[28px] border border-white/10 bg-[#0a0a0a] px-6 py-16 text-center">
-            <p className="text-sm font-medium text-white">No leaderboard data yet</p>
-            <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-gray-400">
+          <div
+            className={`rounded-[28px] border px-6 py-16 text-center ${
+              isLight
+                ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
+          >
+            <p
+              className={`text-sm font-medium ${
+                isLight ? "text-gray-900" : "text-white"
+              }`}
+            >
+              No leaderboard data yet
+            </p>
+            <p
+              className={`mx-auto mt-2 max-w-xl text-sm leading-7 ${
+                isLight ? "text-gray-600" : "text-gray-400"
+              }`}
+            >
               Once users begin solving accepted challenges, rankings will appear here.
             </p>
           </div>
         ) : (
           <>
-            <div className="hidden overflow-hidden rounded-[28px] border border-white/10 bg-[#0a0a0a] lg:block">
+            <div
+              className={`hidden overflow-hidden rounded-[28px] border lg:block ${
+                isLight
+                  ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
+                  : "border-white/10 bg-[#0a0a0a]"
+              }`}
+            >
               <div className="overflow-x-auto">
                 <table className="min-w-full border-collapse">
-                  <thead className="bg-white/[0.02]">
-                    <tr className="border-b border-white/10">
+                  <thead className={isLight ? "bg-gray-50" : "bg-white/[0.02]"}>
+                    <tr className={isLight ? "border-b border-gray-200" : "border-b border-white/10"}>
                       <th className="px-6 py-4 text-left">
                         <SortHeader label="Rank" value="rank" />
                       </th>
@@ -475,7 +626,11 @@ export default function LeaderboardPage() {
                         <SortHeader label="Last Active" value="lastAcceptedAt" />
                       </th>
                       <th className="px-6 py-4 text-left">
-                        <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-500">
+                        <span
+                          className={`text-[11px] font-medium uppercase tracking-[0.16em] ${
+                            isLight ? "text-gray-500" : "text-gray-500"
+                          }`}
+                        >
                           Difficulty Mix
                         </span>
                       </th>
@@ -492,23 +647,37 @@ export default function LeaderboardPage() {
                       return (
                         <tr
                           key={entry.userId}
-                          className={`border-b border-white/5 transition ${
+                          className={`border-b transition ${
                             currentUser
-                              ? "bg-pink-500/[0.06]"
-                              : "hover:bg-white/[0.02]"
+                              ? isLight
+                                ? "border-pink-100 bg-pink-50/70"
+                                : "border-white/5 bg-pink-500/[0.06]"
+                              : isLight
+                              ? "border-gray-100 hover:bg-gray-50/80"
+                              : "border-white/5 hover:bg-white/[0.02]"
                           }`}
                         >
                           <td className="px-6 py-4 align-middle">
                             <span
                               className={`inline-flex min-w-[56px] items-center justify-center rounded-full border px-3 py-1 text-[11px] font-medium ${
                                 entry.rank === 1
-                                  ? "border-yellow-500/20 bg-yellow-500/10 text-yellow-200"
+                                  ? isLight
+                                    ? "border-yellow-200 bg-yellow-50 text-yellow-700"
+                                    : "border-yellow-500/20 bg-yellow-500/10 text-yellow-200"
                                   : entry.rank === 2
-                                  ? "border-slate-400/20 bg-slate-400/10 text-slate-200"
+                                  ? isLight
+                                    ? "border-gray-300 bg-gray-100 text-gray-700"
+                                    : "border-slate-400/20 bg-slate-400/10 text-slate-200"
                                   : entry.rank === 3
-                                  ? "border-orange-500/20 bg-orange-500/10 text-orange-200"
+                                  ? isLight
+                                    ? "border-orange-200 bg-orange-50 text-orange-700"
+                                    : "border-orange-500/20 bg-orange-500/10 text-orange-200"
                                   : currentUser
-                                  ? "border-pink-500/20 bg-pink-500/10 text-pink-200"
+                                  ? isLight
+                                    ? "border-pink-200 bg-pink-50 text-pink-700"
+                                    : "border-pink-500/20 bg-pink-500/10 text-pink-200"
+                                  : isLight
+                                  ? "border-gray-200 bg-gray-50 text-gray-700"
                                   : "border-white/10 bg-white/[0.03] text-gray-300"
                               }`}
                             >
@@ -526,61 +695,117 @@ export default function LeaderboardPage() {
                                 <img
                                   src={resolvedImage}
                                   alt={entry.username}
-                                  className="h-11 w-11 rounded-xl border border-white/10 object-cover"
+                                  className={`h-11 w-11 rounded-xl border object-cover ${
+                                    isLight ? "border-gray-200" : "border-white/10"
+                                  }`}
                                   onError={() => handleImageError(entry.userId)}
                                 />
                               ) : (
-                                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-xs font-semibold text-pink-200">
+                                <div
+                                  className={`flex h-11 w-11 items-center justify-center rounded-xl border text-xs font-semibold ${
+                                    isLight
+                                      ? "border-gray-200 bg-gradient-to-br from-pink-100 to-purple-100 text-pink-600"
+                                      : "border-white/10 bg-white/[0.04] text-pink-200"
+                                  }`}
+                                >
                                   {entry.username.slice(0, 2).toUpperCase()}
                                 </div>
                               )}
 
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-white">
+                                <p
+                                  className={`truncate text-sm font-semibold ${
+                                    isLight ? "text-gray-900" : "text-white"
+                                  }`}
+                                >
                                   {entry.username}
-                                  {entry.country && (
+                                  {getCountryFlag(entry.country) && (
                                     <span className="ml-1.5 text-xs">
                                       {getCountryFlag(entry.country)}
                                     </span>
                                   )}
                                   {currentUser ? (
-                                    <span className="ml-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-2 py-0.5 text-[10px] font-medium text-pink-200">
+                                    <span
+                                      className={`ml-2 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                                        isLight
+                                          ? "border-pink-200 bg-pink-50 text-pink-700"
+                                          : "border-pink-500/20 bg-pink-500/10 text-pink-200"
+                                      }`}
+                                    >
                                       You
                                     </span>
                                   ) : null}
                                 </p>
-                                <p className="mt-0.5 text-xs text-gray-500">
+                                <p
+                                  className={`mt-0.5 text-xs ${
+                                    isLight ? "text-gray-500" : "text-gray-500"
+                                  }`}
+                                >
                                   Competitive coder
                                 </p>
                               </div>
                             </button>
                           </td>
 
-                          <td className="px-6 py-4 align-middle text-sm font-semibold text-white">
+                          <td
+                            className={`px-6 py-4 align-middle text-sm font-semibold ${
+                              isLight ? "text-gray-900" : "text-white"
+                            }`}
+                          >
                             {entry.totalPoints}
                           </td>
 
-                          <td className="px-6 py-4 align-middle text-sm font-semibold text-white">
+                          <td
+                            className={`px-6 py-4 align-middle text-sm font-semibold ${
+                              isLight ? "text-gray-900" : "text-white"
+                            }`}
+                          >
                             {entry.totalSolved}
                           </td>
 
-                          <td className="px-6 py-4 align-middle text-sm font-semibold text-white">
+                          <td
+                            className={`px-6 py-4 align-middle text-sm font-semibold ${
+                              isLight ? "text-gray-900" : "text-white"
+                            }`}
+                          >
                             {entry.currentStreak}
                           </td>
 
-                          <td className="px-6 py-4 align-middle text-sm text-gray-300">
+                          <td
+                            className={`px-6 py-4 align-middle text-sm ${
+                              isLight ? "text-gray-600" : "text-gray-300"
+                            }`}
+                          >
                             {humanizeLastActive(entry.lastAcceptedAt)}
                           </td>
 
                           <td className="px-6 py-4 align-middle">
                             <div className="flex flex-wrap gap-1.5">
-                              <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] text-emerald-300">
+                              <span
+                                className={`rounded-full border px-2.5 py-1 text-[10px] ${
+                                  isLight
+                                    ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                                    : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                                }`}
+                              >
                                 E {entry.easySolved}
                               </span>
-                              <span className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2.5 py-1 text-[10px] text-yellow-300">
+                              <span
+                                className={`rounded-full border px-2.5 py-1 text-[10px] ${
+                                  isLight
+                                    ? "border-yellow-200 bg-yellow-50 text-yellow-700"
+                                    : "border-yellow-500/20 bg-yellow-500/10 text-yellow-300"
+                                }`}
+                              >
                                 M {entry.mediumSolved}
                               </span>
-                              <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-[10px] text-red-300">
+                              <span
+                                className={`rounded-full border px-2.5 py-1 text-[10px] ${
+                                  isLight
+                                    ? "border-red-200 bg-red-50 text-red-600"
+                                    : "border-red-500/20 bg-red-500/10 text-red-300"
+                                }`}
+                              >
                                 H {entry.hardSolved}
                               </span>
                             </div>
@@ -605,8 +830,14 @@ export default function LeaderboardPage() {
                     key={entry.userId}
                     type="button"
                     onClick={() => openUserProfile(entry)}
-                    className={`w-full rounded-[24px] border border-white/10 bg-[#0a0a0a] p-4 text-left ${
-                      currentUser ? "ring-1 ring-pink-500/20" : ""
+                    className={`w-full rounded-[24px] border p-4 text-left ${
+                      currentUser
+                        ? isLight
+                          ? "border-pink-200 bg-white ring-1 ring-pink-200 shadow-[0_10px_30px_rgba(236,72,153,0.06)]"
+                          : "border-white/10 bg-[#0a0a0a] ring-1 ring-pink-500/20"
+                        : isLight
+                        ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.05)]"
+                        : "border-white/10 bg-[#0a0a0a]"
                     }`}
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">
@@ -615,73 +846,157 @@ export default function LeaderboardPage() {
                           <img
                             src={resolvedImage}
                             alt={entry.username}
-                            className="h-11 w-11 rounded-xl border border-white/10 object-cover"
+                            className={`h-11 w-11 rounded-xl border object-cover ${
+                              isLight ? "border-gray-200" : "border-white/10"
+                            }`}
                             onError={() => handleImageError(entry.userId)}
                           />
                         ) : (
-                          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-xs font-semibold text-pink-200">
+                          <div
+                            className={`flex h-11 w-11 items-center justify-center rounded-xl border text-xs font-semibold ${
+                              isLight
+                                ? "border-gray-200 bg-gradient-to-br from-pink-100 to-purple-100 text-pink-600"
+                                : "border-white/10 bg-white/[0.04] text-pink-200"
+                            }`}
+                          >
                             {entry.username.slice(0, 2).toUpperCase()}
                           </div>
                         )}
 
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-white">
+                          <p
+                            className={`truncate text-sm font-semibold ${
+                              isLight ? "text-gray-900" : "text-white"
+                            }`}
+                          >
                             {entry.username}
-                            {entry.country && (
+                            {getCountryFlag(entry.country) && (
                               <span className="ml-1.5 text-xs">
                                 {getCountryFlag(entry.country)}
                               </span>
                             )}
                             {currentUser ? (
-                              <span className="ml-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-2 py-0.5 text-[10px] font-medium text-pink-200">
+                              <span
+                                className={`ml-2 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                                  isLight
+                                    ? "border-pink-200 bg-pink-50 text-pink-700"
+                                    : "border-pink-500/20 bg-pink-500/10 text-pink-200"
+                                }`}
+                              >
                                 You
                               </span>
                             ) : null}
                           </p>
-                          <p className="mt-1 text-xs text-gray-500">
+                          <p
+                            className={`mt-1 text-xs ${
+                              isLight ? "text-gray-500" : "text-gray-500"
+                            }`}
+                          >
                             {humanizeLastActive(entry.lastAcceptedAt)}
                           </p>
                         </div>
                       </div>
 
-                      <span className="inline-flex min-w-[56px] items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-gray-300">
+                      <span
+                        className={`inline-flex min-w-[56px] items-center justify-center rounded-full border px-3 py-1 text-[11px] font-medium ${
+                          isLight
+                            ? "border-gray-200 bg-gray-50 text-gray-700"
+                            : "border-white/10 bg-white/[0.03] text-gray-300"
+                        }`}
+                      >
                         #{entry.rank}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3">
-                        <p className="text-[10px] uppercase tracking-[0.15em] text-gray-500">
+                      <div
+                        className={`rounded-xl border px-3 py-3 ${
+                          isLight
+                            ? "border-gray-200 bg-gray-50"
+                            : "border-white/10 bg-black/20"
+                        }`}
+                      >
+                        <p
+                          className={`text-[10px] uppercase tracking-[0.15em] ${
+                            isLight ? "text-gray-500" : "text-gray-500"
+                          }`}
+                        >
                           Points
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-white">
+                        <p
+                          className={`mt-1 text-sm font-semibold ${
+                            isLight ? "text-gray-900" : "text-white"
+                          }`}
+                        >
                           {entry.totalPoints}
                         </p>
                       </div>
 
-                      <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3">
-                        <p className="text-[10px] uppercase tracking-[0.15em] text-gray-500">
+                      <div
+                        className={`rounded-xl border px-3 py-3 ${
+                          isLight
+                            ? "border-gray-200 bg-gray-50"
+                            : "border-white/10 bg-black/20"
+                        }`}
+                      >
+                        <p
+                          className={`text-[10px] uppercase tracking-[0.15em] ${
+                            isLight ? "text-gray-500" : "text-gray-500"
+                          }`}
+                        >
                           Solved
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-white">
+                        <p
+                          className={`mt-1 text-sm font-semibold ${
+                            isLight ? "text-gray-900" : "text-white"
+                          }`}
+                        >
                           {entry.totalSolved}
                         </p>
                       </div>
 
-                      <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3">
-                        <p className="text-[10px] uppercase tracking-[0.15em] text-gray-500">
+                      <div
+                        className={`rounded-xl border px-3 py-3 ${
+                          isLight
+                            ? "border-gray-200 bg-gray-50"
+                            : "border-white/10 bg-black/20"
+                        }`}
+                      >
+                        <p
+                          className={`text-[10px] uppercase tracking-[0.15em] ${
+                            isLight ? "text-gray-500" : "text-gray-500"
+                          }`}
+                        >
                           Streak
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-white">
+                        <p
+                          className={`mt-1 text-sm font-semibold ${
+                            isLight ? "text-gray-900" : "text-white"
+                          }`}
+                        >
                           {entry.currentStreak}
                         </p>
                       </div>
 
-                      <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3">
-                        <p className="text-[10px] uppercase tracking-[0.15em] text-gray-500">
+                      <div
+                        className={`rounded-xl border px-3 py-3 ${
+                          isLight
+                            ? "border-gray-200 bg-gray-50"
+                            : "border-white/10 bg-black/20"
+                        }`}
+                      >
+                        <p
+                          className={`text-[10px] uppercase tracking-[0.15em] ${
+                            isLight ? "text-gray-500" : "text-gray-500"
+                          }`}
+                        >
                           Difficulty
                         </p>
-                        <p className="mt-1 text-sm font-medium text-white">
+                        <p
+                          className={`mt-1 text-sm font-medium ${
+                            isLight ? "text-gray-900" : "text-white"
+                          }`}
+                        >
                           E {entry.easySolved} · M {entry.mediumSolved} · H{" "}
                           {entry.hardSolved}
                         </p>
@@ -693,27 +1008,51 @@ export default function LeaderboardPage() {
             </div>
 
             {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between rounded-[24px] border border-white/10 bg-[#0a0a0a] px-5 py-4 sm:px-6">
+              <div
+                className={`mt-6 flex items-center justify-between rounded-[24px] border px-5 py-4 sm:px-6 ${
+                  isLight
+                    ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.05)]"
+                    : "border-white/10 bg-[#0a0a0a]"
+                }`}
+              >
                 <button
                   onClick={handlePreviousPage}
                   disabled={currentPage === 1}
-                  className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
+                      : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                  }`}
                   type="button"
                 >
                   ← Previous
                 </button>
 
                 <div className="flex items-center justify-center gap-2">
-                  <span className="text-xs font-medium text-gray-400">
-                    Page <span className="text-white">{currentPage}</span> of{" "}
-                    <span className="text-white">{totalPages}</span>
+                  <span
+                    className={`text-xs font-medium ${
+                      isLight ? "text-gray-500" : "text-gray-400"
+                    }`}
+                  >
+                    Page{" "}
+                    <span className={isLight ? "text-gray-900" : "text-white"}>
+                      {currentPage}
+                    </span>{" "}
+                    of{" "}
+                    <span className={isLight ? "text-gray-900" : "text-white"}>
+                      {totalPages}
+                    </span>
                   </span>
                 </div>
 
                 <button
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages}
-                  className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
+                      : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                  }`}
                   type="button"
                 >
                   Next →
@@ -727,10 +1066,18 @@ export default function LeaderboardPage() {
       {selectedUser && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+            className={`absolute inset-0 backdrop-blur-sm ${
+              isLight ? "bg-slate-900/35" : "bg-black/75"
+            }`}
             onClick={closeUserProfile}
           />
-          <div className="relative w-full max-w-md overflow-hidden rounded-[26px] border border-white/10 bg-[#0b0b10] shadow-[0_25px_100px_rgba(0,0,0,0.45)]">
+          <div
+            className={`relative w-full max-w-md overflow-hidden rounded-[26px] border ${
+              isLight
+                ? "border-gray-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+                : "border-white/10 bg-[#0b0b10] shadow-[0_25px_100px_rgba(0,0,0,0.45)]"
+            }`}
+          >
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
 
             <div className="p-5 sm:p-6">
@@ -745,23 +1092,39 @@ export default function LeaderboardPage() {
                       <img
                         src={resolvedImage}
                         alt={selectedUser.username}
-                        className="h-16 w-16 rounded-2xl border border-white/10 object-cover"
+                        className={`h-16 w-16 rounded-2xl border object-cover ${
+                          isLight ? "border-gray-200" : "border-white/10"
+                        }`}
                         onError={() => handleImageError(selectedUser.userId)}
                       />
                     ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-xl font-semibold text-pink-200">
+                      <div
+                        className={`flex h-16 w-16 items-center justify-center rounded-2xl border text-xl font-semibold ${
+                          isLight
+                            ? "border-gray-200 bg-gradient-to-br from-pink-100 to-purple-100 text-pink-600"
+                            : "border-white/10 bg-white/[0.04] text-pink-200"
+                        }`}
+                      >
                         {selectedUser.username.slice(0, 2).toUpperCase()}
                       </div>
                     );
                   })()}
 
                   <div>
-                    <h3 className="text-lg font-semibold text-white">
+                    <h3
+                      className={`text-lg font-semibold ${
+                        isLight ? "text-gray-900" : "text-white"
+                      }`}
+                    >
                       {selectedUser.username}
                     </h3>
                     {selectedUser.country && (
-                      <p className="text-sm text-gray-400">
-                        {getCountryFlag(selectedUser.country)} {selectedUser.country}
+                      <p
+                        className={`text-sm ${
+                          isLight ? "text-gray-500" : "text-gray-400"
+                        }`}
+                      >
+                        {getCountryFlag(selectedUser.country) && getCountryFlag(selectedUser.country)} {selectedUser.country}
                       </p>
                     )}
                   </div>
@@ -769,37 +1132,77 @@ export default function LeaderboardPage() {
 
                 <button
                   onClick={closeUserProfile}
-                  className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-gray-400 transition hover:border-white/20 hover:text-white"
+                  className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                    isLight
+                      ? "border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-900"
+                      : "border-white/10 text-gray-400 hover:border-white/20 hover:text-white"
+                  }`}
                 >
                   ✕
                 </button>
               </div>
 
               {selectedUser.bio ? (
-                <p className="mb-5 text-sm leading-6 text-gray-300">
+                <p
+                  className={`mb-5 text-sm leading-6 ${
+                    isLight ? "text-gray-600" : "text-gray-300"
+                  }`}
+                >
                   {selectedUser.bio}
                 </p>
               ) : (
-                <p className="mb-5 text-sm italic text-gray-500">
+                <p
+                  className={`mb-5 text-sm italic ${
+                    isLight ? "text-gray-500" : "text-gray-500"
+                  }`}
+                >
                   No bio available
                 </p>
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                  <p className="text-[10px] uppercase tracking-[0.15em] text-gray-500">
+                <div
+                  className={`rounded-xl border px-3 py-3 ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50"
+                      : "border-white/10 bg-white/[0.03]"
+                  }`}
+                >
+                  <p
+                    className={`text-[10px] uppercase tracking-[0.15em] ${
+                      isLight ? "text-gray-500" : "text-gray-500"
+                    }`}
+                  >
                     XP
                   </p>
-                  <p className="mt-1 text-base font-semibold text-white">
+                  <p
+                    className={`mt-1 text-base font-semibold ${
+                      isLight ? "text-gray-900" : "text-white"
+                    }`}
+                  >
                     {selectedUser.totalPoints.toLocaleString()}
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                  <p className="text-[10px] uppercase tracking-[0.15em] text-gray-500">
+                <div
+                  className={`rounded-xl border px-3 py-3 ${
+                    isLight
+                      ? "border-gray-200 bg-gray-50"
+                      : "border-white/10 bg-white/[0.03]"
+                  }`}
+                >
+                  <p
+                    className={`text-[10px] uppercase tracking-[0.15em] ${
+                      isLight ? "text-gray-500" : "text-gray-500"
+                    }`}
+                  >
                     Rank
                   </p>
-                  <p className="mt-1 text-base font-semibold text-white">
+                  <p
+                    className={`mt-1 text-base font-semibold ${
+                      isLight ? "text-gray-900" : "text-white"
+                    }`}
+                  >
                     {selectedUser.userRank || "Beginner"}
                   </p>
                 </div>
@@ -811,7 +1214,11 @@ export default function LeaderboardPage() {
                     href={selectedUser.githubUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300 transition hover:bg-white/[0.06] hover:text-white"
+                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition ${
+                      isLight
+                        ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+                        : "border-white/10 bg-white/[0.03] text-gray-300 hover:bg-white/[0.06] hover:text-white"
+                    }`}
                   >
                     <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
@@ -825,7 +1232,11 @@ export default function LeaderboardPage() {
                     href={selectedUser.linkedinUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300 transition hover:bg-white/[0.06] hover:text-white"
+                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition ${
+                      isLight
+                        ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+                        : "border-white/10 bg-white/[0.03] text-gray-300 hover:bg-white/[0.06] hover:text-white"
+                    }`}
                   >
                     <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451c.979 0 1.771-.773 1.771-1.729V1.729C24 .774 23.204 0 22.225 0zM7.119 20.452H3.555V9h3.564v11.452zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zM20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286z" />
@@ -836,9 +1247,24 @@ export default function LeaderboardPage() {
               </div>
 
               {selectedUser.publicProfile === false && !isCurrentUser(selectedUser) && (
-                <p className="mt-4 text-center text-[10px] text-gray-600">
+                <p
+                  className={`mt-4 text-center text-[10px] ${
+                    isLight ? "text-gray-500" : "text-gray-600"
+                  }`}
+                >
                   This user has limited their profile visibility
                 </p>
+              )}
+
+              {/* Report button - only show for other users, not yourself */}
+              {currentUsername && selectedUser.username.toLowerCase() !== currentUsername.toLowerCase() && (
+                <div className="mt-6 pt-4 border-t">
+                  <ReportButton 
+                    type="user" 
+                    targetId={parseInt(selectedUser.userId) || 0} 
+                    targetLabel={selectedUser.username}
+                  />
+                </div>
               )}
             </div>
           </div>
