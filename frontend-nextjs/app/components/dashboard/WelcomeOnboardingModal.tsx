@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
@@ -9,15 +10,44 @@ export default function WelcomeOnboardingModal() {
   const router = useRouter();
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const hasSeenOnboarding = localStorage.getItem("codemaster_seen_onboarding");
     
     if (!hasSeenOnboarding) {
       setIsOpen(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!mounted || !isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen, mounted]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        handleClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
 
   const handleClose = () => {
     localStorage.setItem("codemaster_seen_onboarding", "true");
@@ -30,27 +60,37 @@ export default function WelcomeOnboardingModal() {
     router.push(route);
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-<motion.div
+        <div className="fixed inset-0 z-[300]">
+          <motion.button
+            type="button"
+            aria-label="Close onboarding"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center"
-          >
-            <div 
-              className={`absolute inset-0 ${isLight ? "bg-gray-900/50" : "bg-black/70"} backdrop-blur-sm`}
-              onClick={handleClose}
-            />
+            onClick={handleClose}
+            className={`absolute inset-0 h-screen w-screen ${
+              isLight
+                ? "bg-slate-900/50 backdrop-blur-md"
+                : "bg-black/80 backdrop-blur-md"
+            }`}
+          />
 
+          <div className="absolute inset-0 flex min-h-screen items-center justify-center overflow-y-auto p-4">
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Welcome to CodeMaster"
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className={`relative z-10 mx-4 w-full max-w-md overflow-hidden rounded-2xl border shadow-2xl ${
+              onClick={(e) => e.stopPropagation()}
+              className={`relative mx-auto w-full max-w-md overflow-hidden rounded-2xl border shadow-2xl ${
                 isLight
                   ? "border-gray-200 bg-white shadow-xl"
                   : "border-white/10 bg-[#0a0a0c]"
@@ -106,8 +146,10 @@ export default function WelcomeOnboardingModal() {
                 </div>
               </div>
             </motion.div>
-          </motion.div>
+          </div>
+        </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

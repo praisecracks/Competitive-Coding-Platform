@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStoredToken } from "@/lib/auth";
@@ -39,8 +40,40 @@ export default function DashboardChallengesPage() {
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(
     null
   );
+  const [mounted, setMounted] = useState(false);
 
   const [visibleCount, setVisibleCount] = useState(INITIAL_SECTION_LIMIT);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!showModal) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showModal]);
+
+  useEffect(() => {
+    if (!showModal) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeChallengeModal();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [showModal]);
 
   const truncateText = (text: string, maxLength: number) => {
     if (!text) return "";
@@ -461,23 +494,32 @@ export default function DashboardChallengesPage() {
     );
   };
 
-  return (
-    <div className={`space-y-6 ${isLight ? "text-gray-900" : "text-white"}`}>
-      {showModal && selectedChallenge && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-          <div
-            className={`absolute inset-0 ${
-              isLight ? "bg-slate-900/35" : "bg-black/75"
-            } backdrop-blur-sm`}
-            onClick={closeChallengeModal}
-          />
+  const challengeModal =
+    mounted &&
+    showModal &&
+    selectedChallenge &&
+    createPortal(
+      <div className="fixed inset-0 z-[300]">
+        <button
+          type="button"
+          aria-label="Close challenge preview modal"
+          className={`absolute inset-0 h-screen w-screen ${
+            isLight ? "bg-slate-900/30" : "bg-black/50"
+          } backdrop-blur-md`}
+          onClick={closeChallengeModal}
+        />
 
+        <div className="absolute inset-0 flex min-h-screen items-center justify-center overflow-y-auto p-4">
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Challenge preview"
             className={`relative w-full max-w-md overflow-hidden rounded-[26px] border ${
               isLight
                 ? "border-gray-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
                 : "border-white/10 bg-[#0b0b10] shadow-[0_25px_100px_rgba(0,0,0,0.45)]"
             }`}
+            onClick={(e) => e.stopPropagation()}
           >
             <div
               className={`absolute inset-x-0 top-0 h-px ${
@@ -607,7 +649,13 @@ export default function DashboardChallengesPage() {
             </div>
           </div>
         </div>
-      )}
+      </div>,
+      document.body
+    );
+
+  return (
+    <div className={`space-y-6 ${isLight ? "text-gray-900" : "text-white"}`}>
+      {challengeModal}
 
       <section
         className={`relative overflow-hidden rounded-[28px] border px-5 py-5 sm:px-6 sm:py-6 ${
@@ -656,7 +704,7 @@ export default function DashboardChallengesPage() {
                 className={`mt-3 max-w-xl text-sm leading-6 ${
                   isLight ? "text-gray-600" : "text-gray-400"
                 }`}
-                >
+              >
                 Continue opened challenges and move into the next set of learning
                 recommendations with a cleaner, more focused workflow.
               </p>
@@ -666,22 +714,22 @@ export default function DashboardChallengesPage() {
               <div
                 className={`min-w-[96px] rounded-2xl border px-3.5 py-3 backdrop-blur-sm ${
                   isLight
-                  ? "border-gray-200 bg-gray-50"
-                  : "border-white/10 bg-white/[0.03]"
+                    ? "border-gray-200 bg-gray-50"
+                    : "border-white/10 bg-white/[0.03]"
                 }`}
-                >
+              >
                 <p
                   className={`text-[10px] uppercase tracking-[0.18em] ${
                     isLight ? "text-gray-500" : "text-gray-500"
                   }`}
-                  >
+                >
                   Total
                 </p>
                 <h3
                   className={`mt-2 text-xl font-semibold ${
                     isLight ? "text-gray-900" : "text-white"
                   }`}
-                  >
+                >
                   {learningStats.total}
                 </h3>
               </div>
@@ -689,22 +737,22 @@ export default function DashboardChallengesPage() {
               <div
                 className={`min-w-[96px] rounded-2xl border px-3.5 py-3 backdrop-blur-sm ${
                   isLight
-                  ? "border-purple-200 bg-purple-50"
-                  : "border-purple-500/20 bg-purple-500/[0.07]"
+                    ? "border-purple-200 bg-purple-50"
+                    : "border-purple-500/20 bg-purple-500/[0.07]"
                 }`}
-                >
+              >
                 <p
                   className={`text-[10px] uppercase tracking-[0.18em] ${
                     isLight ? "text-purple-600/80" : "text-purple-200/80"
                   }`}
-                  >
+                >
                   Opened
                 </p>
                 <h3
                   className={`mt-2 text-xl font-semibold ${
                     isLight ? "text-gray-900" : "text-white"
                   }`}
-                  >
+                >
                   {learningStats.opened}
                 </h3>
               </div>
@@ -712,22 +760,22 @@ export default function DashboardChallengesPage() {
               <div
                 className={`min-w-[96px] rounded-2xl border px-3.5 py-3 backdrop-blur-sm ${
                   isLight
-                  ? "border-pink-200 bg-pink-50"
-                  : "border-pink-500/20 bg-pink-500/[0.07]"
+                    ? "border-pink-200 bg-pink-50"
+                    : "border-pink-500/20 bg-pink-500/[0.07]"
                 }`}
-                >
+              >
                 <p
                   className={`text-[10px] uppercase tracking-[0.18em] ${
                     isLight ? "text-pink-600/80" : "text-pink-200/80"
                   }`}
-                  >
+                >
                   Next
                 </p>
                 <h3
                   className={`mt-2 text-xl font-semibold ${
                     isLight ? "text-gray-900" : "text-white"
                   }`}
-                  >
+                >
                   {learningStats.recommended}
                 </h3>
               </div>
@@ -739,18 +787,18 @@ export default function DashboardChallengesPage() {
       <section
         className={`rounded-[26px] border p-3 sm:p-4 ${
           isLight
-          ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
-          : "border-white/10 bg-[#09090c]"
+            ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+            : "border-white/10 bg-[#09090c]"
         }`}
-        >
+      >
         <div className="grid gap-3 lg:grid-cols-[1.35fr_0.28fr_0.28fr_0.28fr]">
           <div
             className={`flex items-center rounded-2xl border px-4 py-3 transition duration-200 ${
               isLight
-              ? "border-gray-200 bg-white hover:border-gray-300 focus-within:border-pink-300"
-              : "border-white/10 bg-[#0c0c10] hover:border-white/15 focus-within:border-pink-500/25"
+                ? "border-gray-200 bg-white hover:border-gray-300 focus-within:border-pink-300"
+                : "border-white/10 bg-[#0c0c10] hover:border-white/15 focus-within:border-pink-500/25"
             }`}
-            >
+          >
             <span className={`mr-3 text-sm ${isLight ? "text-pink-600" : "text-pink-300"}`}>
               Search
             </span>
@@ -761,10 +809,10 @@ export default function DashboardChallengesPage() {
               placeholder="Title, category, description, or tags"
               className={`w-full bg-transparent text-sm outline-none ${
                 isLight
-                ? "text-gray-900 placeholder:text-gray-400"
-                : "text-white placeholder:text-gray-600"
+                  ? "text-gray-900 placeholder:text-gray-400"
+                  : "text-white placeholder:text-gray-600"
               }`}
-              />
+            />
           </div>
 
           <CustomSelect
@@ -772,31 +820,31 @@ export default function DashboardChallengesPage() {
             onChange={setActiveStatus}
             options={statusOptions}
             allLabel="All status"
-            />
+          />
 
           <CustomSelect
             value={activeDifficulty}
             onChange={setActiveDifficulty}
             options={["All", ...difficultyOrder]}
             allLabel="All difficulties"
-            />
+          />
 
           <CustomSelect
             value={activeCategory}
             onChange={setActiveCategory}
             options={categories}
             allLabel="All categories"
-            />
+          />
         </div>
       </section>
 
       {loading ? (
         <div
-        className={`rounded-[24px] border py-20 text-center ${
-          isLight
-          ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
-          : "border-white/10 bg-[#09090c]"
-        }`}
+          className={`rounded-[24px] border py-20 text-center ${
+            isLight
+              ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+              : "border-white/10 bg-[#09090c]"
+          }`}
         >
           <p className={`text-sm ${isLight ? "text-gray-500" : "text-gray-500"}`}>
             Loading your learning challenges...
@@ -804,24 +852,24 @@ export default function DashboardChallengesPage() {
         </div>
       ) : errorMessage ? (
         <div
-        className={`rounded-[24px] border px-6 py-12 text-center ${
-          isLight
-          ? "border-pink-200 bg-pink-50"
-          : "border-pink-500/15 bg-pink-500/[0.04]"
-        }`}
+          className={`rounded-[24px] border px-6 py-12 text-center ${
+            isLight
+              ? "border-pink-200 bg-pink-50"
+              : "border-pink-500/15 bg-pink-500/[0.04]"
+          }`}
         >
           <p
             className={`text-sm font-medium ${
               isLight ? "text-pink-700" : "text-pink-200"
             }`}
-            >
+          >
             Unable to load
           </p>
           <p
             className={`mx-auto mt-2 max-w-xl text-sm leading-6 ${
               isLight ? "text-gray-600" : "text-gray-300"
             }`}
-            >
+          >
             {errorMessage}
           </p>
         </div>
