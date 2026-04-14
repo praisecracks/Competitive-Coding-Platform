@@ -78,14 +78,14 @@ export default function WelcomeOnboardingModal() {
 
                 <div className="mt-6 flex flex-col gap-3">
                   <button
-                    onClick={() => handleAction("/dashboard/learn")}
+                    onClick={() => handleAction("/dashboard/learning")}
                     className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 px-4 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-white transition-all hover:shadow-lg hover:shadow-pink-500/25"
                   >
                     Start Learning
                   </button>
 
                   <button
-                    onClick={() => handleAction("/challenges")}
+                    onClick={() => handleAction("/dashboard/challenges")}
                     className={`w-full rounded-xl border px-4 py-3 text-sm font-medium uppercase tracking-[0.1em] transition-all ${
                       isLight
                         ? "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100"
