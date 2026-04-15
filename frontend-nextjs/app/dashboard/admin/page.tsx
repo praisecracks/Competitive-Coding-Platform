@@ -33,6 +33,7 @@ interface AdminStats {
     role: string;
     created_at: string;
   }[];
+  activeUsers: number;
 }
 
 type ActivityLogItem = {
@@ -95,6 +96,8 @@ export default function AdminOverview() {
       (user) => user.role === "super_admin" || user.role === "sub_admin"
     ).length;
   }, [stats]);
+
+  const activeUsers = stats?.activeUsers ?? 0;
 
   const recentActivityLogs: ActivityLogItem[] = useMemo(() => {
     if (!stats?.recentSignups) return [];
@@ -363,10 +366,10 @@ export default function AdminOverview() {
             isLight={isLight}
           />
           <StatCard
-            label="Active Staff"
-            value={totalAdmins}
+            label="Active Users"
+            value={activeUsers}
             trend="Active now"
-            icon={<ShieldCheck className="h-5 w-5" />}
+            icon={<Users className="h-5 w-5" />}
             color="sky"
             delay={0.7}
             isLight={isLight}

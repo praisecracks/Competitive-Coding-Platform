@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "./components/landingPage/layout/Header";
 import Home from "./components/landingPage/Home";
+import Features from "./components/landingPage/features";
+import LearningPreview from "./components/landingPage/LearningPreview";
 import ChallengesPreview from "./components/landingPage/ChallengesPreview";
 import Footer from "./components/Footer";
-import Features from "./components/landingPage/features";
 import Pricing from "./components/landingPage/pricing";
 import PricingFAQ from "./components/landingPage/PricingFAQ";
 import { isAuthenticated } from "@/lib/auth";
@@ -41,6 +42,7 @@ export default function Page() {
       <main className="min-h-screen overflow-hidden bg-[#020202] pt-20 text-white">
         <Home />
         <Features />
+        <LearningPreview />
         <ChallengesPreview />
         <Pricing />
         <PricingFAQ />

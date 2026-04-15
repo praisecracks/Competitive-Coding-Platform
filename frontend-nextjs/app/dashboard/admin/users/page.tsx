@@ -15,6 +15,7 @@ import {
   Calendar,
   Mail,
   ArrowUpDown,
+  Clock,
 } from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
 
@@ -25,6 +26,7 @@ interface User {
   role: string;
   rank: string;
   createdAt: string;
+  lastActive?: string;
   profile_pic?: string;
   country?: string;
 }
@@ -614,6 +616,17 @@ export default function ManageUsers() {
                   </div>
                 </th>
 
+                <th className="px-4 py-4">
+                  <div
+                    className={`flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.15em] ${
+                      isLight ? "text-gray-500" : "text-gray-500"
+                    }`}
+                  >
+                    <Clock className="h-3 w-3" />
+                    Last Active
+                  </div>
+                </th>
+
                 <th className="px-4 py-4 text-right">
                   <div
                     className={`inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.15em] ${
@@ -704,6 +717,16 @@ export default function ManageUsers() {
                       }`}
                     >
                       {formatDate(user.createdAt)}
+                    </div>
+                  </td>
+
+                  <td className="px-4 py-4">
+                    <div
+                      className={`text-xs font-medium ${
+                        isLight ? "text-gray-600" : "text-gray-400"
+                      }`}
+                    >
+                      {user.lastActive ? formatLastActive(user.lastActive) : "Never"}
                     </div>
                   </td>
 
@@ -933,6 +956,10 @@ function normalizeUser(raw: any): User {
       raw.createdon ||
       raw.joinedAt ||
       new Date().toISOString(),
+    lastActive:
+      raw.lastActive ||
+      raw.last_active ||
+      null,
     profile_pic: raw.profile_pic || raw.profilePicture || "",
     country: raw.country || "",
   };
@@ -952,6 +979,27 @@ function formatDate(value: string) {
   return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatLastActive(value: string) {
+  if (!value) return "Never";
+  
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Never";
+
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  
+  if (minutes < 5) return "Online";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}h ago`;
+  
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
     year: "numeric",
   });
 }

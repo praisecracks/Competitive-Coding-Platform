@@ -20,6 +20,7 @@ type AdminStatsResponse struct {
 	TotalChallenges  int     `json:"totalChallenges"`
 	TotalSubmissions int     `json:"totalSubmissions"`
 	RecentSignups    []gin.H `json:"recentSignups"`
+	ActiveUsers      int     `json:"activeUsers"`
 }
 
 // GetAdminStats returns stats for the admin dashboard
@@ -42,6 +43,9 @@ func GetAdminStats(c *gin.Context) {
 		_ = cursor.All(ctx, &recentUsers)
 	}
 
+	activeThreshold := time.Now().UTC().Add(-15 * time.Minute)
+	activeUsersCount, _ := usersCollection.CountDocuments(ctx, bson.M{"last_active": bson.M{"$gte": activeThreshold}})
+
 	recentSignups := []gin.H{}
 	for _, u := range recentUsers {
 		recentSignups = append(recentSignups, gin.H{
@@ -57,6 +61,7 @@ func GetAdminStats(c *gin.Context) {
 		TotalChallenges:  int(totalChallenges),
 		TotalSubmissions: int(totalSubmissions),
 		RecentSignups:    recentSignups,
+		ActiveUsers:      int(activeUsersCount),
 	})
 }
 
@@ -76,23 +81,25 @@ func GetUsers(c *gin.Context) {
 	_ = cursor.All(ctx, &users)
 
 	type UserRegistryResponse struct {
-		ID        string    `json:"id"`
-		Email     string    `json:"email"`
-		Username  string    `json:"username"`
-		Role      string    `json:"role"`
-		Rank      string    `json:"rank"`
-		CreatedAt time.Time `json:"createdAt"`
+		ID         string    `json:"id"`
+		Email      string    `json:"email"`
+		Username   string    `json:"username"`
+		Role       string    `json:"role"`
+		Rank       string    `json:"rank"`
+		CreatedAt  time.Time `json:"createdAt"`
+		LastActive time.Time `json:"lastActive"`
 	}
 
 	var response []UserRegistryResponse
 	for _, user := range users {
 		response = append(response, UserRegistryResponse{
-			ID:        user.ID.Hex(),
-			Email:     user.Email,
-			Username:  user.Username,
-			Role:      user.Role,
-			Rank:      user.Rank,
-			CreatedAt: user.CreatedAt,
+			ID:         user.ID.Hex(),
+			Email:      user.Email,
+			Username:   user.Username,
+			Role:       user.Role,
+			Rank:       user.Rank,
+			CreatedAt:  user.CreatedAt,
+			LastActive: user.LastActive,
 		})
 	}
 

@@ -8,6 +8,7 @@ import logo from "../../../../assets/CodeMaster_Logo.png";
 
 const navLinks = [
   { name: "Features", href: "#features" },
+  { name: "Learning", href: "#learning" },
   { name: "Challenges", href: "#challenges" },
   { name: "Pricing", href: "#pricing" },
   { name: "FAQ", href: "#faq" },

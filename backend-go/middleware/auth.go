@@ -1,14 +1,19 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
+	"codingplatform/database"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var jwtSecret []byte
@@ -102,6 +107,13 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("username", username)
 		c.Set("email", email)
 		c.Set("role", role)
+
+		usersCollection := database.GetCollection("users")
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		if objID, err := primitive.ObjectIDFromHex(userID); err == nil {
+			usersCollection.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"last_active": time.Now().UTC()}})
+		}
 
 		// Check if user is suspended
 		// This requires a database check, but we'll only do it if absolutely necessary

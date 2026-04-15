@@ -220,6 +220,8 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	usersCollection.UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{"$set": bson.M{"last_active": time.Now().UTC()}})
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":     "Login successful",
 		"token":       tokenString,
@@ -565,6 +567,7 @@ func GitHubCallback(c *gin.Context) {
 			Role:       "user",
 			CreatedAt:  now,
 			UpdatedAt:  now,
+			LastActive: now,
 		}
 
 		result, insertErr := usersCollection.InsertOne(ctx, user)
@@ -579,7 +582,8 @@ func GitHubCallback(c *gin.Context) {
 		}
 	} else {
 		updateFields := bson.M{
-			"updated_at": time.Now().UTC(),
+			"updated_at":  time.Now().UTC(),
+			"last_active": time.Now().UTC(),
 		}
 
 		if user.ProfilePic == "" && githubProfilePic != "" {
