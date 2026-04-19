@@ -108,3 +108,36 @@ func MarkNotificationRead(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Notification marked as read"})
 }
+
+// GetSystemNotifications returns system notifications for admin users
+func GetSystemNotifications(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	notificationsCollection := database.GetCollection("notifications")
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "created_at", Value: -1}}).
+		SetLimit(20)
+
+	// Get notifications with user_id = "admin" (system notifications)
+	cursor, err := notificationsCollection.Find(ctx, bson.M{"user_id": "admin"}, opts)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "FETCH_FAILED"})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	notifications := make([]models.Notification, 0)
+	if err := cursor.All(ctx, &notifications); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "PARSE_FAILED"})
+		return
+	}
+
+	// Mark all fetched system notifications as read
+	for _, n := range notifications {
+		notificationsCollection.UpdateOne(ctx, bson.M{"_id": n.ID}, bson.M{"$set": bson.M{"read": true}})
+	}
+
+	c.JSON(http.StatusOK, notifications)
+}

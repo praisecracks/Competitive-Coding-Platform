@@ -49,6 +49,228 @@ export interface LearningPath {
   steps: LearningStep[];
 }
 
+export interface Subtopic {
+  id: string;
+  title: string;
+  duration?: string;
+  content: {
+    explanation: string[];
+    example?: {
+      title: string;
+      code: string;
+      explanation: string;
+    };
+    practice?: string;
+    challenge?: string;
+  };
+  type?: "read" | "interactive";
+}
+
+export interface TrackTopic {
+  id: string;
+  title: string;
+  description: string;
+  duration: string;
+  subtopics: Subtopic[];
+}
+
+export interface LearningTrack {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  type: "master_track" | "additional";
+  icon: string;
+  color: string;
+  coverImage?: string;
+  totalHours: number;
+  language: "javascript" | "python" | "go" | "multi";
+  category: "JavaScript" | "Python" | "Go" | "Algorithms" | "Data Structures" | "SQL" | "System Design";
+  topics: TrackTopic[];
+}
+
+export { LEARNING_TRACKS, ADDITIONAL_TRACKS } from "./data/index";
+
+import { LEARNING_TRACKS, ADDITIONAL_TRACKS } from "./data/index";
+
+export interface PathGroup {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description: string;
+  type?: "master_track" | "additional";
+  order: string[];
+  icon: string;
+  color: string;
+}
+
+export const LEARNING_PATH_GROUPS: PathGroup[] = [];
+
+export function getPathGroupForCourse(courseId: string): PathGroup | null {
+  return null;
+}
+
+export function getNextCourseInPath(
+  currentCourseId: string,
+  completedCourseIds: string[]
+): LearningPath | null {
+  const group = LEARNING_PATH_GROUPS.find((group) => group.order.includes(currentCourseId));
+  if (!group) return null;
+
+  const currentIndex = group.order.indexOf(currentCourseId);
+  for (let i = currentIndex + 1; i < group.order.length; i++) {
+    const candidate = LEARNING_PATHS.find((path) => path.id === group.order[i]);
+    if (candidate && !completedCourseIds.includes(candidate.id)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+export function getPreviousCourseInPath(currentCourseId: string): LearningPath | null {
+  const group = LEARNING_PATH_GROUPS.find((group) => group.order.includes(currentCourseId));
+  if (!group) return null;
+
+  const currentIndex = group.order.indexOf(currentCourseId);
+  if (currentIndex > 0) {
+    return LEARNING_PATHS.find((path) => path.id === group.order[currentIndex - 1]) || null;
+  }
+
+  return null;
+}
+
+export function getTrackById(id: string): LearningTrack | undefined {
+  return LEARNING_TRACKS.find((t) => t.id === id) || ADDITIONAL_TRACKS.find((t) => t.id === id);
+}
+
+export function getPathProgress(
+  group: PathGroup,
+  userProgress: { [pathId: string]: { completedStepIds: string[] } }
+): { completed: number; total: number; currentIndex: number } {
+  const total = group.order.reduce((sum, pathId) => {
+    const path = LEARNING_PATHS.find((p) => p.id === pathId);
+    return sum + (path?.steps.length || 0);
+  }, 0);
+
+  const completed = group.order.reduce((sum, pathId) => {
+    const path = LEARNING_PATHS.find((p) => p.id === pathId);
+    const completedSteps = userProgress[pathId]?.completedStepIds?.length || 0;
+    return sum + Math.min(completedSteps, path?.steps.length || 0);
+  }, 0);
+
+  let currentIndex = group.order.length;
+  for (let index = 0; index < group.order.length; index++) {
+    const path = LEARNING_PATHS.find((p) => p.id === group.order[index]);
+    const completedSteps = userProgress[group.order[index]]?.completedStepIds?.length || 0;
+    if (!path || completedSteps < (path.steps.length || 0)) {
+      currentIndex = index;
+      break;
+    }
+  }
+
+  return {
+    completed,
+    total,
+    currentIndex,
+  };
+}
+
+export function getTopicById(trackId: string, topicId: string) {
+  const track = getTrackById(trackId);
+  return track?.topics.find(t => t.id === topicId);
+}
+
+export const COURSE_TO_TRACK_MAPPING: Record<string, { trackId: string; topicIds: string[] }> = {
+  "js-functions-basics": { trackId: "master-javascript", topicIds: ["js-functions"] },
+  "python-while-loops": { trackId: "master-python", topicIds: ["py-loops"] },
+  "go-basics-structs": { trackId: "master-go", topicIds: ["go-structs"] },
+  "binary-search-mastery": { trackId: "algorithms", topicIds: ["algo-binary-search"] },
+  "sliding-window-tech": { trackId: "algorithms", topicIds: ["algo-sliding-window"] },
+  "two-pointers-pattern": { trackId: "algorithms", topicIds: ["algo-two-pointers"] },
+  "recursion-intro": { trackId: "algorithms", topicIds: ["algo-recursion"] },
+  "dynamic-programming-intro": { trackId: "algorithms", topicIds: ["algo-dp"] },
+  "hashing-basics": { trackId: "data-structures", topicIds: ["ds-hashing"] },
+  "sql-basics": { trackId: "sql-databases", topicIds: ["sql-fundamentals"] },
+};
+
+export function getCourseProgressFromTrack(
+  courseId: string,
+  trackProgressMap: Record<string, { completedTopicIds?: string[]; completedLessonIds?: string[]; lessonProgress?: Record<string, { completed: boolean }> }>,
+  courseProgress?: { completedStepIds: string[] }
+): { completedLessons: number; totalLessons: number; progressPercentage: number } {
+  if (courseProgress?.completedStepIds?.length) {
+    const path = LEARNING_PATHS.find((p) => p.id === courseId);
+    const totalSteps = path?.steps.length || 0;
+    const completedSteps = Math.min(courseProgress.completedStepIds.length, totalSteps);
+
+    return {
+      completedLessons: completedSteps,
+      totalLessons: totalSteps,
+      progressPercentage: totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0,
+    };
+  }
+
+  const mapping = COURSE_TO_TRACK_MAPPING[courseId];
+  if (mapping?.trackId) {
+    const trackProgress = trackProgressMap[mapping.trackId];
+    const totalLessons = mapping.topicIds?.length || 0;
+
+    if (!trackProgress || totalLessons === 0) {
+      return { completedLessons: 0, totalLessons, progressPercentage: 0 };
+    }
+
+    let completedLessons = 0;
+    if (mapping.topicIds?.length) {
+      completedLessons = mapping.topicIds.filter((topicId) =>
+        trackProgress.completedTopicIds?.includes(topicId)
+      ).length;
+
+      if (completedLessons === 0 && Array.isArray(trackProgress.completedLessonIds)) {
+        completedLessons = mapping.topicIds.filter((topicId) =>
+          trackProgress.completedLessonIds?.includes(topicId)
+        ).length;
+      }
+
+      if (completedLessons === 0 && trackProgress.lessonProgress) {
+        completedLessons = Object.entries(trackProgress.lessonProgress).filter(
+          ([lessonId, lessonState]) =>
+            lessonState?.completed && mapping.topicIds.includes(lessonId)
+        ).length;
+      }
+    }
+
+    if (completedLessons === 0) {
+      completedLessons =
+        trackProgress.completedLessonIds?.length ||
+        Object.values(trackProgress.lessonProgress || {}).filter((lesson) => lesson?.completed).length ||
+        trackProgress.completedTopicIds?.length ||
+        0;
+    }
+
+    completedLessons = Math.min(completedLessons, totalLessons);
+
+    return {
+      completedLessons,
+      totalLessons,
+      progressPercentage:
+        totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0,
+    };
+  }
+
+  for (const [trackId, progress] of Object.entries(trackProgressMap)) {
+    const track = getTrackById(trackId);
+    if (!track) continue;
+
+    if (track.topics.some((topic) => topic.id === courseId)) {
+      const completed = progress.completedTopicIds?.includes(courseId) ? 1 : 0;
+      return { completedLessons: completed, totalLessons: 1, progressPercentage: completed * 100 };
+    }
+  }
+
+  return { completedLessons: 0, totalLessons: 0, progressPercentage: 0 };
+}
+
 export const LEARNING_PATHS: LearningPath[] = [
   // JAVASCRIPT
  {
@@ -1092,8 +1314,5 @@ export const LEARNING_PATHS: LearningPath[] = [
       }
     }
   ]
-}
-    
-  
-
+ }
 ]

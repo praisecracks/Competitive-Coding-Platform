@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -92,6 +93,16 @@ func Register(c *gin.Context) {
 
 	if input.Username == "" || input.Email == "" || strings.TrimSpace(input.Password) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Please fill in all required fields"})
+		return
+	}
+
+	if len(input.Username) < 3 || len(input.Username) > 20 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Username must be between 3 and 20 characters"})
+		return
+	}
+
+	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9_]+$`, input.Username); !matched {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Username can only contain letters, numbers, and underscores"})
 		return
 	}
 

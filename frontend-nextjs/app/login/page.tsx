@@ -148,6 +148,25 @@ function LoginForm() {
         return;
       }
 
+      // Check if logging in as different user - only clear progress if truly different
+      const previousUser = localStorage.getItem("user");
+      const isDifferentUser = previousUser && data.username && (() => {
+        try {
+          const prev = JSON.parse(previousUser);
+          return prev.username && prev.username !== data.username;
+        } catch { return false; }
+      })();
+
+      if (isDifferentUser) {
+        console.log("Different user detected, clearing progress...");
+        localStorage.removeItem("codemaster_learning_progress_v1");
+        localStorage.removeItem("codemaster_learning_track_progress");
+        localStorage.removeItem("codemaster_learning_streak_v1");
+        localStorage.removeItem("codemaster_user_progress");
+        localStorage.removeItem("dismissed_notification_ids");
+        // Keep onboarding shown for different users too
+      }
+
       persistUserSession(data);
       setStatus("SUCCESS");
 

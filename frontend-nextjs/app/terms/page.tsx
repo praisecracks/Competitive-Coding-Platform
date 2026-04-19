@@ -3,12 +3,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Shield, AlertTriangle, Code, Copyright, Ban } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 import Footer from "../components/Footer";
 import logo from "../../assets/CodeMaster_Logo.png";
 
 export default function TermsPage() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+
   return (
-    <div className="min-h-screen bg-[#08080a] text-white">
+    <div className={`min-h-screen ${isLight ? "bg-gray-50 text-gray-900" : "bg-[#08080a] text-white"}`}>
       {/* Header with Logo */}
       <header className="border-b border-white/5">
         <div className="mx-auto max-w-4xl px-6 py-4 flex items-center justify-between">

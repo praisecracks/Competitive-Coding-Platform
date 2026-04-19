@@ -76,10 +76,70 @@ export default function AnalyticsPage() {
 
       const result = await res.json();
 
+      // Fetch learning progress and streak from localStorage
+      const LEARNING_KEY = "codemaster_learning_track_progress";
+      const stored = localStorage.getItem(LEARNING_KEY);
+      let completedLessons: string[] = [];
+      let learningStreak = 0;
+      try {
+        if (stored) {
+          const progress = JSON.parse(stored);
+          completedLessons = progress.completedLessonIds || [];
+        }
+      } catch {}
+
+      // Also get learning streak from its own key
+      try {
+        const streakData = localStorage.getItem("codemaster_learning_streak_v1");
+        if (streakData) {
+          const streak = JSON.parse(streakData);
+          learningStreak = streak.currentStreak || 0;
+        }
+      } catch {}
+
+      // Calculate combined weekly progress (challenges + learning)
+      const weeklyProgress = (result.weeklyProgress || []).map((d: any) => ({ ...d }));
+      const now = new Date();
+      
+      // Add learning activity to weekly progress
+      for (let i = 6; i >= 0; i--) {
+        const day = new Date(now);
+        day.setDate(day.getDate() - i);
+        const dayKey = day.toISOString().split('T')[0].slice(0, 10);
+        
+        // Count completed lessons from learning data
+        const learningCount = completedLessons.filter((lesson: string) => lesson.includes(dayKey)).length;
+        
+        // Add learning count to challenge count
+        const dayName = day.toLocaleDateString('en-US', { weekday: 'short' });
+        const existing = weeklyProgress.find((d: any) => d.day === dayName);
+        if (existing && learningCount > 0) {
+          existing.value = (existing.value || 0) + learningCount;
+        }
+      }
+
+      // Calculate combined streak (challenges + learning)
+      const activityStreak = weeklyProgress.reduce((maxStreak: number, day: any, index: number) => {
+        if (day.value > 0) {
+          let streak = 1;
+          for (let j = index - 1; j >= 0; j--) {
+            if (weeklyProgress[j].value > 0) streak++;
+            else break;
+          }
+          return Math.max(maxStreak, streak);
+        }
+        return maxStreak;
+      }, 0);
+
+      // Use the higher of challenge streak or learning streak
+      const combinedStreak = Math.max(activityStreak, learningStreak);
+
       const processedData: AnalyticsData = {
         ...result,
+        weeklyProgress,
         stats: {
           ...result.stats,
+          currentStreak: Math.max(combinedStreak, result.stats.currentStreak || 0),
           acceptanceRate:
             typeof result.stats.acceptanceRate === "string"
               ? parseFloat(result.stats.acceptanceRate)
@@ -122,26 +182,76 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div
-        className={`flex min-h-screen items-center justify-center ${
-          isLight ? "bg-[#f8fafc]" : "bg-[#050507]"
-        }`}
-      >
-        <div className="flex flex-col items-center gap-4">
-          <div
-            className={`h-8 w-8 animate-spin rounded-full border-4 ${
-              isLight
-                ? "border-pink-200 border-t-pink-500"
-                : "border-pink-500/20 border-t-pink-500"
-            }`}
-          />
-          <p
-            className={`text-xs uppercase tracking-widest ${
-              isLight ? "text-gray-500" : "text-gray-500"
-            }`}
-          >
-            Loading analytics...
-          </p>
+      <div className={`min-h-screen pb-20 ${isLight ? "bg-[#f8fafc]" : "bg-[#050507]"}`}>
+        <div className="mx-auto max-w-7xl space-y-8 px-4 pt-8">
+          {/* Header Skeleton */}
+          <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-3">
+              <div className="h-6 w-28 animate-pulse rounded-full bg-gray-200" />
+              <div className="space-y-2">
+                <div className="h-8 w-56 animate-pulse rounded-lg bg-gray-200" />
+                <div className="h-4 w-80 animate-pulse rounded-lg bg-gray-200" />
+              </div>
+            </div>
+            <div className="h-10 w-28 animate-pulse rounded-lg bg-gray-200" />
+          </header>
+
+          {/* Stats Grid Skeleton */}
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className={`h-28 rounded-xl border p-4 ${isLight ? "border-gray-200 bg-white" : "border-white/5 bg-white/[0.02]"}`}>
+                <div className="mb-3 h-9 w-9 animate-pulse rounded-lg bg-gray-200" />
+                <div className="space-y-2">
+                  <div className="h-3 w-16 animate-pulse rounded bg-gray-200" />
+                  <div className="h-6 w-12 animate-pulse rounded bg-gray-200" />
+                </div>
+              </div>
+            ))}
+          </section>
+
+          {/* Charts Skeleton */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Weekly Progress Skeleton */}
+            <div className={`rounded-xl border p-5 ${isLight ? "border-gray-200 bg-white" : "border-white/5 bg-white/[0.02]"}`}>
+              <div className="mb-4 h-5 w-32 animate-pulse rounded bg-gray-200" />
+              <div className="flex items-end justify-between gap-2 h-40">
+                {[...Array(7)].map((_, i) => (
+                  <div key={i} className="flex-1 animate-pulse rounded-t-lg bg-gray-200" style={{ height: `${20 + Math.random() * 60}%` }} />
+                ))}
+              </div>
+            </div>
+
+            {/* Category Skeleton */}
+            <div className={`rounded-xl border p-5 ${isLight ? "border-gray-200 bg-white" : "border-white/5 bg-white/[0.02]"}`}>
+              <div className="mb-4 h-5 w-40 animate-pulse rounded bg-gray-200" />
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                    <div className="flex-1 h-3 animate-pulse rounded bg-gray-200" />
+                    <div className="h-3 w-8 animate-pulse rounded bg-gray-200" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Activity Skeleton */}
+          <section className="space-y-4">
+            <div className="h-5 w-32 animate-pulse rounded bg-gray-200" />
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className={`flex items-center gap-4 rounded-xl border p-4 ${isLight ? "border-gray-200 bg-white" : "border-white/5 bg-white/[0.02]"}`}>
+                  <div className="h-10 w-10 animate-pulse rounded-lg bg-gray-200" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-48 animate-pulse rounded bg-gray-200" />
+                    <div className="h-3 w-32 animate-pulse rounded bg-gray-200" />
+                  </div>
+                  <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       </div>
     );
@@ -324,8 +434,8 @@ export default function AnalyticsPage() {
             />
             <StatCard
               label="Streak"
-              value={`${data.stats.currentStreak}`}
-              subtext="Day streak"
+              value={`${Math.max(data.stats.currentStreak || 0, 0)}`}
+              subtext="Day streak (challenges + learning)"
               icon={<Zap className="h-4 w-4" />}
               trend="Keep it going!"
               isLight={isLight}
@@ -362,7 +472,7 @@ export default function AnalyticsPage() {
                       isLight ? "text-gray-500" : "text-gray-500"
                     }`}
                   >
-                    Challenges attempted per day (Solo + Duo)
+                    Challenges + Learning lessons completed
                   </p>
                 </div>
               </div>

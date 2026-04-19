@@ -6,19 +6,52 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 
+interface UserStats {
+  challengesPlayed: number;
+  totalSolved: number;
+  currentStreak: number;
+}
+
 export default function WelcomeOnboardingModal() {
   const router = useRouter();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
 
   useEffect(() => {
     setMounted(true);
     const hasSeenOnboarding = localStorage.getItem("codemaster_seen_onboarding");
+    const token = localStorage.getItem("terminal_token");
     
     if (!hasSeenOnboarding) {
-      setIsOpen(true);
+      if (!token) {
+        setIsOpen(true);
+      } else {
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8080"}/dashboard/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            const stats = {
+              challengesPlayed: data?.stats?.challengesPlayed || 0,
+              totalSolved: data?.stats?.totalSolved || 0,
+              currentStreak: data?.stats?.currentStreak || 0,
+            };
+            setUserStats(stats);
+            
+            const isNewUser = !data?.stats || (stats.challengesPlayed === 0 && stats.totalSolved === 0);
+            if (isNewUser) {
+              setIsOpen(true);
+            } else {
+              localStorage.setItem("codemaster_seen_onboarding", "true");
+            }
+          })
+          .catch(() => {
+            localStorage.setItem("codemaster_seen_onboarding", "true");
+          });
+      }
     }
   }, []);
 
@@ -59,6 +92,13 @@ export default function WelcomeOnboardingModal() {
     setIsOpen(false);
     router.push(route);
   };
+
+  // Determine button text based on user progress
+  const hasStartedLearning = (userStats?.currentStreak || 0) > 0;
+  const hasPlayedChallenges = (userStats?.challengesPlayed || 0) > 0;
+
+  const learningButtonText = hasStartedLearning ? "Continue Learning" : "Start Learning";
+  const challengeButtonText = hasPlayedChallenges ? "Continue Challenges" : "Try a Challenge";
 
   if (!mounted) return null;
 
@@ -121,7 +161,7 @@ export default function WelcomeOnboardingModal() {
                     onClick={() => handleAction("/dashboard/learning")}
                     className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 px-4 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-white transition-all hover:shadow-lg hover:shadow-pink-500/25"
                   >
-                    Start Learning
+                    {learningButtonText}
                   </button>
 
                   <button
@@ -132,7 +172,7 @@ export default function WelcomeOnboardingModal() {
                         : "border-white/10 bg-white/[0.04] text-white hover:border-white/20 hover:bg-white/[0.07]"
                     }`}
                   >
-                    Try a Challenge
+                    {challengeButtonText}
                   </button>
 
                   <button

@@ -18,6 +18,8 @@ import (
 )
 
 var Client *mongo.Client
+var FeedbackCollection *mongo.Collection
+var UserCollection *mongo.Collection
 
 // ConnectDB initializes the connection to MongoDB
 func ConnectDB() {
@@ -43,6 +45,10 @@ func ConnectDB() {
 	}
 
 	Client = client
+
+	// Initialize collections
+	FeedbackCollection = GetCollection("feedback")
+	UserCollection = GetCollection("users")
 
 	fmt.Println(">>> DATABASE_CONNECTED_SUCCESSFULLY")
 

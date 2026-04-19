@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import SkeletonLoader from "../components/dashboard/LoadingSkeleton";
 import ProgressOverview from "../components/dashboard/ProgressOverview";
 import WelcomeSection from "../components/dashboard/WelcomeSection";
 import SocialsNews from "../components/dashboard/socialsnews";
@@ -11,6 +10,7 @@ import WelcomeOnboardingModal from "../components/dashboard/WelcomeOnboardingMod
 import { clearUserSession } from "@/lib/auth";
 import { Copy, Check } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import FeedbackFAB from "../components/FeedbackFAB";
 
 interface DashboardData {
   stats: {
@@ -63,7 +63,7 @@ export default function DashboardPage() {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [userName, setUserName] = useState("");
   const [data, setData] = useState<DashboardData>(defaultData);
   const [statsError, setStatsError] = useState("");
@@ -202,10 +202,6 @@ export default function DashboardPage() {
       console.error("Failed to reset stats:", err);
     }
   };
-
-  if (loading) {
-    return <SkeletonLoader />;
-  }
 
   return (
     <div className="space-y-6">
@@ -390,6 +386,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <FeedbackFAB />
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { getStoredToken } from "@/lib/auth";
 import { useTheme } from "../../context/ThemeContext";
 import Header from "@/app/components/dashboard/header";
 import Footer from "@/app/components/Footer";
+import FeedbackFAB from "../../components/FeedbackFAB";
+import PageFooter from "@/app/components/PageFooter";
 
 type Challenge = {
   id: number;
@@ -884,6 +886,8 @@ export default function DashboardChallengesPage() {
         })
       )}
       {/* <Footer /> */}
+      <FeedbackFAB />
+      <PageFooter />
     </div>
   );
 }

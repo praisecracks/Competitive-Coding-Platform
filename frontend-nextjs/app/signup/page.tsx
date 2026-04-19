@@ -107,7 +107,11 @@ const COUNTRY_OPTIONS = [
 
 function SignupForm() {
   const router = useRouter();
-  const countryDropdownRef = useRef<HTMLDivElement | null>(null);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const notifyTimeoutRef = useRef<number | null>(null);
+
+  const USERNAME_MIN = 3;
+  const USERNAME_MAX = 20;
 
   const [checkingSession, setCheckingSession] = useState(true);
   const [email, setEmail] = useState("");
@@ -121,6 +125,17 @@ function SignupForm() {
   const [errorMsg, setErrorMsg] = useState("");
   const [showPasswordRules, setShowPasswordRules] = useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [notification, setNotification] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
+  const notify = (msg: string, type: "success" | "error" = "error") => {
+    setNotification({ msg, type });
+    if (notifyTimeoutRef.current) {
+      window.clearTimeout(notifyTimeoutRef.current);
+    }
+    notifyTimeoutRef.current = window.setTimeout(() => {
+      setNotification(null);
+    }, 4000);
+  };
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -235,7 +250,7 @@ function SignupForm() {
       case "USER_CHECK_FAILED":
         return "We could not verify your account details right now.";
       case "WEAK_PASSWORD":
-        return "Password must be at least 8 characters and include an uppercase letter, number, and special character.";
+        return "Password must be at least 12 characters and include an uppercase letter, number, and special character.";
       case "PASSWORD_HASH_FAILED":
         return "We could not secure your password right now.";
       case "SIGNUP_FAILED":
@@ -255,27 +270,43 @@ function SignupForm() {
 
     if (!cleanUsername || !cleanEmail || !password) {
       setStatus("ERROR");
-      setErrorMsg("Please complete all required fields.");
+      notify("Please complete all required fields.");
+      return;
+    }
+
+    if (cleanUsername.length < USERNAME_MIN) {
+      setStatus("ERROR");
+      notify(`Username must be at least ${USERNAME_MIN} characters.`);
+      return;
+    }
+
+    if (cleanUsername.length > USERNAME_MAX) {
+      setStatus("ERROR");
+      notify(`Username must not exceed ${USERNAME_MAX} characters.`);
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(cleanUsername)) {
+      setStatus("ERROR");
+      notify("Username can only contain letters, numbers, and underscores.");
       return;
     }
 
     if (!agreeTerms) {
       setStatus("ERROR");
-      setErrorMsg("Please agree to the terms before creating your account.");
+      notify("Please agree to the terms before creating your account.");
       return;
     }
 
     if (!isPasswordValid) {
       setShowPasswordRules(true);
-      setStatus("ERROR");
-      setErrorMsg(
+      notify(
         "Password must be at least 8 characters and include an uppercase letter, number, and special character."
       );
       return;
     }
 
     setStatus("LOADING");
-    setErrorMsg("");
 
     try {
       const res = await fetch("/api/signup", {
@@ -297,7 +328,7 @@ function SignupForm() {
 
       if (!res.ok) {
         setStatus("ERROR");
-        setErrorMsg(mapSignupError(data?.error));
+        notify(mapSignupError(data?.error));
 
         if (data?.error === "WEAK_PASSWORD") {
           setShowPasswordRules(true);
@@ -336,7 +367,7 @@ function SignupForm() {
     } catch (error) {
       console.error("Signup request failed:", error);
       setStatus("ERROR");
-      setErrorMsg("Unable to connect to the server. Please try again.");
+      notify("Unable to connect to the server. Please try again.");
     }
   };
 
@@ -357,6 +388,20 @@ function SignupForm() {
     <GuestGuard>
       <div className="min-h-screen bg-[#050505] text-white selection:bg-fuchsia-500/20 selection:text-white">
         <Header />
+
+        {notification && (
+          <div className="fixed left-1/2 top-24 z-[100] -translate-x-1/2">
+            <div
+              className={`rounded-xl border px-5 py-3 shadow-2xl backdrop-blur-xl ${
+                notification.type === "success"
+                  ? "border-green-500/30 bg-green-500/10 text-green-300"
+                  : "border-red-500/30 bg-red-500/10 text-red-300"
+              }`}
+            >
+              <p className="text-sm font-medium">{notification.msg}</p>
+            </div>
+          </div>
+        )}
 
         <main className="relative px-4 pb-10 pt-24 sm:px-6 lg:px-8">
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -506,17 +551,30 @@ function SignupForm() {
                     <form onSubmit={handleSignup} className="space-y-4">
                       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                         <div className="space-y-1.5">
-                          <label className="block text-sm font-medium text-white/72">
-                            Username
-                          </label>
+                          <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium text-white/72">
+                              Username
+                            </label>
+                            <span className={`text-xs ${
+                              username.length > USERNAME_MAX 
+                                ? "text-red-400" 
+                                : username.length > 0 && username.length < USERNAME_MIN
+                                ? "text-yellow-400"
+                                : "text-white/35"
+                            }`}>
+                              {username.length}/{USERNAME_MAX}
+                            </span>
+                          </div>
                           <input
                             type="text"
                             value={username}
                             onChange={(e) => {
-                              setUsername(e.target.value);
+                              const val = e.target.value.replace(/[^a-zA-Z0-9_]/g, "");
+                              setUsername(val);
                               resetFeedback();
                             }}
                             placeholder="johndoe"
+                            maxLength={USERNAME_MAX}
                             required
                             className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white outline-none transition-all placeholder:text-white/25 focus:border-fuchsia-400/50 focus:bg-white/[0.06] focus:ring-4 focus:ring-fuchsia-500/10"
                           />
@@ -732,9 +790,7 @@ function SignupForm() {
                     </form>
 
                     {status === "ERROR" && (
-                      <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3">
-                        <p className="text-sm text-red-300">{errorMsg}</p>
-                      </div>
+                      <></>
                     )}
 
                     {status === "SUCCESS" && (

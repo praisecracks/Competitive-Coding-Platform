@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import logo from "../../../../assets/CodeMaster_Logo.png";
 
 const navLinks = [
-  { name: "Features", href: "#features" },
+  { name: "About", href: "#features" },
   { name: "Learning", href: "#learning" },
   { name: "Challenges", href: "#challenges" },
   { name: "Pricing", href: "#pricing" },

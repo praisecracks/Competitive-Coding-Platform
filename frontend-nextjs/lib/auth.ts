@@ -109,6 +109,12 @@ export function clearUserSession() {
   localStorage.removeItem(AUTH_EMAIL_KEY);
   localStorage.removeItem(AUTH_USER_KEY);
   localStorage.removeItem("user_pic");
+
+  // Don't clear learning progress or onboarding - kept for same user
+  // Note: Shared devices will see each other's progress
+  
+  localStorage.removeItem("dashboard_notifications");
+  localStorage.removeItem("dismissed_notification_ids");
 }
 
 export function sanitizeRedirect(value: string | null): string {

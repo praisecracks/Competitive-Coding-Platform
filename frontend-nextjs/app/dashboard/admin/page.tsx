@@ -118,26 +118,73 @@ export default function AdminOverview() {
 
   if (loading) {
     return (
-      <div
-        className={`flex min-h-[60vh] items-center justify-center px-4 ${
-          isLight ? "bg-[#f8fafc]" : "bg-[#020202]"
-        }`}
-      >
-        <div
-          className={`flex items-center gap-3 rounded-2xl border px-6 py-5 backdrop-blur-md ${
-            isLight
-              ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
-              : "border-white/5 bg-[#0a0a0a]/50 shadow-2xl"
-          }`}
-        >
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-pink-500/20 border-t-pink-500" />
-          <span
-            className={`text-sm font-medium ${
-              isLight ? "text-gray-600" : "text-gray-400"
-            }`}
-          >
-            Loading Control Center...
-          </span>
+      <div className={`min-h-screen pb-20 ${isLight ? "bg-[#f8fafc]" : "bg-[#020202]"}`}>
+        <div className="mx-auto max-w-7xl space-y-8 px-4 pt-8">
+          {/* Header Skeleton */}
+          <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-3">
+              <div className="h-6 w-32 animate-pulse rounded-full bg-gray-200" />
+              <div className="space-y-2">
+                <div className="h-8 w-48 animate-pulse rounded-lg bg-gray-200" />
+                <div className="h-4 w-72 animate-pulse rounded-lg bg-gray-200" />
+              </div>
+            </div>
+            <div className="h-12 w-40 animate-pulse rounded-xl bg-gray-200" />
+          </header>
+
+          {/* Stats Grid Skeleton */}
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className={`h-32 rounded-xl border p-4 ${isLight ? "border-gray-200 bg-white" : "border-white/5 bg-white/[0.02]"}`}>
+                <div className="mb-3 h-9 w-9 animate-pulse rounded-lg bg-gray-200" />
+                <div className="space-y-2">
+                  <div className="h-3 w-20 animate-pulse rounded bg-gray-200" />
+                  <div className="h-8 w-16 animate-pulse rounded bg-gray-200" />
+                </div>
+              </div>
+            ))}
+          </section>
+
+          {/* Main Content Skeleton */}
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Action Cards Skeleton */}
+            <section className="space-y-6 lg:col-span-2">
+              <div className="space-y-2">
+                <div className="h-6 w-40 animate-pulse rounded-lg bg-gray-200" />
+                <div className="h-4 w-52 animate-pulse rounded-lg bg-gray-200" />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className={`h-28 rounded-xl border p-4 ${isLight ? "border-gray-200 bg-white" : "border-white/5 bg-white/[0.02]"}`}>
+                    <div className="mb-3 h-9 w-9 animate-pulse rounded-lg bg-gray-200" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                      <div className="h-3 w-32 animate-pulse rounded bg-gray-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Activity Skeleton */}
+            <section className="space-y-6">
+              <div className="space-y-2">
+                <div className="h-6 w-32 animate-pulse rounded-lg bg-gray-200" />
+                <div className="h-4 w-40 animate-pulse rounded-lg bg-gray-200" />
+              </div>
+              <div className="space-y-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className={`flex items-center gap-3 rounded-lg border p-3 ${isLight ? "border-gray-200 bg-white" : "border-white/5 bg-white/[0.02]"}`}>
+                    <div className="h-8 w-8 animate-pulse rounded-lg bg-gray-200" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
+                      <div className="h-2.5 w-32 animate-pulse rounded bg-gray-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     );

@@ -150,9 +150,28 @@ function truncateText(value: string, max: number) {
 function getLearningProgress(): LearningProgressStore {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(LEARNING_PROGRESS_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw);
+    // Check new key first (codemaster_learning_track_progress)
+    const raw = localStorage.getItem("codemaster_learning_track_progress");
+    if (raw) {
+      const progress = JSON.parse(raw);
+      // Convert new format (completedLessonIds) to old format for profile compatibility
+      const lessonIds = progress.completedLessonIds || [];
+      return {
+        paths: lessonIds.reduce((acc: Record<string, { completedStepIds: string[] }>, lessonId: string) => {
+          // lessonId format: trackId-topicId-lessonIndex (e.g., "javascript-basics-topic-0-1")
+          const parts = lessonId.split('-');
+          const trackId = parts[0];
+          if (!acc[trackId]) acc[trackId] = { completedStepIds: [] };
+          acc[trackId].completedStepIds.push(lessonId);
+          return acc;
+        }, {}),
+        totalXp: progress.totalXp || 0
+      };
+    }
+    // Fallback to old key
+    const rawOld = localStorage.getItem(LEARNING_PROGRESS_KEY);
+    if (!rawOld) return {};
+    return JSON.parse(rawOld);
   } catch {
     return {};
   }
@@ -178,7 +197,7 @@ export default function ProfilePage() {
   const [referralLink, setReferralLink] = useState("");
   const [recentActivity, setRecentActivity] = useState<SubmissionItem[]>([]);
   const [imageError, setImageError] = useState(false);
-  const [learningTick, setLearningTick] = useState(0);
+  const [learningProgress, setLearningProgress] = useState<LearningProgressStore>(() => getLearningProgress());
 
   const notify = useCallback(
     (msg: string, type: "success" | "error" = "success") => {
@@ -194,6 +213,31 @@ export default function ProfilePage() {
     },
     []
   );
+
+  useEffect(() => {
+    const loadLearning = () => setLearningProgress(getLearningProgress());
+
+    window.addEventListener("storage", loadLearning);
+    window.addEventListener("focus", loadLearning);
+    window.addEventListener("user-profile-updated", loadLearning);
+
+    return () => {
+      window.removeEventListener("storage", loadLearning);
+      window.removeEventListener("focus", loadLearning);
+      window.removeEventListener("user-profile-updated", loadLearning);
+    };
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+
+    if (!token) {
+      router.push("/login?redirect=/dashboard/profile");
+      return;
+    }
+
+    void loadProfilePage(token);
+   }, []);
 
   const syncSidebarCache = useCallback(
     (payload?: Partial<ProfileData>) => {
@@ -218,42 +262,31 @@ export default function ProfilePage() {
       const currentDuelsWon = payload?.duelsWon ?? user?.duelsWon ?? 0;
       const currentWinRate = payload?.winRate ?? user?.winRate ?? 0;
 
-      localStorage.setItem(
-        AUTH_USERNAME_KEY,
-        truncateText(currentName, USERNAME_MAX)
-      );
-      localStorage.setItem(AUTH_EMAIL_KEY, currentEmail);
+      const updatedUser = {
+        username: truncateText(currentName, USERNAME_MAX),
+        email: currentEmail,
+        rank: currentRank,
+        country: currentCountry,
+        profile_pic: currentProfilePic,
+        totalSolved: currentSolved,
+        currentStreak: currentStreak,
+        githubUrl: currentGithubUrl,
+        linkedinUrl: currentLinkedinUrl,
+        role: currentRole,
+        referralCode: currentReferralCode,
+        duelsWon: currentDuelsWon,
+        winRate: currentWinRate,
+      };
 
-      const rawUser = localStorage.getItem(AUTH_USER_KEY);
-      let parsed = {};
-
-      if (rawUser) {
-        try {
-          parsed = JSON.parse(rawUser);
-        } catch {
-          parsed = {};
-        }
+      try {
+        const raw = localStorage.getItem(AUTH_USER_KEY);
+        const existing = raw ? JSON.parse(raw) : {};
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify({ ...existing, ...updatedUser }));
+        localStorage.setItem(AUTH_USERNAME_KEY, updatedUser.username);
+        localStorage.setItem(AUTH_EMAIL_KEY, updatedUser.email);
+      } catch (e) {
+        console.error("Failed to sync profile to localStorage", e);
       }
-
-      localStorage.setItem(
-        AUTH_USER_KEY,
-        JSON.stringify({
-          ...parsed,
-          username: truncateText(currentName, USERNAME_MAX),
-          email: currentEmail,
-          rank: currentRank,
-          country: currentCountry,
-          profile_pic: currentProfilePic,
-          totalSolved: currentSolved,
-          currentStreak: currentStreak,
-          githubUrl: currentGithubUrl,
-          linkedinUrl: currentLinkedinUrl,
-          referralCode: currentReferralCode,
-          role: currentRole,
-          duelsWon: currentDuelsWon,
-          winRate: currentWinRate,
-        })
-      );
 
       Promise.resolve().then(() => {
         window.dispatchEvent(new Event("user-profile-updated"));
@@ -262,48 +295,43 @@ export default function ProfilePage() {
     [user]
   );
 
-  useEffect(() => {
-    return () => {
-      if (notifyTimeoutRef.current) {
-        window.clearTimeout(notifyTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
-
-    if (!token) {
-      router.push("/login?redirect=/dashboard/profile");
-      return;
-    }
-
-    void loadProfilePage(token);
-  }, [router]);
-
-  useEffect(() => {
-    const syncLearning = () => setLearningTick((prev) => prev + 1);
-
-    window.addEventListener("storage", syncLearning);
-    window.addEventListener("focus", syncLearning);
-    window.addEventListener("user-profile-updated", syncLearning);
-
-    return () => {
-      window.removeEventListener("storage", syncLearning);
-      window.removeEventListener("focus", syncLearning);
-      window.removeEventListener("user-profile-updated", syncLearning);
-    };
-  }, []);
-
   const loadProfilePage = async (token: string) => {
     setLoading(true);
-    await Promise.all([
-      fetchProfile(token),
-      fetchDashboardStats(token),
-      fetchReferralCode(token),
+    const startTime = Date.now();
+
+    const MIN_SKELETON_TIME = 800;  // Show skeleton at least 0.8s for smoothness
+    const MAX_TOTAL_TIME = 8000;    // Hard cap: never exceed 8s total
+    const REQUEST_TIMEOUT = 5000;   // Individual request timeout
+
+    // Timeout wrapper: never rejects, resolves to null on timeout
+    const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T | null> => {
+      return Promise.race([
+        promise.catch(() => null),
+        new Promise<T | null>((resolve) => setTimeout(() => resolve(null), ms))
+      ]);
+    };
+
+    // Fire all three in parallel with individual timeouts
+    await Promise.allSettled([
+      withTimeout(fetchProfile(token), REQUEST_TIMEOUT),
+      withTimeout(fetchDashboardStats(token), REQUEST_TIMEOUT),
+      withTimeout(fetchReferralCode(token), REQUEST_TIMEOUT),
     ]);
-    setLoading(false);
-  };
+
+    // Enforce minimum skeleton display time
+    const elapsed = Date.now() - startTime;
+    if (elapsed < MIN_SKELETON_TIME) {
+      await new Promise(r => setTimeout(r, MIN_SKELETON_TIME - elapsed));
+    }
+
+    // Hard cap: force exit after MAX_TOTAL_TIME regardless
+    const totalElapsed = Date.now() - startTime;
+    if (totalElapsed >= MAX_TOTAL_TIME) {
+      console.warn("Profile load exceeded max time, forcing render");
+    }
+
+     setLoading(false);
+   };
 
   const fetchProfile = async (token: string) => {
     try {
@@ -910,8 +938,7 @@ export default function ProfilePage() {
   }, [user]);
 
   const learningSnapshot = useMemo(() => {
-    const progress = getLearningProgress();
-    const pathProgress = progress.paths || {};
+    const pathProgress = learningProgress.paths || {};
 
     let completedCourses = 0;
     let startedCourses = 0;
@@ -981,14 +1008,14 @@ export default function ProfilePage() {
     }
 
     return {
-      totalLearningXp: progress.totalXp || 0,
+      totalLearningXp: learningProgress.totalXp || 0,
       startedCourses,
       completedCourses,
       completedSteps,
       strongestCategory,
       activeCourse,
     };
-  }, [learningTick]);
+  }, [learningProgress]);
 
   const recommendedChallenge = useMemo(() => {
     if (learningSnapshot.activeCourse?.relatedChallengeId) {
@@ -1064,14 +1091,74 @@ export default function ProfilePage() {
   const isAdmin =
     user?.role === "super_admin" || user?.role === "sub_admin";
 
-  if (loading) {
+   if (loading) {
     return (
-      <div
-        className={`flex min-h-[60vh] items-center justify-center ${
-          isLight ? "bg-gray-50" : ""
-        }`}
-      >
-        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-pink-500" />
+      <div className={`space-y-4 ${isAdmin ? (isLight ? "bg-gray-50" : "bg-[#0a0a0a]") : ""}`}>
+        {/* Header skeleton */}
+        <div className={`rounded-2xl border p-6 sm:p-8 ${isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#0a0a0a]"}`}>
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
+            {/* Avatar skeleton */}
+            <div className="relative">
+              <div className={`h-28 w-28 shrink-0 animate-pulse rounded-full ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+              <div className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full border-2 border-white bg-gray-200" />
+            </div>
+
+            {/* Info skeleton */}
+            <div className="flex-1 space-y-3">
+              <div className={`h-8 w-48 animate-pulse rounded-lg ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+              <div className={`h-4 w-32 animate-pulse rounded-lg ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+              <div className="flex gap-4 pt-2">
+                <div className={`h-4 w-24 animate-pulse rounded-lg ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+                <div className={`h-4 w-20 animate-pulse rounded-lg ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats grid skeleton */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className={`rounded-2xl border p-4 ${isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#0a0a0a]"}`}>
+              <div className={`h-4 w-24 animate-pulse rounded ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+              <div className={`mt-3 h-8 w-16 animate-pulse rounded-lg ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+            </div>
+          ))}
+        </div>
+
+        {/* Two-column layout skeleton */}
+        <div className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
+          {/* Left column */}
+          <div className="space-y-4">
+            {[1, 2].map((i) => (
+              <div key={i} className={`rounded-2xl border p-5 ${isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#0a0a0a]"}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-3">
+                    <div className={`h-5 w-40 animate-pulse rounded-lg ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+                    <div className={`h-3 w-60 animate-pulse rounded ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+                  </div>
+                  <div className={`h-8 w-8 shrink-0 rounded-lg ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+                </div>
+                <div className="mt-5 space-y-3">
+                  <div className={`h-4 w-full animate-pulse rounded ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+                  <div className={`h-4 w-3/4 animate-pulse rounded ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Right column */}
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={`rounded-2xl border p-5 ${isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#0a0a0a]"}`}>
+                <div className={`h-5 w-40 animate-pulse rounded-lg ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+                <div className="mt-4 space-y-3">
+                  <div className={`h-4 w-full animate-pulse rounded ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+                  <div className={`h-4 w-5/6 animate-pulse rounded ${isLight ? "bg-gray-200" : "bg-white/5"}`} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -1482,67 +1569,6 @@ export default function ProfilePage() {
                 isLight={isLight}
               />
             </div>
-          </div>
-
-          <div
-            className={`rounded-2xl border p-5 ${
-              isLight
-                ? "border-gray-200 bg-white shadow-sm"
-                : "border-white/10 bg-[#0a0a0a]"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                Challenge Recommendation
-              </h2>
-              <span className={`text-[10px] ${isLight ? "text-pink-600" : "text-pink-300"}`}>
-                Adaptive
-              </span>
-            </div>
-
-            {recommendedChallenge ? (
-              <div
-                className={`mt-4 rounded-2xl border p-4 ${
-                  isLight
-                    ? "border-gray-200 bg-gray-50"
-                    : "border-white/10 bg-white/[0.03]"
-                }`}
-              >
-                <p className={`text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                  {recommendedChallenge.title || "Next recommended challenge"}
-                </p>
-                <p className={`mt-1 text-xs leading-6 ${isLight ? "text-gray-600" : "text-gray-400"}`}>
-                  {recommendedChallenge.reason}
-                </p>
-
-                <button
-                  onClick={() =>
-                    router.push(`/dashboard/challenges/${recommendedChallenge.challengeId}`)
-                  }
-                  className={`mt-4 inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition ${
-                    isLight
-                      ? "border-pink-200 bg-pink-50 text-pink-700 hover:bg-pink-100"
-                      : "border-pink-500/20 bg-pink-500/10 text-pink-200 hover:bg-pink-500/15"
-                  }`}
-                  type="button"
-                >
-                  Solve Challenge
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
-              <div
-                className={`mt-4 rounded-xl border px-4 py-6 ${
-                  isLight
-                    ? "border-gray-200 bg-gray-50"
-                    : "border-white/10 bg-white/[0.03]"
-                }`}
-              >
-                <p className={`text-xs ${isLight ? "text-gray-600" : "text-gray-400"}`}>
-                  Start learning or solving more challenges so CodeMaster can recommend the next best battle for you.
-                </p>
-              </div>
-            )}
           </div>
 
           <div

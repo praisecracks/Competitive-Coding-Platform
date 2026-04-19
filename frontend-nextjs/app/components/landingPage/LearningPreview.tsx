@@ -318,9 +318,9 @@ export default function LearningPreview() {
           <div className="inline-flex items-center gap-3 rounded-full border border-purple-500/30 bg-purple-500/10 px-5 py-2 text-[11px] font-medium uppercase tracking-[0.28em] text-purple-300 backdrop-blur-xl">
             <Zap className="h-4 w-4" />
             Learning System
-            <span className="ml-1 rounded-full border border-pink-500/40 bg-pink-500/20 px-2.5 py-0.5 text-[10px] font-bold text-pink-200">
+            {/* <span className="ml-1 rounded-full border border-pink-500/40 bg-pink-500/20 px-2.5 py-0.5 text-[10px] font-bold text-pink-200">
               3 Languages
-            </span>
+            </span> */}
           </div>
 
           <h2 className="mt-8 text-5xl font-black tracking-[-0.04em] text-white sm:text-6xl md:text-7xl">
@@ -357,17 +357,17 @@ export default function LearningPreview() {
           <div className="flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
             <div className="max-w-xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-pink-500/30 bg-pink-500/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-pink-300">
-                <Sparkles className="h-4 w-4" />
-                30+ Languages Coming Soon
-              </div>
-              <p className="mt-6 text-2xl font-bold text-white">
-                One platform. Infinite possibilities.
-              </p>
-              <p className="mt-3 text-[15px] text-gray-400">
-                From JavaScript to Rust, Python to Go — master any language 
-                with our structured learning paths. New languages added regularly.
-              </p>
+<Sparkles className="h-4 w-4" />
+              Structured Learning Paths
             </div>
+            <p className="mt-6 text-2xl font-bold text-white">
+              One platform. Infinite possibilities.
+            </p>
+            <p className="mt-3 text-[15px] text-gray-400">
+              Master coding with structured learning paths designed to take you from beginner 
+              to expert. New content added regularly.
+            </p>
+          </div>
 
             <Link
               href="/login"

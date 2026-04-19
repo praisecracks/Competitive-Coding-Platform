@@ -1,4 +1,5 @@
 import "./globals.css";
+import { ThemeProvider } from "./context/ThemeContext";
 
 export const metadata = {
   title: "CodeMaster",
@@ -12,7 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <body>{children}</body>
+      <body>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Heart, Star, Play, BookOpen } from "lucide-react";
+import { Clock, Heart, Star, Play, BookOpen, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/app/context/ThemeContext";
 
@@ -18,9 +18,12 @@ type LearningHeroProps = {
     coverImage: string;
     nextLesson?: string;
   };
+  isCompleted?: boolean;
+  onViewCurriculum?: () => void;
+  onContinue?: () => void;
 };
 
-export default function LearningHero({ path }: LearningHeroProps) {
+export default function LearningHero({ path, isCompleted, onViewCurriculum, onContinue }: LearningHeroProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
@@ -207,12 +210,25 @@ export default function LearningHero({ path }: LearningHeroProps) {
               </p>
             </div>
 
-            <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 sm:mt-5 sm:py-3 lg:mt-6">
-              <Play className="h-4 w-4" />
-              Continue Learning
+            <button 
+              onClick={onContinue}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 sm:mt-5 sm:py-3 lg:mt-6"
+            >
+              {isCompleted ? (
+                <>
+                  <CheckCircle className="h-4 w-4" />
+                  Learning Completed
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4" />
+                  Continue Learning
+                </>
+              )}
             </button>
 
             <button
+              onClick={onViewCurriculum}
               className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-sm transition sm:mt-3 sm:py-3 ${
                 isLight
                   ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"

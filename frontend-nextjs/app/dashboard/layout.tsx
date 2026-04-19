@@ -29,7 +29,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     setSidebarOpen((prev) => !prev);
   };
 
-  const contentBg = isLight ? "bg-gray-50" : "bg-[#020202]";
+   const contentBg = isLight ? "bg-gray-50" : "bg-[#020202]";
   const textColor = isLight ? "text-gray-900" : "text-white";
   const mainPadding = isMobile ? "pl-0" : sidebarOpen ? "lg:pl-62" : "lg:pl-20";
 
@@ -82,7 +82,7 @@ export default function DashboardLayout({
     setCheckingAuth(false);
   }, [router, pathname]);
 
-  const loaderBg = "bg-[#020202]";
+   const loaderBg = "bg-[#020202]";
 
   if (checkingAuth) {
     return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -29,10 +29,18 @@ export default function Notifications() {
   const [processingDuelIds, setProcessingDuelIds] = useState<Record<string, "accept" | "decline" | null>>({});
   const processedInviteIdsRef = useRef<Set<string>>(new Set());
 
+  const getAuthToken = useCallback((): string | null => {
+    const token = localStorage.getItem("terminal_token");
+    if (!token) {
+      console.debug("No auth token found in localStorage");
+    }
+    return token;
+  }, []);
+
   useEffect(() => {
     const fetchPrefs = async () => {
       try {
-        const token = localStorage.getItem("terminal_token");
+        const token = getAuthToken();
         if (!token) return;
 
         const res = await fetch("/api/profile", {
@@ -44,14 +52,16 @@ export default function Notifications() {
           setPreferences({
             emailNotifications: data.emailNotifications ?? true,
           });
+        } else {
+          console.warn("Profile API returned non-OK status:", res.status);
         }
       } catch (e) {
-        console.error("Failed to fetch notification preferences");
+        console.error("Failed to fetch notification preferences:", e);
       }
     };
 
     fetchPrefs();
-  }, []);
+  }, [getAuthToken]);
 
   useEffect(() => {
     const saved = localStorage.getItem("dashboard_notifications");
@@ -72,11 +82,29 @@ export default function Notifications() {
     }
   }, []);
 
+  // Get dismissed notification IDs from localStorage
+  const getDismissedIds = (): Set<string> => {
+    try {
+      const stored = localStorage.getItem("dismissed_notification_ids");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  };
+
+  // Save dismissed notification ID to localStorage
+  const saveDismissedId = (id: string) => {
+    const dismissed = getDismissedIds();
+    dismissed.add(id);
+    localStorage.setItem("dismissed_notification_ids", JSON.stringify([...dismissed]));
+  };
+
   useEffect(() => {
     localStorage.setItem("dashboard_notifications", JSON.stringify(notifications));
   }, [notifications]);
 
   const removeNotification = (id: string) => {
+    saveDismissedId(id); // Save so it won't reappear
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
@@ -86,109 +114,265 @@ export default function Notifications() {
     removeNotification(notificationId);
   };
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const token = localStorage.getItem("terminal_token");
+useEffect(() => {
+      const fetchNotifications = async () => {
+        const token = getAuthToken();
         if (!token) return;
 
         const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+        console.debug("Fetching notifications from:", `${API_BASE_URL}/notifications`, `${API_BASE_URL}/duo/pending-invites`);
 
-        const notifRes = await fetch(`${API_BASE_URL}/notifications`, {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-        });
+        // Check user role for admin notifications (only super_admin sees feedback notifications)
+        let isSuperAdmin = false;
+        try {
+          const userData = localStorage.getItem("user");
+          if (userData) {
+            const user = JSON.parse(userData);
+            isSuperAdmin = user.role === "super_admin";
+          }
+        } catch {}
 
-        let fetchedNotifications: Notification[] = [];
+        try {
+          // Fetch regular notifications
+          let fetchedNotifications: Notification[] = [];
+          
+          try {
+            const notifRes = await fetch(`${API_BASE_URL}/notifications`, {
+              headers: { Authorization: `Bearer ${token}` },
+              cache: "no-store",
+            });
 
-        if (notifRes.ok) {
-          const data = await notifRes.json();
-          if (Array.isArray(data)) {
-            fetchedNotifications = data.map((n: any) => ({
-              id: n.id,
-              type: n.type,
-              title: n.title,
-              message: n.message,
-              timestamp: new Date(n.created_at),
-              read: n.read,
-            }));
+            if (notifRes.ok) {
+              try {
+                const data = await notifRes.json();
+                if (Array.isArray(data)) {
+                  fetchedNotifications = data.map((n: any) => ({
+                    id: n.id,
+                    type: n.type,
+                    title: n.title,
+                    message: n.message,
+                    timestamp: new Date(n.created_at),
+                    read: n.read,
+                  }));
+                  console.debug("Fetched", fetchedNotifications.length, "regular notifications");
+                } else {
+                  console.debug("Notifications response not array, using empty");
+                }
+              } catch (parseErr) {
+                console.debug("Failed to parse notifications JSON, using empty");
+              }
+            } else {
+              // Silently ignore non-OK responses — common if endpoint doesn't exist
+              console.debug("Notifications API status:", notifRes.status, "- skipping");
+            }
+} catch (err) {
+              console.debug("Regular notifications fetch failed (expected if no endpoint):", err);
+            }
+
+            // Fetch system notifications for super_admin only
+            if (isSuperAdmin) {
+              try {
+                const sysRes = await fetch(`${API_BASE_URL}/notifications/system`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                  cache: "no-store",
+                });
+
+                if (sysRes.ok) {
+                  const sysData = await sysRes.json();
+                  if (Array.isArray(sysData)) {
+                    // Get dismissed IDs to filter out
+                    const dismissedIds = getDismissedIds();
+                    const systemNotifs = sysData.map((n: any) => ({
+                      id: n.id,
+                      type: n.type,
+                      title: n.title,
+                      message: n.message,
+                      timestamp: new Date(n.created_at),
+                      read: n.read || false,
+                    })).filter((n: any) => !dismissedIds.has(n.id)); // Filter out dismissed
+                    fetchedNotifications = [...fetchedNotifications, ...systemNotifs];
+                    console.debug("Fetched", systemNotifs.length, "system notifications for admin");
+                  }
+                }
+              } catch (sysErr) {
+                console.debug("System notifications fetch failed:", sysErr);
+              }
+            }
+
+            // Fetch duel invites (may fail if endpoint doesn't exist - that's ok)
+           try {
+            const res = await fetch(`${API_BASE_URL}/duo/pending-invites`, {
+              headers: { Authorization: `Bearer ${token}` },
+              cache: "no-store",
+            });
+
+            if (!res.ok) {
+              // Silently ignore — endpoint may not exist or user not authenticated
+              console.debug("Duel invites API status:", res.status, "- skipping");
+              setNotifications(fetchedNotifications.slice(0, 20));
+              return;
+            }
+
+            let invites: any[];
+            try {
+              invites = await res.json();
+            } catch (parseErr) {
+              console.debug("Failed to parse duel invites JSON, using empty");
+              setNotifications(fetchedNotifications.slice(0, 20));
+              return;
+            }
+
+            if (!Array.isArray(invites)) {
+              console.debug("Duel invites not array, using empty");
+              setNotifications(fetchedNotifications.slice(0, 20));
+              return;
+            }
+
+           console.debug("Fetched", invites.length, "duel invites");
+
+           const duelInvites: Notification[] = invites
+             .filter((invite: any) => {
+               const duelId = String(invite.id || "");
+               if (!duelId) return false;
+               const notificationId = `invite-${duelId}`;
+               if (processedInviteIdsRef.current.has(notificationId)) return false;
+               if (processingDuelIds[duelId]) return false;
+               return true;
+             })
+             .map((invite: any) => ({
+               id: `invite-${invite.id}`,
+               type: "duel_invite",
+               title: "Duel Invitation",
+               message: `${invite.challenger_name} challenged you to ${invite.challenge_title}`,
+               timestamp: new Date(invite.created_at),
+               read: false,
+               duelId: invite.id,
+               challengeTitle: invite.challenge_title,
+               challengerName: invite.challenger_name,
+             }));
+
+           setNotifications((prev) => {
+             const nonInviteNotifications = fetchedNotifications;
+             const preservedCountdownInvites = prev.filter(
+               (n) =>
+                 n.type === "duel_invite" &&
+                 n.duelId &&
+                 (countdown[n.duelId] !== undefined || processingDuelIds[n.duelId])
+             );
+
+             const merged = [
+               ...preservedCountdownInvites,
+               ...duelInvites,
+               ...nonInviteNotifications,
+             ];
+
+             const seen = new Set<string>();
+             return merged.filter((n) => {
+               if (seen.has(n.id)) return false;
+               seen.add(n.id);
+               return true;
+             }).slice(0, 20);
+           });
+         } catch (err) {
+           console.error("Failed to fetch duel invites:", err);
+           // Fallback to regular notifications only
+           setNotifications(fetchedNotifications.slice(0, 20));
+         }
+       } catch (error) {
+         console.error("Unexpected error in fetchNotifications:", error);
+         // Last resort: don't crash, just keep existing notifications
+       }
+     };
+
+     fetchNotifications();
+     const interval = setInterval(fetchNotifications, 2000);
+
+     return () => clearInterval(interval);
+   }, [countdown, processingDuelIds, getAuthToken]);
+
+  // Streak reminder system
+  useEffect(() => {
+    const checkStreaks = () => {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const timeUntilMidnight = (24 - currentHour) * 60 - currentMinute;
+
+      // Check learning streak
+      const streakData = localStorage.getItem("codemaster_learning_streak_v1");
+      if (streakData) {
+        const streak = JSON.parse(streakData);
+        if (streak.currentStreak > 0) {
+          const lastDate = new Date(streak.lastLearningDate);
+          const lastDateStr = lastDate.toDateString();
+          const todayStr = now.toDateString();
+          const yesterday = new Date(now);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toDateString();
+
+          // Show reminder in the evening (after 6 PM)
+          if (currentHour >= 18 && lastDateStr !== todayStr && lastDateStr !== yesterdayStr) {
+            const streakNotifId = "streak-learning-reminder";
+            const existingNotif = notifications.find(n => n.id === streakNotifId);
+            if (!existingNotif) {
+              const newNotif: Notification = {
+                id: streakNotifId,
+                type: "warning",
+                title: "🔥 Learning Streak at Risk!",
+                message: `Your ${streak.currentStreak}-day learning streak will reset tonight. Complete a lesson to keep it alive!`,
+                timestamp: now,
+                read: false,
+              };
+              setNotifications(prev => [newNotif, ...prev]);
+            }
           }
         }
+      }
 
-        const res = await fetch(`${API_BASE_URL}/duo/pending-invites`, {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-        });
+      // Check challenge streak (from dashboard stats)
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.currentStreak && user.currentStreak > 0 && user.lastActive) {
+          const lastActiveDate = new Date(user.lastActive);
+          const lastActiveStr = lastActiveDate.toDateString();
+          const todayStr = now.toDateString();
+          const yesterday = new Date(now);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toDateString();
 
-        if (!res.ok) {
-          setNotifications(fetchedNotifications.slice(0, 20));
-          return;
+          if (currentHour >= 18 && lastActiveStr !== todayStr && lastActiveStr !== yesterdayStr) {
+            const challengeNotifId = "streak-challenge-reminder";
+            const existingNotif = notifications.find(n => n.id === challengeNotifId);
+            if (!existingNotif) {
+              const newNotif: Notification = {
+                id: challengeNotifId,
+                type: "warning",
+                title: "⚡ Challenge Streak at Risk!",
+                message: `Your ${user.currentStreak}-day challenge streak will reset tonight. Complete a challenge to keep it alive!`,
+                timestamp: now,
+                read: false,
+              };
+              setNotifications(prev => [newNotif, ...prev]);
+            }
+          }
         }
-
-        const invites = await res.json();
-
-        if (!Array.isArray(invites)) {
-          setNotifications(fetchedNotifications.slice(0, 20));
-          return;
-        }
-
-        const duelInvites: Notification[] = invites
-          .filter((invite: any) => {
-            const duelId = String(invite.id || "");
-            if (!duelId) return false;
-            const notificationId = `invite-${duelId}`;
-            if (processedInviteIdsRef.current.has(notificationId)) return false;
-            if (processingDuelIds[duelId]) return false;
-            return true;
-          })
-          .map((invite: any) => ({
-            id: `invite-${invite.id}`,
-            type: "duel_invite",
-            title: "Duel Invitation",
-            message: `${invite.challenger_name} challenged you to ${invite.challenge_title}`,
-            timestamp: new Date(invite.created_at),
-            read: false,
-            duelId: invite.id,
-            challengeTitle: invite.challenge_title,
-            challengerName: invite.challenger_name,
-          }));
-
-        setNotifications((prev) => {
-          const nonInviteNotifications = fetchedNotifications;
-          const preservedCountdownInvites = prev.filter(
-            (n) =>
-              n.type === "duel_invite" &&
-              n.duelId &&
-              (countdown[n.duelId] !== undefined || processingDuelIds[n.duelId])
-          );
-
-          const merged = [
-            ...preservedCountdownInvites,
-            ...duelInvites,
-            ...nonInviteNotifications,
-          ];
-
-          const seen = new Set<string>();
-          return merged.filter((n) => {
-            if (seen.has(n.id)) return false;
-            seen.add(n.id);
-            return true;
-          }).slice(0, 20);
-        });
-      } catch (e) {
-        console.error("Failed to fetch notifications:", e);
       }
     };
 
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 2000);
+    // Check on mount and every hour
+    checkStreaks();
+    const hourInterval = setInterval(checkStreaks, 60 * 60 * 1000);
 
-    return () => clearInterval(interval);
-  }, [countdown, processingDuelIds]);
+    return () => clearInterval(hourInterval);
+  }, []);
 
   const handleDuelAction = async (duelId: string, action: "accept" | "decline") => {
-    const token = localStorage.getItem("terminal_token");
-    if (!token) return;
+    const token = getAuthToken();
+    if (!token) {
+      console.warn("Cannot handle duel action: no auth token");
+      return;
+    }
 
     setProcessingDuelIds((prev) => ({ ...prev, [duelId]: action }));
 
@@ -199,14 +383,16 @@ export default function Notifications() {
           ? `${API_BASE_URL}/duo/accept/${duelId}`
           : `${API_BASE_URL}/duo/decline/${duelId}`;
 
+      console.debug(`Duel action: ${action} for duel ${duelId} at ${endpoint}`);
+
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        console.error(`Failed to ${action} duel`, data);
+        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+        console.error(`Failed to ${action} duel:`, res.status, errorData);
         return;
       }
 
@@ -217,7 +403,7 @@ export default function Notifications() {
         markInviteProcessed(duelId);
       }
     } catch (e) {
-      console.error(`Failed to ${action} duel`, e);
+      console.error(`Failed to ${action} duel:`, e);
     } finally {
       setProcessingDuelIds((prev) => ({ ...prev, [duelId]: null }));
     }

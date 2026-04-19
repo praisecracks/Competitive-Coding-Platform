@@ -2,33 +2,127 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  Search,
   Clock,
   ChevronRight,
-  Lock,
-  ArrowRight,
-  TrendingUp,
-  Sparkles,
+  MapPin,
+  Search,
+  Flame,
+  Code2,
+  Database,
+  FolderOpen,
   BookOpen,
+  GraduationCap,
+  Sprout,
+  Zap,
+  Crown,
+  Gem,
+  Award,
 } from "lucide-react";
-import { LEARNING_PATHS } from "./data";
+import { LEARNING_TRACKS, ADDITIONAL_TRACKS } from "./data";
 import { useTheme } from "@/app/context/ThemeContext";
+import FeedbackFAB from "../../components/FeedbackFAB";
+import PageFooter from "@/app/components/PageFooter";
 
-const PROGRESS_KEY = "codemaster_learning_progress_v1";
+const TRACK_PROGRESS_KEY = "codemaster_learning_track_progress";
 
-type PathStatus = "not_started" | "in_progress" | "completed" | "locked";
-
-interface UserProgress {
-  totalXp?: number;
-  paths: {
-    [pathId: string]: {
-      completedStepIds: string[];
-      liked: boolean;
-      rating: number | null;
-    };
+interface TrackProgress {
+  completedTopicIds: string[];
+  completedLessonIds?: string[];
+  lessonProgress?: {
+    [lessonId: string]: { completed: boolean; timeSpentSeconds: number };
   };
+  topicTimeSpent?: { [topicId: string]: number };
+  startedAt?: string;
+  lastAccessedAt?: string;
+}
+
+type AccentColor =
+  | "yellow"
+  | "emerald"
+  | "cyan"
+  | "pink"
+  | "purple"
+  | "orange"
+  | string;
+
+function getFolderAccent(color: AccentColor, isLight: boolean) {
+  switch (color) {
+    case "yellow":
+      return {
+        dot: "bg-yellow-400",
+        tab: isLight
+          ? "bg-yellow-100 border-yellow-200"
+          : "bg-yellow-500/10 border-yellow-500/20",
+        shell: isLight
+          ? "from-yellow-50/90 via-white to-white"
+          : "from-yellow-500/[0.04] via-[#0c0c12] to-[#0c0c12]",
+        icon: isLight ? "bg-yellow-100 text-yellow-700" : "bg-yellow-500/15 text-yellow-400",
+      };
+    case "emerald":
+      return {
+        dot: "bg-emerald-400",
+        tab: isLight
+          ? "bg-emerald-100 border-emerald-200"
+          : "bg-emerald-500/10 border-emerald-500/20",
+        shell: isLight
+          ? "from-emerald-50/90 via-white to-white"
+          : "from-emerald-500/[0.04] via-[#0c0c12] to-[#0c0c12]",
+        icon: isLight
+          ? "bg-emerald-100 text-emerald-700"
+          : "bg-emerald-500/15 text-emerald-400",
+      };
+    case "cyan":
+      return {
+        dot: "bg-cyan-400",
+        tab: isLight ? "bg-cyan-100 border-cyan-200" : "bg-cyan-500/10 border-cyan-500/20",
+        shell: isLight
+          ? "from-cyan-50/90 via-white to-white"
+          : "from-cyan-500/[0.04] via-[#0c0c12] to-[#0c0c12]",
+        icon: isLight ? "bg-cyan-100 text-cyan-700" : "bg-cyan-500/15 text-cyan-400",
+      };
+    case "pink":
+      return {
+        dot: "bg-pink-400",
+        tab: isLight ? "bg-pink-100 border-pink-200" : "bg-pink-500/10 border-pink-500/20",
+        shell: isLight
+          ? "from-pink-50/90 via-white to-white"
+          : "from-pink-500/[0.04] via-[#0c0c12] to-[#0c0c12]",
+        icon: isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/15 text-pink-400",
+      };
+    case "purple":
+      return {
+        dot: "bg-purple-400",
+        tab: isLight
+          ? "bg-purple-100 border-purple-200"
+          : "bg-purple-500/10 border-purple-500/20",
+        shell: isLight
+          ? "from-purple-50/90 via-white to-white"
+          : "from-purple-500/[0.04] via-[#0c0c12] to-[#0c0c12]",
+        icon: isLight ? "bg-purple-100 text-purple-700" : "bg-purple-500/15 text-purple-400",
+      };
+    case "orange":
+      return {
+        dot: "bg-orange-400",
+        tab: isLight
+          ? "bg-orange-100 border-orange-200"
+          : "bg-orange-500/10 border-orange-500/20",
+        shell: isLight
+          ? "from-orange-50/90 via-white to-white"
+          : "from-orange-500/[0.04] via-[#0c0c12] to-[#0c0c12]",
+        icon: isLight ? "bg-orange-100 text-orange-700" : "bg-orange-500/15 text-orange-400",
+      };
+    default:
+      return {
+        dot: "bg-gray-400",
+        tab: isLight ? "bg-gray-100 border-gray-200" : "bg-white/[0.05] border-white/10",
+        shell: isLight
+          ? "from-gray-50/90 via-white to-white"
+          : "from-white/[0.03] via-[#0c0c12] to-[#0c0c12]",
+        icon: isLight ? "bg-gray-100 text-gray-700" : "bg-white/[0.06] text-gray-300",
+      };
+  }
 }
 
 export default function LearningPage() {
@@ -36,750 +130,645 @@ export default function LearningPage() {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
+  const LEGACY_PROGRESS_KEY = "codemaster_learning_progress_v1";
+
+  const [trackProgressMap, setTrackProgressMap] = useState<Record<string, TrackProgress>>({});
+  const [legacyProgress, setLegacyProgress] = useState<{
+    paths: Record<string, { completedStepIds: string[] }>;
+  }>({ paths: {} });
+  const [streak, setStreak] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
-  const [userProgress, setUserProgress] = useState<UserProgress>({
-    paths: {},
-    totalXp: 0,
-  });
+
+  const loadProgress = () => {
+    const trackSaved = localStorage.getItem(TRACK_PROGRESS_KEY);
+    if (trackSaved) {
+      try {
+        setTrackProgressMap(JSON.parse(trackSaved));
+      } catch (e) {
+        console.error("Failed to parse track progress", e);
+      }
+    }
+
+    const legacySaved = localStorage.getItem(LEGACY_PROGRESS_KEY);
+    if (legacySaved) {
+      try {
+        setLegacyProgress(JSON.parse(legacySaved));
+      } catch (e) {
+        console.error("Failed to parse legacy progress", e);
+      }
+    }
+
+    // Load actual streak from localStorage
+    const streakKey = "codemaster_learning_streak_v1";
+    const streakData = localStorage.getItem(streakKey);
+    if (streakData) {
+      try {
+        const parsed = JSON.parse(streakData);
+        setStreak(parsed.currentStreak || 0);
+      } catch (e) {
+        console.error("Failed to parse streak", e);
+        setStreak(0);
+      }
+    } else {
+      setStreak(0);
+    }
+  };
 
   useEffect(() => {
-    const loadProgress = () => {
-      const saved = localStorage.getItem(PROGRESS_KEY);
-      if (saved) {
-        try {
-          setUserProgress(JSON.parse(saved));
-        } catch (e) {
-          console.error("Failed to parse learning progress", e);
-        }
-      }
-    };
-
     loadProgress();
 
-    const handleUpdate = () => {
+    // Listen for progress updates
+    const handleProgressUpdate = () => {
       loadProgress();
     };
 
-    window.addEventListener("codemaster-learning-updated", handleUpdate);
-    return () =>
-      window.removeEventListener("codemaster-learning-updated", handleUpdate);
+    window.addEventListener("codemaster-learning-updated", handleProgressUpdate);
+    return () => {
+      window.removeEventListener("codemaster-learning-updated", handleProgressUpdate);
+    };
   }, []);
 
-  const derivedPaths = useMemo(() => {
-    return LEARNING_PATHS.map((path) => {
-      const progress = userProgress.paths[path.id] || {
-        completedStepIds: [],
-        liked: false,
-        rating: null,
-      };
+  const allTracks = [...LEARNING_TRACKS, ...ADDITIONAL_TRACKS];
 
-      const completedCount = progress.completedStepIds.length;
-      const totalSteps = path.steps.length;
-      const progressPercentage =
-        totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0;
+  const filteredTracks = useMemo(() => {
+    if (!searchQuery.trim()) return allTracks;
+    const query = searchQuery.toLowerCase();
+    return allTracks.filter(
+      (track) =>
+        track.title.toLowerCase().includes(query) ||
+        track.description.toLowerCase().includes(query) ||
+        track.subtitle.toLowerCase().includes(query)
+    );
+  }, [searchQuery, allTracks]);
 
-      let isUnlocked = true;
-      if (path.prerequisiteIds && path.prerequisiteIds.length > 0) {
-        isUnlocked = path.prerequisiteIds.every((preId) => {
-          const preProgress = userProgress.paths[preId];
-          const prePath = LEARNING_PATHS.find((p) => p.id === preId);
-          return (
-            preProgress &&
-            prePath &&
-            preProgress.completedStepIds.length === prePath.steps.length
-          );
-        });
-      }
+  const trackStats = useMemo(() => {
+    let totalTopics = 0;
+    let completedTopics = 0;
+    let completedLessons = 0;
 
-      let status: PathStatus = "not_started";
-      if (!isUnlocked) status = "locked";
-      else if (progressPercentage === 100) status = "completed";
-      else if (progressPercentage > 0) status = "in_progress";
+    allTracks.forEach((track) => {
+      const progress = trackProgressMap[track.id];
+      totalTopics += track.topics.length;
 
-      return {
-        ...path,
-        completedSteps: completedCount,
-        totalSteps,
-        progressPercentage,
-        status,
-        isUnlocked,
-        isRecommended:
-          path.difficulty === "Beginner" && status === "not_started",
-      };
+      track.topics.forEach((topic) => {
+        const topicLessons = topic.subtopics.length;
+        let topicCompletedLessons = 0;
+
+        if (progress?.completedTopicIds?.includes(topic.id)) {
+          completedTopics++;
+          topicCompletedLessons = topicLessons;
+        } else {
+          topic.subtopics.forEach((subtopic) => {
+            if (
+              progress?.lessonProgress?.[subtopic.id]?.completed ||
+              progress?.completedLessonIds?.includes(subtopic.id)
+            ) {
+              topicCompletedLessons++;
+            }
+          });
+        }
+
+        completedLessons += topicCompletedLessons;
+      });
     });
-  }, [userProgress]);
 
-  const stats = useMemo(() => {
-    const totalXp = userProgress.totalXp || 0;
-    const masteredCount = derivedPaths.filter(
-      (p) => p.status === "completed"
-    ).length;
-    const inProgressCount = derivedPaths.filter(
-      (p) => p.status === "in_progress"
-    ).length;
-    const totalSteps = derivedPaths.reduce((sum, p) => sum + p.totalSteps, 0);
-    const completedSteps = derivedPaths.reduce(
-      (sum, p) => sum + p.completedSteps,
+    const legacyLessonsCompleted = Object.values(legacyProgress?.paths || {}).reduce(
+      (sum, p) => sum + (p.completedStepIds?.length || 0),
       0
     );
 
+    const totalLessonsFromBoth = completedLessons + legacyLessonsCompleted;
+
+    const milestones = [
+      { count: 5, label: "5", iconName: "Sprout" },
+      { count: 10, label: "10", iconName: "BookOpen" },
+      { count: 15, label: "15", iconName: "Code2" },
+      { count: 20, label: "20", iconName: "Flame" },
+      { count: 25, label: "25", iconName: "Zap" },
+      { count: 30, label: "30", iconName: "Award" },
+      { count: 40, label: "40", iconName: "Gem" },
+      { count: 50, label: "50", iconName: "Crown" },
+    ];
+
+    const earnedMilestones = milestones
+      .filter((m) => totalLessonsFromBoth >= m.count)
+      .reverse();
+
     return {
-      totalXp,
-      masteredCount,
-      inProgressCount,
-      totalSteps,
-      completedSteps,
+      totalTopics,
+      completedTopics,
+      totalLessonsCompleted: completedLessons,
+      earnedMilestones,
     };
-  }, [userProgress, derivedPaths]);
+  }, [trackProgressMap, allTracks, legacyProgress]);
 
-  const filteredPaths = derivedPaths.filter((path) => {
-    const matchesSearch =
-      path.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      path.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      path.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      path.difficulty.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesCategory =
-      activeFilter === "All" || path.category === activeFilter;
-
-    return matchesSearch && matchesCategory;
-  });
-
-  const sortedPaths = [...filteredPaths].sort((a, b) => {
-    const statusPriority = {
-      in_progress: 0,
-      not_started: 1,
-      completed: 2,
-      locked: 3,
-    };
-
-    if (statusPriority[a.status] !== statusPriority[b.status]) {
-      return statusPriority[a.status] - statusPriority[b.status];
-    }
-
-    const difficultyPriority = {
-      Beginner: 0,
-      Intermediate: 1,
-      Advanced: 2,
-    };
-
-    if (difficultyPriority[a.difficulty] !== difficultyPriority[b.difficulty]) {
-      return difficultyPriority[a.difficulty] - difficultyPriority[b.difficulty];
-    }
-
-    return a.title.localeCompare(b.title);
-  });
-
-  const categories = [
-    "All",
-    ...Array.from(new Set(LEARNING_PATHS.map((p) => p.category))),
-  ];
-
-  const continuePath = derivedPaths.find((p) => p.status === "in_progress");
-
-  const handleStart = (pathId: string, isUnlocked: boolean) => {
-    if (isUnlocked) {
-      router.push(`/dashboard/learning/${pathId}`);
-    }
+  const handleTrackClick = (trackId: string) => {
+    router.push(`/dashboard/learning/track/${trackId}`);
   };
 
-  const getDifficultyBadge = (difficulty: string) => {
-    if (isLight) {
-      switch (difficulty) {
-        case "Beginner":
-          return "border-emerald-200 bg-emerald-50 text-emerald-700";
-        case "Intermediate":
-          return "border-amber-200 bg-amber-50 text-amber-700";
-        case "Advanced":
-          return "border-rose-200 bg-rose-50 text-rose-700";
-        default:
-          return "border-gray-200 bg-gray-50 text-gray-700";
-      }
-    }
-
-    switch (difficulty) {
-      case "Beginner":
-        return "border-emerald-500/15 bg-emerald-500/10 text-emerald-300";
-      case "Intermediate":
-        return "border-amber-500/15 bg-amber-500/10 text-amber-300";
-      case "Advanced":
-        return "border-rose-500/15 bg-rose-500/10 text-rose-300";
-      default:
-        return "border-white/10 bg-white/[0.04] text-gray-300";
-    }
+  const handleExploreCourses = () => {
+    router.push("/dashboard/learning/explore");
   };
 
-  const getStatusBadge = (status: PathStatus) => {
-    if (isLight) {
-      switch (status) {
-        case "in_progress":
-          return "border-purple-200 bg-purple-50 text-purple-700";
-        case "completed":
-          return "border-emerald-200 bg-emerald-50 text-emerald-700";
-        case "locked":
-          return "border-gray-200 bg-gray-50 text-gray-500";
-        default:
-          return "border-pink-200 bg-pink-50 text-pink-700";
-      }
-    }
+  const getMilestoneIcon = (iconName: string) => {
+    const iconMap: Record<string, React.ReactNode> = {
+      Sprout: <Sprout className="h-4 w-4" />,
+      BookOpen: <BookOpen className="h-4 w-4" />,
+      Code2: <Code2 className="h-4 w-4" />,
+      Flame: <Flame className="h-4 w-4" />,
+      Zap: <Zap className="h-4 w-4" />,
+      Award: <Award className="h-4 w-4" />,
+      Gem: <Gem className="h-4 w-4" />,
+      Crown: <Crown className="h-4 w-4" />,
+    };
+    return iconMap[iconName] || null;
+  };
 
-    switch (status) {
-      case "in_progress":
-        return "border-purple-500/15 bg-purple-500/10 text-purple-300";
-      case "completed":
-        return "border-emerald-500/15 bg-emerald-500/10 text-emerald-300";
-      case "locked":
-        return "border-white/10 bg-white/[0.04] text-gray-400";
-      default:
-        return "border-pink-500/15 bg-pink-500/10 text-pink-300";
-    }
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.06,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.32,
+        ease: [0.25, 0.1, 0.25, 1] as const,
+      },
+    },
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <section className="space-y-5">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-2xl">
-            <p
-              className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${
-                isLight ? "text-pink-600" : "text-pink-300"
-              }`}
-            >
-              Learning Hub
-            </p>
-            <h1
-              className={`mt-2 text-3xl font-semibold tracking-tight sm:text-[2.35rem] ${
-                isLight ? "text-gray-900" : "text-white"
-              }`}
-            >
-              Explore your learning paths
-            </h1>
-            <p
-              className={`mt-3 text-sm leading-6 ${
-                isLight ? "text-gray-600" : "text-gray-400"
-              }`}
-            >
-              Learn concepts clearly, track real progress, and move from
-              structured lessons into practical coding confidence.
-            </p>
-          </div>
+        <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-2">
+                <MapPin className={`h-4 w-4 ${isLight ? "text-pink-600" : "text-pink-400"}`} />
+                <p
+                  className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${
+                    isLight ? "text-pink-600" : "text-pink-300"
+                  }`}
+                >
+                  Learning Tracks
+                </p>
+              </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[520px]">
-            <div
-              className={`rounded-2xl border px-4 py-3 ${
-                isLight
-                  ? "border-gray-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)]"
-                  : "border-white/10 bg-[#0c0c10]"
-              }`}
-            >
-              <p
-                className={`text-[10px] uppercase tracking-[0.18em] ${
-                  isLight ? "text-gray-500" : "text-gray-500"
-                }`}
-              >
-                Paths
-              </p>
-              <p
-                className={`mt-1.5 text-lg font-semibold ${
+              <h1
+                className={`mt-2 text-[2.2rem] font-semibold tracking-tight ${
                   isLight ? "text-gray-900" : "text-white"
                 }`}
               >
-                {LEARNING_PATHS.length}
-              </p>
-            </div>
+                Start Your Learning Journey
+              </h1>
 
-            <div
-              className={`rounded-2xl border px-4 py-3 ${
-                isLight
-                  ? "border-purple-200 bg-purple-50 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
-                  : "border-purple-500/15 bg-purple-500/[0.06]"
-              }`}
-            >
               <p
-                className={`text-[10px] uppercase tracking-[0.18em] ${
-                  isLight ? "text-purple-700/80" : "text-purple-200/80"
+                className={`mt-2 text-sm leading-6 ${
+                  isLight ? "text-gray-600" : "text-gray-400"
                 }`}
               >
-                Active
+                Choose a track and master programming fundamentals step by step
               </p>
-              <p className="mt-1.5 text-lg font-semibold text-white dark:text-white">
-                <span className={isLight ? "text-gray-900" : "text-white"}>
-                  {stats.inProgressCount}
-                </span>
-              </p>
+
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() => router.push("/dashboard/learning/journal")}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                    isLight
+                      ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                      : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                  }`}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  View Journal
+                </button>
+              </div>
             </div>
 
-            <div
-              className={`rounded-2xl border px-4 py-3 ${
-                isLight
-                  ? "border-emerald-200 bg-emerald-50 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
-                  : "border-emerald-500/15 bg-emerald-500/[0.06]"
-              }`}
-            >
-              <p
-                className={`text-[10px] uppercase tracking-[0.18em] ${
-                  isLight ? "text-emerald-700/80" : "text-emerald-200/80"
+            <div className="grid w-full max-w-[600px] grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div
+                className={`rounded-2xl border px-5 py-4 ${
+                  isLight
+                    ? "border-orange-200 bg-orange-50 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
+                    : "border-orange-500/15 bg-orange-500/[0.06]"
                 }`}
               >
-                Mastered
-              </p>
-              <p className="mt-1.5 text-lg font-semibold">
-                <span className={isLight ? "text-gray-900" : "text-white"}>
-                  {stats.masteredCount}
-                </span>
-              </p>
-            </div>
+                <p
+                  className={`text-[10px] uppercase tracking-[0.18em] ${
+                    isLight ? "text-orange-700/80" : "text-orange-200/80"
+                  }`}
+                >
+                  <Flame className={`mr-1 inline h-3 w-3 ${streak > 0 ? "animate-pulse" : ""}`} />
+                  Streak
+                </p>
+                <p className={`mt-2 text-2xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+                  {streak}
+                </p>
+              </div>
 
-            <div
-              className={`rounded-2xl border px-4 py-3 ${
-                isLight
-                  ? "border-pink-200 bg-pink-50 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
-                  : "border-pink-500/15 bg-pink-500/[0.06]"
-              }`}
-            >
-              <p
-                className={`text-[10px] uppercase tracking-[0.18em] ${
-                  isLight ? "text-pink-700/80" : "text-pink-200/80"
+              <div
+                className={`rounded-2xl border px-5 py-4 ${
+                  isLight
+                    ? "border-emerald-200 bg-emerald-50 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
+                    : "border-emerald-500/15 bg-emerald-500/[0.06]"
                 }`}
               >
-                Steps
-              </p>
-              <p className="mt-1.5 text-lg font-semibold">
-                <span className={isLight ? "text-gray-900" : "text-white"}>
-                  {stats.completedSteps}/{stats.totalSteps}
-                </span>
-              </p>
+                <p
+                  className={`text-[10px] uppercase tracking-[0.18em] ${
+                    isLight ? "text-emerald-700/80" : "text-emerald-200/80"
+                  }`}
+                >
+                  <BookOpen className="mr-1 inline h-3 w-3" />
+                  Topics Done
+                </p>
+                <p
+                  className={`mt-2 text-2xl font-semibold ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
+                  {trackStats.completedTopics}/{trackStats.totalTopics}
+                </p>
+                <p className={`mt-1 text-xs ${isLight ? "text-emerald-700" : "text-emerald-300/70"}`}>
+                  {trackStats.totalLessonsCompleted} lessons completed
+                </p>
+              </div>
+
+              <div
+                className={`rounded-2xl border px-5 py-4 ${
+                  isLight
+                    ? "border-amber-200 bg-amber-50 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
+                    : "border-amber-500/15 bg-amber-500/[0.06]"
+                }`}
+              >
+                <p
+                  className={`text-[10px] uppercase tracking-[0.18em] ${
+                    isLight ? "text-amber-700/80" : "text-amber-200/80"
+                  }`}
+                >
+                  <Award className="mr-1 inline h-3 w-3" />
+                  Badges
+                </p>
+
+                {trackStats.earnedMilestones.length > 0 ? (
+                  <>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {trackStats.earnedMilestones.slice(0, 4).map((milestone, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${
+                            isLight
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-amber-500/20 text-amber-300"
+                          }`}
+                        >
+                          {getMilestoneIcon(milestone.iconName)}
+                          <span>{milestone.label}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {trackStats.earnedMilestones.length > 4 && (
+                      <p className={`mt-2 text-xs ${isLight ? "text-amber-700" : "text-amber-300/70"}`}>
+                        +{trackStats.earnedMilestones.length - 4} more badges
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className={`mt-2 text-sm ${isLight ? "text-amber-700" : "text-amber-300/70"}`}>
+                    No badges yet
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-[1.2fr_auto]">
-          <div
-            className={`flex items-center rounded-2xl border px-4 py-3 transition focus-within:border-pink-300 ${
-              isLight
-                ? "border-gray-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.04)] hover:border-gray-300"
-                : "border-white/10 bg-[#0c0c10] hover:border-white/15 focus-within:border-pink-500/25"
-            }`}
-          >
-            <Search className={`mr-3 h-4 w-4 ${isLight ? "text-pink-500" : "text-pink-300"}`} />
-            <input
-              type="text"
-              placeholder="Search concepts, languages, data structures, or algorithms..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full bg-transparent text-sm outline-none ${
+        <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
+          <div className="flex gap-3">
+            <div
+              className={`flex-1 flex items-center rounded-2xl border px-4 py-3 transition-all ${
                 isLight
-                  ? "text-gray-900 placeholder:text-gray-400"
-                  : "text-white placeholder:text-gray-600"
+                  ? "border-gray-200 bg-white focus-within:border-pink-300"
+                  : "border-white/10 bg-[#0c0c10] focus-within:border-pink-500/30"
               }`}
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveFilter(cat)}
-                className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
-                  activeFilter === cat
-                    ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20"
-                    : isLight
-                    ? "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm"
-                    : "border border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-gray-200"
+            >
+              <Search className={`mr-3 h-4 w-4 ${isLight ? "text-pink-500" : "text-pink-300"}`} />
+              <input
+                type="text"
+                placeholder="Search tracks, topics, or technologies..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full bg-transparent text-sm outline-none ${
+                  isLight
+                    ? "text-gray-900 placeholder:text-gray-400"
+                    : "text-white placeholder:text-gray-600"
                 }`}
-              >
-                {cat}
-              </button>
-            ))}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className={`ml-2 rounded-lg px-2 py-1 text-xs transition ${
+                    isLight ? "text-gray-500 hover:text-gray-700" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={handleExploreCourses}
+              className={`flex items-center gap-2 rounded-2xl border px-5 py-3 transition-all font-medium ${
+                isLight
+                  ? "border-pink-200 bg-pink-50 hover:bg-pink-100 text-pink-700"
+                  : "border-pink-500/15 bg-pink-500/10 hover:bg-pink-500/15 text-pink-300"
+              }`}
+            >
+              <GraduationCap className="h-4 w-4" />
+              <span className="whitespace-nowrap">Browse other Courses</span>
+            </button>
           </div>
         </div>
       </section>
 
-      <AnimatePresence>
-        {continuePath && (
-          <motion.section
-            initial={{ opacity: 0, y: -16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            className={`rounded-[24px] border p-5 ${
-              isLight
-                ? "border-purple-200 bg-[linear-gradient(180deg,rgba(245,243,255,1),rgba(255,255,255,1))] shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
-                : "border-purple-500/20 bg-[linear-gradient(180deg,rgba(168,85,247,0.08),rgba(9,9,12,1))]"
-            }`}
-          >
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-start gap-4">
-                <div
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-                    isLight
-                      ? "bg-purple-100 text-purple-600"
-                      : "bg-purple-500/12 text-purple-300"
-                  }`}
+      <section className="py-2">
+        <motion.div
+          className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <div className="grid gap-7 md:grid-cols-2 xl:grid-cols-3">
+            {filteredTracks.map((track) => {
+              const trackProgress = trackProgressMap[track.id];
+
+              let totalLessons = 0;
+              let completedLessons = 0;
+
+              track.topics.forEach((topic) => {
+                const topicLessons = topic.subtopics.length;
+                totalLessons += topicLessons;
+
+                let topicCompletedLessons = 0;
+
+                if (trackProgress?.completedTopicIds?.includes(topic.id)) {
+                  topicCompletedLessons = topicLessons;
+                } else {
+                  topic.subtopics.forEach((subtopic) => {
+                    if (
+                      trackProgress?.lessonProgress?.[subtopic.id]?.completed ||
+                      trackProgress?.completedLessonIds?.includes(subtopic.id)
+                    ) {
+                      topicCompletedLessons++;
+                    }
+                  });
+                }
+
+                completedLessons += topicCompletedLessons;
+              });
+
+              const progressPercentage =
+                totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+              const status =
+                progressPercentage === 100
+                  ? "completed"
+                  : progressPercentage > 0
+                  ? "in_progress"
+                  : "not_started";
+
+              const accent = getFolderAccent(track.color, isLight);
+
+              return (
+                <motion.article
+                  key={track.id}
+                  variants={itemVariants}
+                  onClick={() => handleTrackClick(track.id)}
+                  className="group h-full cursor-pointer"
+                  whileHover={{ y: -4 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <TrendingUp className="h-6 w-6" />
-                </div>
+                  <div className="relative h-full pt-4">
+                    <div
+                      className={`absolute inset-x-3 bottom-0 top-5 rounded-[22px] ${
+                        isLight
+                          ? "bg-gray-100/80 shadow-[0_14px_30px_rgba(15,23,42,0.06)]"
+                          : "bg-black/25 shadow-[0_14px_30px_rgba(0,0,0,0.25)]"
+                      } transition-all duration-300 group-hover:translate-y-[3px]`}
+                    />
 
-                <div>
-                  <p
-                    className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${
-                      isLight ? "text-purple-700" : "text-purple-300"
-                    }`}
-                  >
-                    Continue Learning
-                  </p>
-                  <h2
-                    className={`mt-1.5 text-xl font-semibold tracking-tight ${
-                      isLight ? "text-gray-900" : "text-white"
-                    }`}
-                  >
-                    Resume {continuePath.title}
-                  </h2>
-                  <p
-                    className={`mt-2 text-sm leading-6 ${
-                      isLight ? "text-gray-600" : "text-gray-300"
-                    }`}
-                  >
-                    Continue from {continuePath.completedSteps}/
-                    {continuePath.totalSteps} completed steps.
-                  </p>
-                </div>
-              </div>
+                    <div
+                      className={`absolute left-5 top-0 z-20 h-8 w-20 rounded-t-[12px] rounded-br-[10px] border bg-gradient-to-b ${accent.tab} transition-all duration-300`}
+                    >
+                      <div className="flex h-full items-center justify-between px-2">
+                        <span className={`h-2 w-2 rounded-full ${accent.dot}`} />
+                        <FolderOpen
+                          className={`h-3.5 w-3.5 ${
+                            isLight ? "text-gray-500" : "text-gray-400"
+                          }`}
+                        />
+                      </div>
+                    </div>
 
-              <button
-                onClick={() => handleStart(continuePath.id, true)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 px-5 py-3 text-sm font-medium text-white transition hover:opacity-95"
-              >
-                Resume Path
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </motion.section>
-        )}
-      </AnimatePresence>
+                    <div
+                      className={`relative z-10 flex h-full flex-col overflow-hidden rounded-[24px] border bg-gradient-to-b ${
+                        accent.shell
+                      } ${
+                        isLight
+                          ? "border-gray-200 shadow-[0_16px_38px_rgba(15,23,42,0.08)]"
+                          : "border-white/10 shadow-[0_16px_38px_rgba(0,0,0,0.28)]"
+                      } transition-all duration-300 group-hover:shadow-[0_20px_44px_rgba(15,23,42,0.12)]`}
+                    >
+                      {track.coverImage ? (
+                        <div className="relative h-28 w-full overflow-hidden">
+                          <img
+                            src={track.coverImage}
+                            alt={track.title}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                        </div>
+                      ) : (
+                        <div className="h-2 w-full bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500" />
+                      )}
 
-      <section className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p
-              className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${
-                isLight ? "text-gray-500" : "text-gray-500"
-              }`}
-            >
-              Learning Paths
-            </p>
-            <h2
-              className={`mt-1.5 text-2xl font-semibold tracking-tight ${
-                isLight ? "text-gray-900" : "text-white"
-              }`}
-            >
-              All available courses
-            </h2>
-            <p
-              className={`mt-2 max-w-2xl text-sm leading-6 ${
-                isLight ? "text-gray-600" : "text-gray-400"
-              }`}
-            >
-              Start, continue, review, or unlock courses from one clean
-              learning workspace.
-            </p>
+                      <div
+                        className={`m-3 flex flex-1 flex-col rounded-[16px] border p-4 ${
+                          isLight
+                            ? "border-white/80 bg-white/92"
+                            : "border-white/5 bg-white/[0.03]"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-xl ${accent.icon}`}
+                          >
+                            {track.type === "master_track" ? (
+                              <Code2 className="h-4.5 w-4.5" />
+                            ) : (
+                              <Database className="h-4.5 w-4.5" />
+                            )}
+                          </div>
+
+                          <div
+                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                              status === "completed"
+                                ? isLight
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : "bg-emerald-500/20 text-emerald-300"
+                                : status === "in_progress"
+                                ? isLight
+                                  ? "bg-pink-50 text-pink-700"
+                                  : "bg-pink-500/15 text-pink-300"
+                                : isLight
+                                ? "bg-gray-100 text-gray-600"
+                                : "bg-white/[0.06] text-gray-300"
+                            }`}
+                          >
+                            {status === "completed"
+                              ? "Completed"
+                              : status === "in_progress"
+                              ? "In Progress"
+                              : "New"}
+                          </div>
+                        </div>
+
+                        <div className="mt-3">
+                          <h3
+                            className={`text-[1.85rem] font-bold leading-tight transition-colors duration-300 ${
+                              isLight
+                                ? "text-gray-900 group-hover:text-pink-600"
+                                : "text-white group-hover:text-pink-400"
+                            }`}
+                          >
+                            {track.title}
+                          </h3>
+
+                          <p
+                            className={`mt-1 text-sm ${
+                              isLight ? "text-gray-500" : "text-gray-400"
+                            }`}
+                          >
+                            {track.subtitle}
+                          </p>
+                        </div>
+
+                        <p
+                          className={`mt-2 line-clamp-2 text-sm leading-6 ${
+                            isLight ? "text-gray-600" : "text-gray-400"
+                          }`}
+                        >
+                          {track.description}
+                        </p>
+
+                        <div
+                          className={`mt-4 flex items-center gap-4 text-sm ${
+                            isLight ? "text-gray-500" : "text-gray-500"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            {track.totalHours}h total
+                          </span>
+                        </div>
+
+                        <div className="mt-3">
+                          <div
+                            className={`h-2 overflow-hidden rounded-full ${
+                              isLight ? "bg-gray-100" : "bg-white/[0.06]"
+                            }`}
+                          >
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${progressPercentage}%` }}
+                              transition={{ duration: 0.75, ease: "easeOut" }}
+                              className={`h-full rounded-full ${
+                                status === "completed"
+                                  ? "bg-emerald-500"
+                                  : "bg-gradient-to-r from-pink-500 to-purple-500"
+                              }`}
+                            />
+                          </div>
+
+                          <p
+                            className={`mt-2 text-sm ${
+                              isLight ? "text-gray-500" : "text-gray-500"
+                            }`}
+                          >
+                            <span className={isLight ? "text-gray-700" : "text-gray-300"}>
+                              {completedLessons}
+                            </span>
+                            /{totalLessons} lessons completed
+                          </p>
+                        </div>
+
+                        <motion.button
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.985 }}
+                          className={`mt-auto flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-300 ${
+                            isLight
+                              ? "bg-gray-100 text-gray-700 hover:bg-pink-500 hover:text-white"
+                              : "bg-white/[0.06] text-white hover:bg-pink-500"
+                          }`}
+                        >
+                          {status === "completed"
+                            ? "Review Track"
+                            : status === "in_progress"
+                            ? "Continue Track"
+                            : "Start Track"}
+                          <ChevronRight className="h-4 w-4" />
+                        </motion.button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.article>
+              );
+            })}
           </div>
+        </motion.div>
 
-          <div className={`text-sm ${isLight ? "text-gray-500" : "text-gray-500"}`}>
-            {sortedPaths.length} {sortedPaths.length === 1 ? "course" : "courses"}
-          </div>
-        </div>
-
-        {sortedPaths.length === 0 ? (
-          <div
-            className={`flex flex-col items-center justify-center rounded-[24px] border px-6 py-14 text-center ${
-              isLight
-                ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
-                : "border-white/10 bg-[#09090c]"
+        {filteredTracks.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className={`mx-auto mt-12 flex max-w-2xl flex-col items-center justify-center rounded-2xl border py-16 ${
+              isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#0c0c12]"
             }`}
           >
-            <div
-              className={`flex h-16 w-16 items-center justify-center rounded-2xl ${
-                isLight ? "bg-gray-100 text-gray-400" : "bg-white/[0.04] text-gray-600"
-              }`}
-            >
-              <BookOpen className="h-8 w-8" />
-            </div>
+            <Search className={`h-12 w-12 ${isLight ? "text-gray-300" : "text-gray-600"}`} />
             <h3
-              className={`mt-5 text-lg font-semibold ${
+              className={`mt-4 text-lg font-semibold ${
                 isLight ? "text-gray-900" : "text-white"
               }`}
             >
-              No courses found
+              No tracks found
             </h3>
-            <p
-              className={`mt-2 max-w-md text-sm leading-6 ${
-                isLight ? "text-gray-600" : "text-gray-400"
-              }`}
-            >
-              We couldn’t find any learning paths matching your search or
-              filters.
+            <p className={`mt-2 text-sm ${isLight ? "text-gray-500" : "text-gray-400"}`}>
+              Try adjusting your search
             </p>
             <button
-              onClick={() => {
-                setSearchQuery("");
-                setActiveFilter("All");
-              }}
-              className={`mt-6 text-sm font-medium ${
-                isLight
-                  ? "text-pink-600 hover:text-pink-700"
-                  : "text-pink-400 hover:text-pink-300"
+              onClick={() => setSearchQuery("")}
+              className={`mt-4 text-sm font-medium ${
+                isLight ? "text-pink-600 hover:text-pink-700" : "text-pink-400 hover:text-pink-300"
               }`}
             >
               Clear filters
             </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {sortedPaths.map((path) => (
-              <motion.article
-                key={path.id}
-                layout
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`group overflow-hidden rounded-[26px] border transition duration-300 ${
-                  isLight
-                    ? path.status === "locked"
-                      ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.05)]"
-                      : path.status === "in_progress"
-                      ? "border-purple-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.05)] hover:border-purple-300 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
-                      : "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.05)] hover:border-pink-200 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
-                    : path.status === "locked"
-                    ? "border-white/10 bg-[#09090c]"
-                    : path.status === "in_progress"
-                    ? "border-purple-500/20 bg-[#09090c] hover:border-purple-500/30"
-                    : "border-white/10 bg-[#09090c] hover:border-pink-500/20"
-                }`}
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={path.coverImage}
-                    alt={path.title}
-                    className={`h-full w-full object-cover transition duration-500 ${
-                      path.status === "locked"
-                        ? "scale-100 grayscale-[0.2]"
-                        : "group-hover:scale-[1.03]"
-                    }`}
-                  />
-                  <div
-                    className={`absolute inset-0 ${
-                      isLight
-                        ? "bg-gradient-to-t from-white via-white/30 to-transparent"
-                        : "bg-gradient-to-t from-[#09090c] via-[#09090c]/40 to-transparent"
-                    }`}
-                  />
-
-                  <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${getDifficultyBadge(
-                          path.difficulty
-                        )}`}
-                      >
-                        {path.difficulty}
-                      </span>
-
-                      {path.isRecommended && path.status !== "locked" && (
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
-                            isLight
-                              ? "border-pink-200 bg-pink-50 text-pink-700"
-                              : "border-pink-500/15 bg-pink-500/10 text-pink-300"
-                          }`}
-                        >
-                          <Sparkles className="h-3.5 w-3.5" />
-                          Recommended
-                        </span>
-                      )}
-                    </div>
-
-                    <span
-                      className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${getStatusBadge(
-                        path.status
-                      )}`}
-                    >
-                      {path.status === "in_progress"
-                        ? "In Progress"
-                        : path.status === "completed"
-                        ? "Completed"
-                        : path.status === "locked"
-                        ? "Locked"
-                        : "Ready"}
-                    </span>
-                  </div>
-
-                  {path.status === "locked" && (
-                    <div
-                      className={`absolute inset-0 flex items-center justify-center ${
-                        isLight
-                          ? "bg-white/35 backdrop-blur-[1px]"
-                          : "bg-black/30 backdrop-blur-[1px]"
-                      }`}
-                    >
-                      <div
-                        className={`rounded-2xl border p-4 text-center ${
-                          isLight
-                            ? "border-gray-200 bg-white/90"
-                            : "border-white/10 bg-black/55"
-                        }`}
-                      >
-                        <Lock
-                          className={`mx-auto h-5 w-5 ${
-                            isLight ? "text-gray-500" : "text-gray-300"
-                          }`}
-                        />
-                        <p
-                          className={`mt-2 text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                            isLight ? "text-gray-600" : "text-gray-300"
-                          }`}
-                        >
-                          Locked
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <span
-                      className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${
-                        isLight ? "text-pink-600" : "text-pink-400"
-                      }`}
-                    >
-                      {path.category}
-                    </span>
-                    <div
-                      className={`flex items-center gap-1.5 text-xs ${
-                        isLight ? "text-gray-500" : "text-gray-500"
-                      }`}
-                    >
-                      <Clock className="h-3.5 w-3.5" />
-                      {path.readTime}
-                    </div>
-                  </div>
-
-                  <h3
-                    className={`mt-3 text-xl font-semibold tracking-tight ${
-                      isLight ? "text-gray-900" : "text-white"
-                    }`}
-                  >
-                    {path.title}
-                  </h3>
-
-                  <p
-                    className={`mt-2 min-h-[48px] text-sm leading-6 ${
-                      isLight ? "text-gray-600" : "text-gray-400"
-                    }`}
-                  >
-                    {path.subtitle}
-                  </p>
-
-                  <div className="mt-4">
-                    <div className="mb-2 flex items-center justify-between text-[11px] font-medium">
-                      <span className={isLight ? "text-gray-500" : "text-gray-500"}>
-                        {path.status === "completed" ? "Mastered" : "Progress"}
-                      </span>
-                      <span
-                        className={
-                          path.status === "completed"
-                            ? isLight
-                              ? "text-emerald-700"
-                              : "text-emerald-300"
-                            : isLight
-                            ? "text-gray-700"
-                            : "text-gray-300"
-                        }
-                      >
-                        {path.progressPercentage}%
-                      </span>
-                    </div>
-
-                    <div
-                      className={`h-2 overflow-hidden rounded-full ${
-                        isLight ? "bg-gray-100" : "bg-white/[0.06]"
-                      }`}
-                    >
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${path.progressPercentage}%` }}
-                        className={`h-full rounded-full ${
-                          path.status === "completed"
-                            ? "bg-emerald-500"
-                            : "bg-gradient-to-r from-pink-500 to-purple-500"
-                        }`}
-                      />
-                    </div>
-
-                    <div
-                      className={`mt-2 flex items-center justify-between text-[11px] ${
-                        isLight ? "text-gray-500" : "text-gray-500"
-                      }`}
-                    >
-                      <span>
-                        {path.completedSteps}/{path.totalSteps} steps completed
-                      </span>
-                    </div>
-                  </div>
-
-                  {path.status === "locked" && (
-                    <div
-                      className={`mt-4 rounded-xl border px-3 py-2 text-xs ${
-                        isLight
-                          ? "border-gray-200 bg-gray-50 text-gray-500"
-                          : "border-white/10 bg-white/[0.03] text-gray-500"
-                      }`}
-                    >
-                      Complete prerequisite courses to unlock this path.
-                    </div>
-                  )}
-
-                  <div className="mt-6 flex items-center gap-3">
-                    <button
-                      onClick={() => handleStart(path.id, path.isUnlocked)}
-                      disabled={!path.isUnlocked}
-                      className={`flex-1 rounded-xl px-4 py-3 text-sm font-medium transition ${
-                        path.status === "locked"
-                          ? isLight
-                            ? "cursor-not-allowed border border-gray-200 bg-gray-50 text-gray-400"
-                            : "cursor-not-allowed border border-white/10 bg-white/[0.03] text-gray-600"
-                          : "bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:opacity-95"
-                      }`}
-                    >
-                      {path.status === "completed"
-                        ? "Review Course"
-                        : path.status === "in_progress"
-                        ? "Continue Learning"
-                        : "Start Learning"}
-                    </button>
-
-                    <button
-                      onClick={() => handleStart(path.id, path.isUnlocked)}
-                      disabled={!path.isUnlocked}
-                      className={`flex h-[48px] w-[48px] items-center justify-center rounded-xl border transition ${
-                        path.status === "locked"
-                          ? isLight
-                            ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
-                            : "cursor-not-allowed border-white/10 bg-white/[0.03] text-gray-600"
-                          : isLight
-                          ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
-                          : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
-                      }`}
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-              </motion.article>
-            ))}
-          </div>
+          </motion.div>
         )}
       </section>
+
+      <FeedbackFAB />
+      <PageFooter />
     </div>
   );
 }

@@ -16,7 +16,7 @@ import LearningHero from "../LearningHero";
 import LearningContent from "../LearningContent";
 import LearningEngagement from "../LearningEngagement";
 import LearningOutline from "../LearningOutline";
-import { LEARNING_PATHS } from "../data";
+import { LEARNING_PATHS, getTrackById } from "../data";
 import { useTheme } from "@/app/context/ThemeContext";
 
 const PROGRESS_KEY = "codemaster_learning_progress_v1";
@@ -40,6 +40,13 @@ export default function LearningPathEngine() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const pathId = params.pathId as string;
+
+  useEffect(() => {
+    const track = getTrackById(pathId);
+    if (track) {
+      router.replace(`/dashboard/learning/track/${pathId}`);
+    }
+  }, [pathId, router]);
 
   const [userProgress, setUserProgress] = useState<UserProgress>({
     paths: {},
@@ -219,7 +226,7 @@ export default function LearningPathEngine() {
     saveProgress(newProgress);
   };
 
-  if (loading || !path) {
+  if (loading) {
     return (
       <div
         className={`flex min-h-screen items-center justify-center ${
@@ -227,6 +234,29 @@ export default function LearningPathEngine() {
         }`}
       >
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!path) {
+    return (
+      <div
+        className={`flex min-h-screen flex-col items-center justify-center gap-4 ${
+          isLight ? "bg-[#f8fafc]" : "bg-[#020202]"
+        }`}
+      >
+        <h1 className={`text-2xl font-bold ${isLight ? "text-gray-900" : "text-white"}`}>
+          Course not found
+        </h1>
+        <p className={isLight ? "text-gray-600" : "text-gray-400"}>
+          The course you&apos;re looking for doesn&apos;t exist.
+        </p>
+        <button
+          onClick={() => router.push("/dashboard/learning")}
+          className="px-4 py-2 bg-pink-500 text-white rounded-lg"
+        >
+          Back to Learning
+        </button>
       </div>
     );
   }
@@ -300,7 +330,7 @@ export default function LearningPathEngine() {
       <div className="mx-auto mt-[-30px] max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <button
-            onClick={() => router.push("/dashboard/learning")}
+            onClick={() => router.push("/dashboard/learning/explore")}
             className={`group inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
               isLight ? "text-gray-500 hover:text-gray-900" : "text-gray-500 hover:text-white"
             }`}
@@ -510,6 +540,10 @@ export default function LearningPathEngine() {
                       path.relatedChallengeId &&
                       router.push(`/dashboard/challenges/${path.relatedChallengeId}`)
                     }
+                    onDuel={() => router.push("/dashboard/challenges")}
+                    onNextCourse={() => {}}
+                    hasRelatedChallenge={!!path.relatedChallengeId}
+                    hasNextCourse={false}
                     rating={path.rating}
                     totalRatings={path.totalRatings}
                   />
