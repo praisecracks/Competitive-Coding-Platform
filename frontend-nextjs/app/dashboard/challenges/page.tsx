@@ -116,6 +116,7 @@ export default function DashboardChallengesPage() {
       setChallenges([]);
       setErrorMessage("Backend is offline or unreachable at the moment.");
     } finally {
+      await new Promise(resolve => setTimeout(resolve, 1000));
       setLoading(false);
     }
   }, []);
@@ -841,16 +842,35 @@ export default function DashboardChallengesPage() {
       </section>
 
       {loading ? (
-        <div
-          className={`rounded-[24px] border py-20 text-center ${
-            isLight
-              ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
-              : "border-white/10 bg-[#09090c]"
-          }`}
-        >
-          <p className={`text-sm ${isLight ? "text-gray-500" : "text-gray-500"}`}>
-            Loading your learning challenges...
-          </p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className={`rounded-[24px] border p-5 ${
+                isLight
+                  ? "border-gray-200 bg-white"
+                  : "border-white/10 bg-[#09090c]"
+              }`}
+            >
+              <div className={`h-6 w-3/4 animate-pulse rounded-lg mb-3 ${
+                isLight ? "bg-gray-200" : "bg-white/10"
+              }`} />
+              <div className={`h-4 w-full animate-pulse rounded mb-2 ${
+                isLight ? "bg-gray-200" : "bg-white/10"
+              }`} />
+              <div className={`h-4 w-2/3 animate-pulse rounded mb-4 ${
+                isLight ? "bg-gray-200" : "bg-white/10"
+              }`} />
+              <div className="flex gap-2">
+                <div className={`h-6 w-16 animate-pulse rounded-full ${
+                  isLight ? "bg-gray-200" : "bg-white/10"
+                }`} />
+                <div className={`h-6 w-16 animate-pulse rounded-full ${
+                  isLight ? "bg-gray-200" : "bg-white/10"
+                }`} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : errorMessage ? (
         <div
