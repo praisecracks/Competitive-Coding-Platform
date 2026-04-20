@@ -11,6 +11,7 @@ import { clearUserSession } from "@/lib/auth";
 import { Copy, Check } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import FeedbackFAB from "../components/FeedbackFAB";
+import { getLearningProgress } from "@/lib/learning-api";
 
 interface DashboardData {
   stats: {
@@ -58,6 +59,14 @@ const defaultData: DashboardData = {
   recentSubmissions: [],
 };
 
+interface ActiveLearning {
+  trackId: string;
+  topicId?: string;
+  title: string;
+  subtitle?: string;
+  progressPercent: number;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { theme } = useTheme();
@@ -69,6 +78,7 @@ export default function DashboardPage() {
   const [statsError, setStatsError] = useState("");
   const [isRankModalOpen, setIsRankModalOpen] = useState(false);
   const [isCopied, setIsCheck] = useState(false);
+  const [activeLearning, setActiveLearning] = useState<ActiveLearning | null>(null);
 
   const tips = useMemo(
     () => [
@@ -119,6 +129,43 @@ export default function DashboardPage() {
 
     fetchDashboardData(token);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    async function loadLearningProgress() {
+      try {
+        const progress = await getLearningProgress();
+        const trackProgress = progress.trackProgress || {};
+        
+        // Find tracks with progress (started but not completed)
+        let mostRecent: ActiveLearning | null = null;
+        
+        for (const [trackId, track] of Object.entries(trackProgress)) {
+          const completedLessons = (track as any)?.completedLessonIds?.length || 0;
+          const completedTopics = (track as any)?.completedTopicIds?.length || 0;
+          
+          if (completedLessons > 0 || completedTopics > 0) {
+            // Just take the first track with progress
+            if (!mostRecent) {
+              mostRecent = {
+                trackId,
+                topicId: undefined, // Let the track page decide which topic
+                title: trackId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                progressPercent: 0
+              };
+              break;
+            }
+          }
+        }
+        
+        if (mostRecent) {
+          setActiveLearning(mostRecent);
+        }
+      } catch (e) {
+        console.error("Failed to load learning progress", e);
+      }
+    }
+    loadLearningProgress();
   }, []);
 
   const fetchDashboardData = async (token: string) => {
@@ -210,22 +257,38 @@ export default function DashboardPage() {
       <WelcomeSection
         userName={userName || "Developer"}
         actionTitle={
-          data.recentSubmissions.length > 0
+          activeLearning
+            ? `Continue: ${activeLearning.title}`
+            : data.recentSubmissions.length > 0
             ? `Continue: ${data.recentSubmissions[0].title}`
             : "Start your next challenge"
         }
         actionSubtitle={
-          data.recentSubmissions.length > 0
+          activeLearning
+            ? `You're ${activeLearning.progressPercent}% through this track. Keep going!`
+            : data.recentSubmissions.length > 0
             ? "Jump back into your most recent learning activity and keep the momentum going."
             : "Explore challenges and begin building your progress with a focused first step."
         }
         actionButtonLabel={
-          data.recentSubmissions.length > 0
+          activeLearning
+            ? "Continue Learning"
+            : data.recentSubmissions.length > 0
             ? "Continue Learning"
             : "Start Learning"
         }
         secondaryButtonLabel="Explore Challenges"
-        onActionClick={() => router.push("/dashboard/learning")}
+        onActionClick={() => {
+          if (activeLearning) {
+            if (activeLearning.topicId) {
+              router.push(`/dashboard/learning/track/${activeLearning.trackId}/topic/${activeLearning.topicId}`);
+            } else {
+              router.push(`/dashboard/learning/track/${activeLearning.trackId}`);
+            }
+          } else {
+            router.push("/dashboard/learning");
+          }
+        }}
         onSecondaryActionClick={() => router.push("/dashboard/challenges")}
       />
 

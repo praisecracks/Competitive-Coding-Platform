@@ -3,6 +3,42 @@ export const AUTH_USERNAME_KEY = "user_name";
 export const AUTH_EMAIL_KEY = "user_email";
 export const AUTH_USER_KEY = "user";
 
+export const GLOBAL_PROGRESS_KEY = "codemaster_learning_track_progress";
+export const GLOBAL_LEGACY_PROGRESS_KEY = "codemaster_learning_progress_v1";
+export const GLOBAL_STREAK_KEY = "codemaster_learning_streak_v1";
+export const GLOBAL_JOURNAL_KEY = "codemaster_learning_journal";
+
+function sanitizeKeyPart(value: string): string {
+  if (!value) return "anonymous";
+  return value.toLowerCase().replace(/[^a-z0-9@._-]/g, "_").slice(0, 64);
+}
+
+export function getUserScopedKey(baseKey: string): string {
+  if (typeof window === "undefined") return baseKey;
+
+  const stored = localStorage.getItem(AUTH_EMAIL_KEY);
+  if (!stored) return baseKey;
+
+  const sanitized = sanitizeKeyPart(stored);
+  return `${baseKey}_${sanitized}`;
+}
+
+export function getUserProgressKey(): string {
+  return getUserScopedKey(GLOBAL_PROGRESS_KEY);
+}
+
+export function getUserLegacyProgressKey(): string {
+  return getUserScopedKey(GLOBAL_LEGACY_PROGRESS_KEY);
+}
+
+export function getUserStreakKey(): string {
+  return getUserScopedKey(GLOBAL_STREAK_KEY);
+}
+
+export function getUserJournalKey(): string {
+  return getUserScopedKey(GLOBAL_JOURNAL_KEY);
+}
+
 type PersistedUser = {
   username: string;
   email: string;
@@ -110,9 +146,6 @@ export function clearUserSession() {
   localStorage.removeItem(AUTH_USER_KEY);
   localStorage.removeItem("user_pic");
 
-  // Don't clear learning progress or onboarding - kept for same user
-  // Note: Shared devices will see each other's progress
-  
   localStorage.removeItem("dashboard_notifications");
   localStorage.removeItem("dismissed_notification_ids");
 }

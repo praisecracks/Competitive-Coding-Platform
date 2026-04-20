@@ -20,6 +20,7 @@ import (
 var Client *mongo.Client
 var FeedbackCollection *mongo.Collection
 var UserCollection *mongo.Collection
+var LearningProgressCollection *mongo.Collection
 
 // ConnectDB initializes the connection to MongoDB
 func ConnectDB() {
@@ -49,6 +50,7 @@ func ConnectDB() {
 	// Initialize collections
 	FeedbackCollection = GetCollection("feedback")
 	UserCollection = GetCollection("users")
+	LearningProgressCollection = GetCollection("learning_progress")
 
 	fmt.Println(">>> DATABASE_CONNECTED_SUCCESSFULLY")
 

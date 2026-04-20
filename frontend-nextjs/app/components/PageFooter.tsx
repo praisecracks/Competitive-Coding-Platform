@@ -38,7 +38,7 @@ export default function PageFooter() {
 
   return (
     <footer
-      className={`mt-16 border-t px-4 py-8 ${
+      className={`mt-16 border-t px-4 py-8 select-none ${
         isLight
           ? "border-gray-200 bg-gray-50"
           : "border-white/5 bg-[#0a0a0a]"

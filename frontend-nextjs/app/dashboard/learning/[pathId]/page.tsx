@@ -19,6 +19,28 @@ import LearningOutline from "../LearningOutline";
 import { LEARNING_PATHS, getTrackById } from "../data";
 import { useTheme } from "@/app/context/ThemeContext";
 
+function playXpSound() {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+    oscillator.type = "sine";
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch (e) {
+    console.warn("Audio not supported", e);
+  }
+}
+
 const PROGRESS_KEY = "codemaster_learning_progress_v1";
 
 interface PathProgress {
@@ -158,6 +180,8 @@ export default function LearningPathEngine() {
 
     if (xpToGain > 0) {
       setShowXpPopup(xpToGain);
+      // Play XP sound
+      playXpSound();
       setTimeout(() => setShowXpPopup(null), 2000);
     }
 

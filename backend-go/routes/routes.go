@@ -96,6 +96,17 @@ func RegisterRoutes(r *gin.Engine) {
 		// Submission routes
 		protected.POST("/run", controllers.RunCode)
 		protected.POST("/submit", controllers.SubmitCode)
+
+		// Learning Progress routes
+		learning := protected.Group("/learning")
+		{
+			learning.GET("/progress", controllers.GetLearningProgress)
+			learning.PUT("/track-progress", controllers.UpdateTrackProgress)
+			learning.POST("/streak", controllers.UpdateStreak)
+			learning.POST("/journal", controllers.AddJournalEntry)
+			learning.DELETE("/journal/:id", controllers.DeleteJournalEntry)
+			learning.PUT("/legacy-progress", controllers.UpdateLegacyProgress)
+		}
 	}
 
 	// Reports

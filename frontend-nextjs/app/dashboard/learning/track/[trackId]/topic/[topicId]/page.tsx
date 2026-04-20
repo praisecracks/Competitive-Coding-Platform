@@ -33,19 +33,13 @@ import {
 } from "../../../../data";
 import { useTheme } from "@/app/context/ThemeContext";
 import PageFooter from "@/app/components/PageFooter";
-
-const PROGRESS_KEY = "codemaster_learning_track_progress";
-
-interface TrackProgress {
-  completedTopicIds: string[];
-  completedLessonIds: string[];
-  lessonProgress: {
-    [lessonId: string]: { completed: boolean; timeSpentSeconds: number };
-  };
-  topicTimeSpent: { [topicId: string]: number };
-  startedAt?: string;
-  lastAccessedAt?: string;
-}
+import {
+  getLearningProgress,
+  migrateLegacyProgress,
+  updateTrackProgress,
+  updateStreak,
+  TrackProgress,
+} from "@/lib/learning-api";
 
 export default function TopicPage() {
   const router = useRouter();
@@ -72,23 +66,19 @@ export default function TopicPage() {
   const [pendingAction, setPendingAction] = useState<"complete" | "next" | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem(PROGRESS_KEY);
-    if (saved) {
+    async function loadProgress() {
       try {
-        const all = JSON.parse(saved);
-        setProgress(
-          all[trackId] || {
-            completedTopicIds: [],
-            completedLessonIds: [],
-            lessonProgress: {},
-            topicTimeSpent: {},
-          }
-        );
+        const data = await migrateLegacyProgress();
+        const trackProgress = data.trackProgress?.[trackId];
+        if (trackProgress) {
+          setProgress(trackProgress);
+        }
       } catch (e) {
-        console.error("Failed to parse progress", e);
+        console.error("Failed to load progress from API", e);
       }
+      setLoading(false);
     }
-    setLoading(false);
+    loadProgress();
   }, [trackId]);
 
    useEffect(() => {
@@ -101,18 +91,21 @@ export default function TopicPage() {
    }, [topic, progress.completedLessonIds, activeLessonId]);
 
   const saveProgress = useCallback(
-    (newProgress: TrackProgress) => {
-      setProgress(newProgress);
-
-      const all = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
-      all[trackId] = {
+    async (newProgress: TrackProgress) => {
+      const progressToSave: TrackProgress = {
         ...newProgress,
         lastAccessedAt: new Date().toISOString(),
-        startedAt: all[trackId]?.startedAt || new Date().toISOString(),
+        startedAt: newProgress.startedAt || new Date().toISOString(),
       };
 
-      localStorage.setItem(PROGRESS_KEY, JSON.stringify(all));
-      window.dispatchEvent(new Event("codemaster-learning-updated"));
+      setProgress(progressToSave);
+
+      try {
+        await updateTrackProgress(trackId, progressToSave);
+        window.dispatchEvent(new Event("codemaster-learning-updated"));
+      } catch (e) {
+        console.error("Failed to save progress to API", e);
+      }
     },
     [trackId]
   );
@@ -142,14 +135,13 @@ export default function TopicPage() {
         if (!next.topicTimeSpent) next.topicTimeSpent = {};
         next.topicTimeSpent[topicId] = (next.topicTimeSpent[topicId] || 0) + timeSpent;
 
-        const all = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
-        all[trackId] = {
+        // Save to API
+        const progressToSave = {
           ...next,
+          startedAt: next.startedAt || new Date().toISOString(),
           lastAccessedAt: new Date().toISOString(),
-          startedAt: all[trackId]?.startedAt || new Date().toISOString(),
         };
-
-        localStorage.setItem(PROGRESS_KEY, JSON.stringify(all));
+        updateTrackProgress(trackId, progressToSave).catch(e => console.error("Failed to save time tracking", e));
         window.dispatchEvent(new Event("codemaster-learning-updated"));
 
         return next;
@@ -247,42 +239,12 @@ export default function TopicPage() {
 
     saveProgress(nextProgress);
 
-    const today = new Date().toDateString();
-    const streakKey = "codemaster_learning_streak_v1";
-    const existingStreak = localStorage.getItem(streakKey);
-    
-    if (existingStreak) {
-      const streak = JSON.parse(existingStreak);
-      const lastDate = new Date(streak.lastLearningDate).toDateString();
-      
-      if (lastDate !== today) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toDateString();
-        
-        if (lastDate === yesterdayStr) {
-          streak.currentStreak += 1;
-        } else {
-          streak.currentStreak = 1;
-        }
-        
-        if (streak.currentStreak > streak.longestStreak) {
-          streak.longestStreak = streak.currentStreak;
-        }
-        
-        streak.lastLearningDate = new Date().toISOString();
-        localStorage.setItem(streakKey, JSON.stringify(streak));
-        window.dispatchEvent(new Event("codemaster-learning-updated"));
-      }
-    } else {
-      const newStreak = {
-        currentStreak: 1,
-        lastLearningDate: new Date().toISOString(),
-        longestStreak: 1,
-      };
-      localStorage.setItem(streakKey, JSON.stringify(newStreak));
+    // Update streak via API (non-blocking)
+    updateStreak(true).then(() => {
       window.dispatchEvent(new Event("codemaster-learning-updated"));
-    }
+    }).catch(e => {
+      console.error("Failed to update streak", e);
+    });
 
     const currentIndex = topic.subtopics.findIndex((subtopic) => subtopic.id === activeLessonId);
     if (currentIndex < topic.subtopics.length - 1) {

@@ -17,8 +17,7 @@ import {
 import { LEARNING_PATH_GROUPS, getPathProgress } from "../data";
 import { useTheme } from "@/app/context/ThemeContext";
 import type { PathGroup } from "../data";
-
-const PROGRESS_KEY = "codemaster_learning_track_progress";
+import { getUserProgressKey } from "@/lib/auth";
 
 interface UserProgress {
   totalXp?: number;
@@ -42,6 +41,7 @@ export default function LearningPathsPage() {
   });
 
   useEffect(() => {
+    const PROGRESS_KEY = getUserProgressKey();
     const saved = localStorage.getItem(PROGRESS_KEY);
     if (saved) {
       try {

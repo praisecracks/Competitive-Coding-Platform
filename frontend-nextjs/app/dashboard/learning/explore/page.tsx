@@ -16,8 +16,11 @@ import {
 import { LEARNING_PATHS, LEARNING_TRACKS, ADDITIONAL_TRACKS, getCourseProgressFromTrack } from "../data";
 import { useTheme } from "@/app/context/ThemeContext";
 import PageFooter from "@/app/components/PageFooter";
-
-const PROGRESS_KEY = "codemaster_learning_track_progress"; // Same as course detail page
+import {
+  getUserProgressKey,
+  getUserLegacyProgressKey,
+} from "@/lib/auth";
+import { migrateLegacyProgress, getLearningProgress } from "@/lib/learning-api";
 
 type PathStatus = "not_started" | "in_progress" | "completed";
 
@@ -60,28 +63,58 @@ export default function ExploreCoursesPage() {
   const [trackProgressMap, setTrackProgressMap] = useState<Record<string, TrackProgress>>({});
 
   useEffect(() => {
-    // Load track progress
-    const trackSaved = localStorage.getItem(PROGRESS_KEY);
-    if (trackSaved) {
+    async function loadProgress() {
       try {
-        const parsed = JSON.parse(trackSaved);
-        setTrackProgressMap(parsed || {});
+        // Try from MongoDB API first
+        const data = await migrateLegacyProgress();
+        if (data.trackProgress && Object.keys(data.trackProgress).length > 0) {
+          setTrackProgressMap(data.trackProgress);
+        }
+        if (data.legacyProgress && Object.keys(data.legacyProgress).length > 0) {
+          setUserProgress({ paths: data.legacyProgress as any, totalXp: 0 });
+        }
       } catch (e) {
-        console.error("Failed to parse track progress", e);
+        console.warn("API failed", e);
+      }
+      
+      // Check user-scoped localStorage
+      const userEmail = localStorage.getItem("user_email");
+      const sanitized = userEmail ? userEmail.toLowerCase().replace(/[^a-z0-9@._-]/g, "_").slice(0, 64) : null;
+      
+      // Try user-scoped keys first
+      if (sanitized) {
+        const localProgress = localStorage.getItem(`codemaster_learning_track_progress_${sanitized}`);
+        if (localProgress) {
+          try {
+            const parsed = JSON.parse(localProgress);
+            if (parsed && Object.keys(parsed).length > 0 && Object.keys(trackProgressMap).length === 0) {
+              setTrackProgressMap(parsed);
+            }
+          } catch {}
+        }
+        const localLegacy = localStorage.getItem(`codemaster_learning_progress_v1_${sanitized}`);
+        if (localLegacy && Object.keys(userProgress.paths).length === 0) {
+          try {
+            setUserProgress({ paths: JSON.parse(localLegacy), totalXp: 0 });
+          } catch {}
+        }
+      }
+      
+      // Last resort: check old global keys (for backward compatibility)
+      const globalProgress = localStorage.getItem("codemaster_learning_track_progress");
+      if (globalProgress && Object.keys(trackProgressMap).length === 0) {
+        try {
+          setTrackProgressMap(JSON.parse(globalProgress));
+        } catch {}
+      }
+      const globalLegacy = localStorage.getItem("codemaster_learning_progress_v1");
+      if (globalLegacy && Object.keys(userProgress.paths).length === 0) {
+        try {
+          setUserProgress({ paths: JSON.parse(globalLegacy), totalXp: 0 });
+        } catch {}
       }
     }
-
-    // Also load legacy course progress from separate key
-    const LEGACY_KEY = "codemaster_learning_progress_v1";
-    const legacySaved = localStorage.getItem(LEGACY_KEY);
-    if (legacySaved) {
-      try {
-        const parsed = JSON.parse(legacySaved);
-        setUserProgress(parsed);
-      } catch (e) {
-        console.error("Failed to parse legacy progress", e);
-      }
-    }
+    loadProgress();
   }, []);
 
   const allTracks = useMemo(() => [...LEARNING_TRACKS, ...ADDITIONAL_TRACKS], []);

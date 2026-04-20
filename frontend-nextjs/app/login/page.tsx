@@ -10,6 +10,14 @@ import {
   isAuthenticated,
   persistUserSession,
   sanitizeRedirect,
+  getUserProgressKey,
+  getUserLegacyProgressKey,
+  getUserStreakKey,
+  getUserJournalKey,
+  GLOBAL_PROGRESS_KEY,
+  GLOBAL_LEGACY_PROGRESS_KEY,
+  GLOBAL_STREAK_KEY,
+  GLOBAL_JOURNAL_KEY,
 } from "@/lib/auth";
 
 type Status = "IDLE" | "LOADING" | "SUCCESS" | "ERROR";
@@ -148,24 +156,38 @@ function LoginForm() {
         return;
       }
 
-      // Check if logging in as different user - only clear progress if truly different
+      // Migrate global progress data to user-scoped storage for same user re-login
+      const currentUserKey = getUserProgressKey();
+      const currentLegacyKey = getUserLegacyProgressKey();
+      const currentStreakKey = getUserStreakKey();
+      const currentJournalKey = getUserJournalKey();
+
       const previousUser = localStorage.getItem("user");
-      const isDifferentUser = previousUser && data.username && (() => {
+      const isSameUser = previousUser && data.username && (() => {
         try {
           const prev = JSON.parse(previousUser);
-          return prev.username && prev.username !== data.username;
+          return prev.username && prev.username === data.username;
         } catch { return false; }
       })();
 
-      if (isDifferentUser) {
-        console.log("Different user detected, clearing progress...");
-        localStorage.removeItem("codemaster_learning_progress_v1");
-        localStorage.removeItem("codemaster_learning_track_progress");
-        localStorage.removeItem("codemaster_learning_streak_v1");
-        localStorage.removeItem("codemaster_user_progress");
-        localStorage.removeItem("dismissed_notification_ids");
-        // Keep onboarding shown for different users too
+      if (isSameUser) {
+        const hasExistingUserData = localStorage.getItem(currentUserKey) ||
+          localStorage.getItem(currentLegacyKey) ||
+          localStorage.getItem(currentStreakKey);
+        if (!hasExistingUserData) {
+          const globalProgress = localStorage.getItem(GLOBAL_PROGRESS_KEY);
+          const globalLegacy = localStorage.getItem(GLOBAL_LEGACY_PROGRESS_KEY);
+          const globalStreak = localStorage.getItem(GLOBAL_STREAK_KEY);
+          const globalJournal = localStorage.getItem(GLOBAL_JOURNAL_KEY);
+
+          if (globalProgress) localStorage.setItem(currentUserKey, globalProgress);
+          if (globalLegacy) localStorage.setItem(currentLegacyKey, globalLegacy);
+          if (globalStreak) localStorage.setItem(currentStreakKey, globalStreak);
+          if (globalJournal) localStorage.setItem(currentJournalKey, globalJournal);
+        }
       }
+
+      localStorage.removeItem("dismissed_notification_ids");
 
       persistUserSession(data);
       setStatus("SUCCESS");

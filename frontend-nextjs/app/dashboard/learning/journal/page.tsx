@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/app/context/ThemeContext";
+import { getUserJournalKey } from "@/lib/auth";
 
 interface JournalEntry {
   id: string;
@@ -42,7 +43,7 @@ export default function LearningJournalPage() {
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
 
   useEffect(() => {
-    const journalKey = "codemaster_learning_journal";
+    const journalKey = getUserJournalKey();
     const savedJournal = localStorage.getItem(journalKey);
 
     if (savedJournal) {
@@ -162,8 +163,9 @@ export default function LearningJournalPage() {
   const handleDeleteEntry = (entryId: string) => {
     const updatedEntries = journalEntries.filter((entry) => entry.id !== entryId);
     setJournalEntries(updatedEntries);
+    const journalKey = getUserJournalKey();
     localStorage.setItem(
-      "codemaster_learning_journal",
+      journalKey,
       JSON.stringify(updatedEntries)
     );
 

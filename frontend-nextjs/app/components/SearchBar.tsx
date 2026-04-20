@@ -9,6 +9,7 @@ import {
   SearchResults,
   SearchUser,
   SearchChallenge,
+  SearchCourse,
 } from "@/lib/search";
 import { useTheme } from "@/app/context/ThemeContext";
 
@@ -17,7 +18,7 @@ export default function SearchBar() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResults>({ users: [], challenges: [] });
+  const [results, setResults] = useState<SearchResults>({ users: [], challenges: [], courses: [] });
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState("");
@@ -28,7 +29,7 @@ export default function SearchBar() {
   const performSearch = useMemo(() => {
     return debounce(async (searchQuery: string) => {
       if (!searchQuery.trim()) {
-        setResults({ users: [], challenges: [] });
+setResults({ users: [], challenges: [], courses: [] });
         setError("");
         setLoading(false);
         return;
@@ -60,7 +61,7 @@ export default function SearchBar() {
     setIsOpen(true);
 
     if (!value.trim()) {
-      setResults({ users: [], challenges: [] });
+      setResults({ users: [], challenges: [], courses: [] });
       setError("");
       setLoading(false);
     } else {
@@ -119,9 +120,16 @@ export default function SearchBar() {
     router.push(`/dashboard/challenges/${challengeId}`);
   };
 
+  // Handle course click
+  const handleCourseClick = (courseId: string) => {
+    setIsOpen(false);
+    setQuery("");
+    router.push(`/dashboard/learning/${courseId}`);
+  };
+
   const hasResults =
-    results.users.length > 0 || results.challenges.length > 0;
-  const totalResults = results.users.length + results.challenges.length;
+    (results.users?.length > 0) || (results.challenges?.length > 0) || (results.courses?.length > 0);
+  const totalResults = (results.users?.length || 0) + (results.challenges?.length || 0) + (results.courses?.length || 0);
 
   return (
     <div ref={searchRef} className="relative w-full">
@@ -134,12 +142,12 @@ export default function SearchBar() {
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => query && setIsOpen(true)}
-          placeholder="Search users, challenges..."
-          className={`w-full rounded-lg border px-4 py-3 pr-10 text-sm outline-none transition ${
-            isLight
-              ? "border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-pink-500 focus:bg-white"
-              : "border-white/10 bg-white/5 text-white placeholder:text-gray-500 focus:border-pink-500/50 focus:bg-white/10"
-          }`}
+          placeholder="Search users, challenges, learning paths..."
+className={`w-full rounded-lg border px-4 py-3 pr-10 text-sm outline-none transition ${
+              isLight
+                ? "border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                : "border-white/10 bg-white/5 text-white placeholder:text-gray-500 focus:border-pink-500/50 focus:bg-white/10"
+            }`}
         />
 
         {/* Search Icon */}
@@ -309,6 +317,41 @@ export default function SearchBar() {
                             {challenge.category && (
                               <span className={`text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>
                                 {challenge.category}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Courses Section */}
+              {(results.courses?.length > 0) && (
+                <div className={`border-b py-2 ${isLight ? "border-gray-100" : "border-white/5"}`}>
+                  <div className="px-4 py-2">
+                    <p className={`text-xs font-semibold uppercase tracking-wider ${isLight ? "text-gray-500" : "text-gray-600"}`}>
+                      Learning Paths
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    {results.courses?.map((course: SearchCourse) => (
+                      <button
+                        key={course.id}
+                        onClick={() => handleCourseClick(course.id)}
+                        className={`w-full px-4 py-3 text-left transition ${
+                          isLight ? "hover:bg-gray-50" : "hover:bg-white/5"
+                        }`}
+                      >
+                        <div className="space-y-1">
+                          <p className={`truncate text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
+                            {course.title}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            {course.category && (
+                              <span className={`text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>
+                                {course.category}
                               </span>
                             )}
                           </div>

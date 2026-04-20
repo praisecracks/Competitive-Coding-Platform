@@ -24,8 +24,15 @@ import { LEARNING_TRACKS, ADDITIONAL_TRACKS } from "./data";
 import { useTheme } from "@/app/context/ThemeContext";
 import FeedbackFAB from "../../components/FeedbackFAB";
 import PageFooter from "@/app/components/PageFooter";
-
-const TRACK_PROGRESS_KEY = "codemaster_learning_track_progress";
+import {
+  getLearningProgress,
+  migrateLegacyProgress,
+} from "@/lib/learning-api";
+import {
+  getUserProgressKey,
+  getUserLegacyProgressKey,
+  getUserStreakKey,
+} from "@/lib/auth";
 
 interface TrackProgress {
   completedTopicIds: string[];
@@ -130,8 +137,6 @@ export default function LearningPage() {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
-  const LEGACY_PROGRESS_KEY = "codemaster_learning_progress_v1";
-
   const [trackProgressMap, setTrackProgressMap] = useState<Record<string, TrackProgress>>({});
   const [legacyProgress, setLegacyProgress] = useState<{
     paths: Record<string, { completedStepIds: string[] }>;
@@ -139,38 +144,52 @@ export default function LearningPage() {
   const [streak, setStreak] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const loadProgress = () => {
-    const trackSaved = localStorage.getItem(TRACK_PROGRESS_KEY);
-    if (trackSaved) {
-      try {
-        setTrackProgressMap(JSON.parse(trackSaved));
-      } catch (e) {
-        console.error("Failed to parse track progress", e);
+  const loadProgress = async () => {
+    try {
+      const data = await migrateLegacyProgress();
+      if (data.trackProgress) {
+        setTrackProgressMap(data.trackProgress);
       }
-    }
+      if (data.legacyProgress) {
+        setLegacyProgress({ paths: data.legacyProgress as any });
+      }
+      if (data.streak) {
+        setStreak(data.streak.currentStreak || 0);
+      }
+    } catch (e) {
+      console.error("Failed to load progress", e);
+      // Fallback to localStorage
+      const TRACK_PROGRESS_KEY = getUserProgressKey();
+      const LEGACY_PROGRESS_KEY = getUserLegacyProgressKey();
 
-    const legacySaved = localStorage.getItem(LEGACY_PROGRESS_KEY);
-    if (legacySaved) {
-      try {
-        setLegacyProgress(JSON.parse(legacySaved));
-      } catch (e) {
-        console.error("Failed to parse legacy progress", e);
+      const trackSaved = localStorage.getItem(TRACK_PROGRESS_KEY);
+      if (trackSaved) {
+        try {
+          setTrackProgressMap(JSON.parse(trackSaved));
+        } catch (e) {
+          console.error("Failed to parse track progress", e);
+        }
       }
-    }
 
-    // Load actual streak from localStorage
-    const streakKey = "codemaster_learning_streak_v1";
-    const streakData = localStorage.getItem(streakKey);
-    if (streakData) {
-      try {
-        const parsed = JSON.parse(streakData);
-        setStreak(parsed.currentStreak || 0);
-      } catch (e) {
-        console.error("Failed to parse streak", e);
-        setStreak(0);
+      const legacySaved = localStorage.getItem(LEGACY_PROGRESS_KEY);
+      if (legacySaved) {
+        try {
+          setLegacyProgress(JSON.parse(legacySaved));
+        } catch (e) {
+          console.error("Failed to parse legacy progress", e);
+        }
       }
-    } else {
-      setStreak(0);
+
+      const streakKey = getUserStreakKey();
+      const streakData = localStorage.getItem(streakKey);
+      if (streakData) {
+        try {
+          const parsed = JSON.parse(streakData);
+          setStreak(parsed.currentStreak || 0);
+        } catch (e) {
+          console.error("Failed to parse streak", e);
+        }
+      }
     }
   };
 

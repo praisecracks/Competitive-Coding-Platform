@@ -14,8 +14,8 @@ import {
 import { getTrackById, TrackTopic } from "../../data";
 import { useTheme } from "@/app/context/ThemeContext";
 import PageFooter from "@/app/components/PageFooter";
-
-const PROGRESS_KEY = "codemaster_learning_track_progress";
+import { getUserProgressKey } from "@/lib/auth";
+import { migrateLegacyProgress } from "@/lib/learning-api";
 
 interface TrackProgress {
   completedTopicIds: string[];
@@ -47,19 +47,19 @@ export default function TrackOverviewPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedProgress = localStorage.getItem(PROGRESS_KEY);
-    if (savedProgress) {
+    async function loadProgress() {
       try {
-        const parsed = JSON.parse(savedProgress);
-        const trackProgress = parsed[trackId] || parsed?.tracks?.[trackId];
+        const data = await migrateLegacyProgress();
+        const trackProgress = data.trackProgress?.[trackId];
         if (trackProgress) {
           setProgress(trackProgress);
         }
-      } catch (error) {
-        console.error("Error loading progress:", error);
+      } catch (e) {
+        console.error("Error loading progress:", e);
       }
+      setLoading(false);
     }
-    setLoading(false);
+    loadProgress();
   }, [trackId]);
 
   const trackProgressStats = useMemo(() => {

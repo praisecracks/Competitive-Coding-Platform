@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
+import { getUserStreakKey } from "@/lib/auth";
 
 interface Notification {
   id: string;
@@ -299,7 +300,7 @@ useEffect(() => {
       const timeUntilMidnight = (24 - currentHour) * 60 - currentMinute;
 
       // Check learning streak
-      const streakData = localStorage.getItem("codemaster_learning_streak_v1");
+      const streakData = localStorage.getItem(getUserStreakKey());
       if (streakData) {
         const streak = JSON.parse(streakData);
         if (streak.currentStreak > 0) {

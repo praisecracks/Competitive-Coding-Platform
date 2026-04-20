@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Target, Swords, ChevronRight, X, BookOpen, GraduationCap, Trophy, Download, Share2, Bookmark } from "lucide-react";
+import { getUserJournalKey } from "@/lib/auth";
 
 type CompletionModalProps = {
   courseTitle: string;
@@ -266,7 +267,7 @@ export default function CompletionModal({
   };
 
   const handleSaveToJournal = () => {
-    const journalKey = 'codemaster_learning_journal';
+    const journalKey = getUserJournalKey();
     const existingJournal = JSON.parse(localStorage.getItem(journalKey) || '[]');
     
     const journalEntry = {

@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { RefreshCw, TrendingUp, Award, Zap } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { migrateLegacyProgress } from "@/lib/learning-api";
 
 type StatCardProps = {
   label: string;
@@ -76,26 +77,21 @@ export default function AnalyticsPage() {
 
       const result = await res.json();
 
-      // Fetch learning progress and streak from localStorage
-      const LEARNING_KEY = "codemaster_learning_track_progress";
-      const stored = localStorage.getItem(LEARNING_KEY);
+      // Fetch learning progress and streak from API (with migration)
       let completedLessons: string[] = [];
       let learningStreak = 0;
       try {
-        if (stored) {
-          const progress = JSON.parse(stored);
-          completedLessons = progress.completedLessonIds || [];
+        const learningData = await migrateLegacyProgress();
+        // Collect all completed lesson IDs from all tracks
+        for (const trackProgress of Object.values(learningData.trackProgress || {})) {
+          if (trackProgress.completedLessonIds) {
+            completedLessons = [...completedLessons, ...trackProgress.completedLessonIds];
+          }
         }
-      } catch {}
-
-      // Also get learning streak from its own key
-      try {
-        const streakData = localStorage.getItem("codemaster_learning_streak_v1");
-        if (streakData) {
-          const streak = JSON.parse(streakData);
-          learningStreak = streak.currentStreak || 0;
-        }
-      } catch {}
+        learningStreak = learningData.streak?.currentStreak || 0;
+      } catch {
+        // Silently fail - analytics will just not show learning data
+      }
 
       // Calculate combined weekly progress (challenges + learning)
       const weeklyProgress = (result.weeklyProgress || []).map((d: any) => ({ ...d }));

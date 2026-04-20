@@ -525,4 +525,4 @@ export function ReportButton({ type, targetId, targetLabel }: ReportButtonProps)
       {mounted ? createPortal(modalContent, document.body) : null}
     </>
   );
-}
+};

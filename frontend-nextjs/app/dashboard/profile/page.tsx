@@ -24,6 +24,8 @@ import {
   AUTH_USERNAME_KEY,
   getStoredUser,
   normalizeProfileImageUrl,
+  getUserProgressKey,
+  getUserLegacyProgressKey,
 } from "@/lib/auth";
 import { LEARNING_PATHS } from "@/app/dashboard/learning/data";
 
@@ -80,7 +82,6 @@ type LearningProgressStore = {
 };
 
 const API_BASE_URL = "/api";
-const LEARNING_PROGRESS_KEY = "codemaster_learning_progress_v1";
 
 const DEFAULT_BIO = "Building, learning, and improving every day.";
 const DEFAULT_RANK = "Beginner";
@@ -147,33 +148,74 @@ function truncateText(value: string, max: number) {
   return value.length > max ? `${value.slice(0, max)}…` : value;
 }
 
-function getLearningProgress(): LearningProgressStore {
-  if (typeof window === "undefined") return {};
+async function getLearningProgressAPI(): Promise<LearningProgressStore> {
   try {
-    // Check new key first (codemaster_learning_track_progress)
-    const raw = localStorage.getItem("codemaster_learning_track_progress");
-    if (raw) {
-      const progress = JSON.parse(raw);
-      // Convert new format (completedLessonIds) to old format for profile compatibility
-      const lessonIds = progress.completedLessonIds || [];
-      return {
-        paths: lessonIds.reduce((acc: Record<string, { completedStepIds: string[] }>, lessonId: string) => {
-          // lessonId format: trackId-topicId-lessonIndex (e.g., "javascript-basics-topic-0-1")
-          const parts = lessonId.split('-');
-          const trackId = parts[0];
-          if (!acc[trackId]) acc[trackId] = { completedStepIds: [] };
-          acc[trackId].completedStepIds.push(lessonId);
-          return acc;
-        }, {}),
-        totalXp: progress.totalXp || 0
-      };
+    const response = await fetch("/api/learning/progress", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("terminal_token")}`,
+      },
+    });
+    if (!response.ok) throw new Error("API not available");
+    
+    const data = await response.json();
+    const converted: LearningProgressStore = { paths: {} };
+    
+    // Add legacy_progress from MongoDB
+    if (data.legacyProgress) {
+      for (const [pathId, pathData] of Object.entries(data.legacyProgress)) {
+        const p = pathData as any;
+        converted.paths[pathId] = { 
+          completedStepIds: p?.completedStepIds || [],
+          liked: p?.liked || false,
+          rating: p?.rating || null
+        };
+      }
     }
-    // Fallback to old key
-    const rawOld = localStorage.getItem(LEARNING_PROGRESS_KEY);
-    if (!rawOld) return {};
-    return JSON.parse(rawOld);
+    
+    // Also convert track progress to legacy format
+    if (data.trackProgress) {
+      for (const [trackId, trackProgress] of Object.entries(data.trackProgress)) {
+        const tp = trackProgress as any;
+        const lessonIds: string[] = [];
+        if (tp?.completedLessonIds) {
+          lessonIds.push(...tp.completedLessonIds);
+        }
+        if (!converted.paths[trackId]) {
+          converted.paths[trackId] = { completedStepIds: lessonIds };
+        } else {
+          const existing = converted.paths[trackId].completedStepIds || [];
+          converted.paths[trackId] = { 
+            ...converted.paths[trackId],
+            completedStepIds: [...existing, ...lessonIds]
+          };
+        }
+      }
+    }
+    return converted;
   } catch {
-    return {};
+    // Fallback to localStorage
+    const userEmail = localStorage.getItem("user_email");
+    const sanitized = userEmail ? userEmail.toLowerCase().replace(/[^a-z0-9@._-]/g, "_").slice(0, 64) : null;
+    const result: LearningProgressStore = { paths: {} };
+    if (sanitized) {
+      try {
+        const local = localStorage.getItem(`codemaster_learning_progress_v1_${sanitized}`);
+        if (local) result.paths = JSON.parse(local);
+      } catch {}
+      try {
+        const track = localStorage.getItem(`codemaster_learning_track_progress_${sanitized}`);
+        if (track) {
+          const parsed = JSON.parse(track);
+          for (const [trackId, data] of Object.entries(parsed)) {
+            const lessonIds = (data as any)?.completedLessonIds || [];
+            if (lessonIds.length > 0 && !result.paths[trackId]) {
+              result.paths[trackId] = { completedStepIds: lessonIds };
+            }
+          }
+        }
+      } catch {}
+    }
+    return result;
   }
 }
 
@@ -197,7 +239,7 @@ export default function ProfilePage() {
   const [referralLink, setReferralLink] = useState("");
   const [recentActivity, setRecentActivity] = useState<SubmissionItem[]>([]);
   const [imageError, setImageError] = useState(false);
-  const [learningProgress, setLearningProgress] = useState<LearningProgressStore>(() => getLearningProgress());
+const [learningProgress, setLearningProgress] = useState<LearningProgressStore>({});
 
   const notify = useCallback(
     (msg: string, type: "success" | "error" = "success") => {
@@ -215,14 +257,16 @@ export default function ProfilePage() {
   );
 
   useEffect(() => {
-    const loadLearning = () => setLearningProgress(getLearningProgress());
+    async function loadLearning() {
+      const progress = await getLearningProgressAPI();
+      setLearningProgress(progress);
+    }
+    loadLearning();
 
-    window.addEventListener("storage", loadLearning);
     window.addEventListener("focus", loadLearning);
     window.addEventListener("user-profile-updated", loadLearning);
 
     return () => {
-      window.removeEventListener("storage", loadLearning);
       window.removeEventListener("focus", loadLearning);
       window.removeEventListener("user-profile-updated", loadLearning);
     };
@@ -1328,7 +1372,7 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
-            </div>
+</div>
           </div>
 
           <div
@@ -1338,151 +1382,39 @@ export default function ProfilePage() {
                 : "border-white/10 bg-[#0a0a0a]"
             }`}
           >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                  Current Learning Focus
-                </h2>
-                <p className="mt-0.5 text-[10px] text-gray-500">
-                  Pick up where your growth path currently stands.
-                </p>
+            <div className="mb-3">
+              <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+                Profile Strength
+              </h2>
+              <p className="mt-0.5 text-[10px] text-gray-500">
+                Supporting metric for account completeness.
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <div className="mb-1.5 flex items-center justify-between text-[10px]">
+                <p className={isLight ? "text-gray-500" : "text-gray-400"}>Completion</p>
+                <p className="font-bold text-pink-500">{profileCompleteness}%</p>
               </div>
-              <div
-                className={`rounded-xl border p-2 ${
-                  isLight
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-600"
-                    : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                }`}
-              >
-                <Sparkles className="h-4 w-4" />
+              <div className={`h-1 w-full overflow-hidden rounded-full ${isLight ? "bg-gray-200" : "bg-white/5"}`}>
+                <div
+                  className="h-full rounded-full bg-pink-500 transition-all duration-500"
+                  style={{ width: `${profileCompleteness}%` }}
+                />
               </div>
             </div>
 
-            {learningSnapshot.activeCourse ? (
-              <div className="mt-4">
-                <p className={`text-lg font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                  {learningSnapshot.activeCourse.title}
-                </p>
-                <p className={`mt-1 max-w-2xl text-xs leading-6 ${isLight ? "text-gray-600" : "text-gray-400"}`}>
-                  {learningSnapshot.activeCourse.subtitle}
-                </p>
-
-                <div className="mt-4">
-                  <div className="mb-1.5 flex items-center justify-between text-[10px]">
-                    <p className={isLight ? "text-gray-500" : "text-gray-400"}>Progress</p>
-                    <p className="font-bold text-pink-500">
-                      {learningSnapshot.activeCourse.percent}%
-                    </p>
-                  </div>
-                  <div className={`h-1.5 w-full overflow-hidden rounded-full ${isLight ? "bg-gray-200" : "bg-white/5"}`}>
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all duration-500"
-                      style={{
-                        width: `${learningSnapshot.activeCourse.percent}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  <div
-                    className={`rounded-xl border p-3 ${
-                      isLight
-                        ? "border-gray-200 bg-gray-50"
-                        : "border-white/10 bg-white/[0.03]"
-                    }`}
-                  >
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
-                      Next Step
-                    </p>
-                    <p className={`mt-1 text-xs font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
-                      {learningSnapshot.activeCourse.nextStepTitle ||
-                        "Continue your course"}
-                    </p>
-                  </div>
-
-                  <div
-                    className={`rounded-xl border p-3 ${
-                      isLight
-                        ? "border-gray-200 bg-gray-50"
-                        : "border-white/10 bg-white/[0.03]"
-                    }`}
-                  >
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">
-                      Focus Area
-                    </p>
-                    <p className={`mt-1 text-xs font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
-                      {learningSnapshot.activeCourse.category}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    onClick={() =>
-                      router.push(
-                        `/dashboard/learning/${learningSnapshot.activeCourse?.id}`
-                      )
-                    }
-                    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition ${
-                      isLight
-                        ? "border border-gray-300 bg-gray-900 text-white hover:bg-black"
-                        : "border border-white/10 bg-white text-black hover:bg-gray-200"
-                    }`}
-                    type="button"
-                  >
-                    Continue Learning
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-
-                  {learningSnapshot.activeCourse.relatedChallengeId && (
-                    <button
-                      onClick={() =>
-                        router.push(
-                          `/dashboard/challenges/${learningSnapshot.activeCourse?.relatedChallengeId}`
-                        )
-                      }
-                      className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition ${
-                        isLight
-                          ? "border-pink-200 bg-pink-50 text-pink-700 hover:bg-pink-100"
-                          : "border-pink-500/20 bg-pink-500/10 text-pink-200 hover:bg-pink-500/15"
-                      }`}
-                      type="button"
-                    >
-                      Linked Challenge
-                      <Trophy className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div
-                className={`mt-4 rounded-xl border px-4 py-6 ${
-                  isLight
-                    ? "border-gray-200 bg-gray-50"
-                    : "border-white/10 bg-white/[0.03]"
-                }`}
-              >
-                <p className={`text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
-                  No active course yet
-                </p>
-                <p className={`mt-1 text-xs leading-6 ${isLight ? "text-gray-600" : "text-gray-400"}`}>
-                  Start a learning path so your profile reflects both knowledge growth and challenge readiness.
-                </p>
-
-                <button
-                  onClick={() => router.push("/dashboard/learning")}
-                  className={`mt-4 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition ${
-                    isLight
-                      ? "border border-gray-300 bg-gray-900 text-white hover:bg-black"
-                      : "border border-white/10 bg-white text-black hover:bg-gray-200"
-                  }`}
-                  type="button"
-                >
-                  Explore Learning Hub
-                </button>
-              </div>
-            )}
+            <div className="grid gap-2">
+              {intelligenceInsights.slice(0, 2).map((item, index) => (
+                <InsightCard
+                  key={`${item.title}-${index}`}
+                  title={item.title}
+                  description={item.description}
+                  tone={item.tone}
+                  isLight={isLight}
+                />
+              ))}
+            </div>
           </div>
 
           <div
@@ -1568,48 +1500,6 @@ export default function ProfilePage() {
                 value={skillIdentity.consistencyState}
                 isLight={isLight}
               />
-            </div>
-          </div>
-
-          <div
-            className={`rounded-2xl border p-5 ${
-              isLight
-                ? "border-gray-200 bg-white shadow-sm"
-                : "border-white/10 bg-[#0a0a0a]"
-            }`}
-          >
-            <div className="mb-3">
-              <h2 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                Profile Strength
-              </h2>
-              <p className="mt-0.5 text-[10px] text-gray-500">
-                Supporting metric for account completeness.
-              </p>
-            </div>
-
-            <div className="mb-4">
-              <div className="mb-1.5 flex items-center justify-between text-[10px]">
-                <p className={isLight ? "text-gray-500" : "text-gray-400"}>Completion</p>
-                <p className="font-bold text-pink-500">{profileCompleteness}%</p>
-              </div>
-              <div className={`h-1 w-full overflow-hidden rounded-full ${isLight ? "bg-gray-200" : "bg-white/5"}`}>
-                <div
-                  className="h-full rounded-full bg-pink-500 transition-all duration-500"
-                  style={{ width: `${profileCompleteness}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              {intelligenceInsights.slice(0, 2).map((item, index) => (
-                <InsightCard
-                  key={`${item.title}-${index}`}
-                  title={item.title}
-                  description={item.description}
-                  tone={item.tone}
-                  isLight={isLight}
-                />
-              ))}
             </div>
           </div>
 
