@@ -88,7 +88,7 @@ function humanizeLastActive(date?: string) {
   return parsed.toLocaleDateString();
 }
 
-const ENTRIES_PER_PAGE = 10;
+const ENTRIES_PER_PAGE = 5;
 
 export default function LeaderboardPage() {
   const { theme } = useTheme();
@@ -114,7 +114,7 @@ export default function LeaderboardPage() {
     setFailedImages((prev) => new Set([...prev, userId]));
   };
 
-  const fetchLeaderboard = async (showLoading = true) => {
+  const fetchLeaderboard = async (showLoading = true): Promise<void> => {
     const token =
       typeof window !== "undefined"
         ? window.localStorage.getItem("terminal_token")
@@ -162,11 +162,16 @@ export default function LeaderboardPage() {
 
       setEntries(normalizedEntries);
       setFailedImages(new Set());
+      
+      if (showLoading) {
+        await new Promise(resolve => setTimeout(resolve, 1200));
+      }
+      setLoading(false);
     } catch (error) {
       console.error("Leaderboard fetch error:", error);
       setErrorMessage("Backend is offline or unreachable.");
-    } finally {
       if (showLoading) setLoading(false);
+    } finally {
       setRefreshing(false);
     }
   };
@@ -350,19 +355,24 @@ export default function LeaderboardPage() {
                 </span>
 
                 <h1
-                  className={`mt-4 text-xl font-semibold tracking-tight sm:text-2xl ${
+                  className={`mt-4 text-2xl font-bold tracking-tight sm:text-3xl ${
                     isLight ? "text-gray-900" : "text-white"
                   }`}
                 >
-                  CODEMASTER Leaderboard
+                  <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                    CODEMASTER
+                  </span>{" "}
+                  <span className={isLight ? "text-gray-600" : "text-gray-400"}>
+                    Leaderboard
+                  </span>
                 </h1>
 
                 <p
-                  className={`mt-2 max-w-2xl text-xs leading-6 sm:text-sm ${
-                    isLight ? "text-gray-600" : "text-gray-400"
+                  className={`mt-3 max-w-2xl text-sm leading-6 ${
+                    isLight ? "text-gray-500" : "text-gray-500"
                   }`}
                 >
-                  Clean rankings • Compete on points • Build streaks
+                  Top coders ranked by points, difficulty solved & streak
                 </p>
               </div>
 
@@ -537,16 +547,45 @@ export default function LeaderboardPage() {
         </div>
 
         {loading ? (
-          <div
-            className={`rounded-[28px] border px-6 py-20 text-center ${
-              isLight
-                ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
-                : "border-white/10 bg-[#0a0a0a]"
-            }`}
-          >
-            <p className={`text-sm ${isLight ? "text-gray-600" : "text-gray-400"}`}>
-              Loading leaderboard...
-            </p>
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+              <div
+                key={i}
+                className={`rounded-[24px] border p-4 ${
+                  isLight
+                    ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.05)]"
+                    : "border-white/10 bg-[#0a0a0a]"
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`h-11 w-11 animate-pulse rounded-xl ${
+                    isLight ? "bg-gray-200" : "bg-white/10"
+                  }`} />
+                  <div className="flex-1 space-y-2">
+                    <div className={`h-4 w-32 animate-pulse rounded ${
+                      isLight ? "bg-gray-200" : "bg-white/10"
+                    }`} />
+                    <div className={`h-3 w-24 animate-pulse rounded ${
+                      isLight ? "bg-gray-200" : "bg-white/10"
+                    }`} />
+                  </div>
+                  <div className={`h-6 w-12 animate-pulse rounded ${
+                    isLight ? "bg-gray-200" : "bg-white/10"
+                  }`} />
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  <div className={`h-12 animate-pulse rounded-xl ${
+                    isLight ? "bg-gray-200" : "bg-white/10"
+                  }`} />
+                  <div className={`h-12 animate-pulse rounded-xl ${
+                    isLight ? "bg-gray-200" : "bg-white/10"
+                  }`} />
+                  <div className={`h-12 animate-pulse rounded-xl ${
+                    isLight ? "bg-gray-200" : "bg-white/10"
+                  }`} />
+                </div>
+              </div>
+            ))}
           </div>
         ) : errorMessage ? (
           <div
@@ -657,30 +696,39 @@ export default function LeaderboardPage() {
                               : "border-white/5 hover:bg-white/[0.02]"
                           }`}
                         >
-                          <td className="px-6 py-4 align-middle">
+<td className="px-6 py-4 align-middle">
                             <span
-                              className={`inline-flex min-w-[56px] items-center justify-center rounded-full border px-3 py-1 text-[11px] font-medium ${
+                              className={`inline-flex min-w-[56px] items-center justify-center gap-1 rounded-full border px-3 py-1.5 text-xs font-bold ${
                                 entry.rank === 1
                                   ? isLight
-                                    ? "border-yellow-200 bg-yellow-50 text-yellow-700"
-                                    : "border-yellow-500/20 bg-yellow-500/10 text-yellow-200"
+                                    ? "border-yellow-400 bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-700 shadow-sm"
+                                    : "border-yellow-500/40 bg-gradient-to-r from-yellow-500/20 to-yellow-400/10 text-yellow-400 shadow-lg shadow-yellow-500/20"
                                   : entry.rank === 2
                                   ? isLight
-                                    ? "border-gray-300 bg-gray-100 text-gray-700"
-                                    : "border-slate-400/20 bg-slate-400/10 text-slate-200"
+                                    ? "border-slate-400 bg-gradient-to-r from-slate-100 to-slate-50 text-slate-600 shadow-sm"
+                                    : "border-slate-400/40 bg-gradient-to-r from-slate-500/20 to-slate-400/10 text-slate-300 shadow-lg shadow-slate-500/20"
                                   : entry.rank === 3
                                   ? isLight
-                                    ? "border-orange-200 bg-orange-50 text-orange-700"
-                                    : "border-orange-500/20 bg-orange-500/10 text-orange-200"
+                                    ? "border-orange-400 bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 shadow-sm"
+                                    : "border-orange-500/40 bg-gradient-to-r from-orange-500/20 to-orange-400/10 text-orange-400 shadow-lg shadow-orange-500/20"
                                   : currentUser
                                   ? isLight
-                                    ? "border-pink-200 bg-pink-50 text-pink-700"
-                                    : "border-pink-500/20 bg-pink-500/10 text-pink-200"
+                                  ? "border-pink-200 bg-pink-50 text-pink-700"
+                                  : "border-pink-500/20 bg-pink-500/10 text-pink-200"
                                   : isLight
                                   ? "border-gray-200 bg-gray-50 text-gray-700"
                                   : "border-white/10 bg-white/[0.03] text-gray-300"
                               }`}
                             >
+                              {entry.rank === 1 && (
+                                <span className="text-[10px]">👑</span>
+                              )}
+                              {entry.rank === 2 && (
+                                <span className="text-[10px]">🥈</span>
+                              )}
+                              {entry.rank === 3 && (
+                                <span className="text-[10px]">🥉</span>
+                              )}
                               #{entry.rank}
                             </span>
                           </td>
@@ -898,12 +946,33 @@ export default function LeaderboardPage() {
                       </div>
 
                       <span
-                        className={`inline-flex min-w-[56px] items-center justify-center rounded-full border px-3 py-1 text-[11px] font-medium ${
-                          isLight
+                        className={`inline-flex min-w-[56px] items-center justify-center gap-1 rounded-full border px-3 py-1.5 text-xs font-bold ${
+                          entry.rank === 1
+                            ? isLight
+                              ? "border-yellow-400 bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-700 shadow-sm"
+                              : "border-yellow-500/40 bg-gradient-to-r from-yellow-500/20 to-yellow-400/10 text-yellow-400 shadow-lg shadow-yellow-500/20"
+                            : entry.rank === 2
+                            ? isLight
+                              ? "border-slate-400 bg-gradient-to-r from-slate-100 to-slate-50 text-slate-600 shadow-sm"
+                              : "border-slate-400/40 bg-gradient-to-r from-slate-500/20 to-slate-400/10 text-slate-300 shadow-lg shadow-slate-500/20"
+                            : entry.rank === 3
+                            ? isLight
+                              ? "border-orange-400 bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 shadow-sm"
+                              : "border-orange-500/40 bg-gradient-to-r from-orange-500/20 to-orange-400/10 text-orange-400 shadow-lg shadow-orange-500/20"
+                            : isLight
                             ? "border-gray-200 bg-gray-50 text-gray-700"
                             : "border-white/10 bg-white/[0.03] text-gray-300"
                         }`}
                       >
+                        {entry.rank === 1 && (
+                          <span className="text-[10px]">👑</span>
+                        )}
+                        {entry.rank === 2 && (
+                          <span className="text-[10px]">🥈</span>
+                        )}
+                        {entry.rank === 3 && (
+                          <span className="text-[10px]">🥉</span>
+                        )}
                         #{entry.rank}
                       </span>
                     </div>
@@ -1078,7 +1147,19 @@ export default function LeaderboardPage() {
                 : "border-white/10 bg-[#0b0b10] shadow-[0_25px_100px_rgba(0,0,0,0.45)]"
             }`}
           >
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
+            {/* Top rank glow effect for top 3 */}
+            {selectedUser.rank <= 3 && (
+              <div className={`absolute inset-x-0 top-0 h-1 ${
+                selectedUser.rank === 1
+                  ? "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400"
+                  : selectedUser.rank === 2
+                  ? "bg-gradient-to-r from-slate-300 via-slate-200 to-slate-300"
+                  : "bg-gradient-to-r from-orange-400 via-orange-300 to-orange-400"
+              }`} />
+            )}
+            {selectedUser.rank > 3 && (
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
+            )}
 
             <div className="p-5 sm:p-6">
               <div className="mb-5 flex items-start justify-between gap-4">
@@ -1087,36 +1168,72 @@ export default function LeaderboardPage() {
                     const resolvedImage = resolveProfilePicUrl(
                       selectedUser.profilePic || selectedUser.profile_pic
                     );
+                    const isTopThree = selectedUser.rank <= 3;
 
-                    return resolvedImage && !failedImages.has(selectedUser.userId) ? (
-                      <img
-                        src={resolvedImage}
-                        alt={selectedUser.username}
-                        className={`h-16 w-16 rounded-2xl border object-cover ${
-                          isLight ? "border-gray-200" : "border-white/10"
-                        }`}
-                        onError={() => handleImageError(selectedUser.userId)}
-                      />
-                    ) : (
-                      <div
-                        className={`flex h-16 w-16 items-center justify-center rounded-2xl border text-xl font-semibold ${
-                          isLight
-                            ? "border-gray-200 bg-gradient-to-br from-pink-100 to-purple-100 text-pink-600"
-                            : "border-white/10 bg-white/[0.04] text-pink-200"
-                        }`}
-                      >
-                        {selectedUser.username.slice(0, 2).toUpperCase()}
+                    return (
+                      <div className="relative">
+                        {resolvedImage && !failedImages.has(selectedUser.userId) ? (
+                          <img
+                            src={resolvedImage}
+                            alt={selectedUser.username}
+                            className={`h-16 w-16 rounded-2xl object-cover ${
+                              isLight ? "border-gray-200" : "border-white/10"
+                            } ${isTopThree ? (
+                              selectedUser.rank === 1 
+                                ? "ring-2 ring-yellow-400/50 shadow-lg shadow-yellow-500/20"
+                                : selectedUser.rank === 2
+                                ? "ring-2 ring-slate-400/50 shadow-lg shadow-slate-500/20"
+                                : "ring-2 ring-orange-400/50 shadow-lg shadow-orange-500/20"
+                            ) : ""}`}
+                            onError={() => handleImageError(selectedUser.userId)}
+                          />
+                        ) : (
+                          <div
+                            className={`flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-semibold ${
+                              isLight
+                                ? "border border-gray-200 bg-gradient-to-br from-pink-100 to-purple-100 text-pink-600"
+                                : "border border-white/10 bg-gradient-to-br from-pink-500/20 to-purple-500/20 text-pink-200"
+                            } ${isTopThree ? (
+                              selectedUser.rank === 1 
+                                ? "ring-2 ring-yellow-400/50 shadow-lg shadow-yellow-500/20"
+                                : selectedUser.rank === 2
+                                ? "ring-2 ring-slate-400/50 shadow-lg shadow-slate-500/20"
+                                : "ring-2 ring-orange-400/50 shadow-lg shadow-orange-500/20"
+                            ) : ""}`}
+                          >
+                            {selectedUser.username.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        {/* Rank badge */}
+                        <div className={`absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                          selectedUser.rank === 1
+                            ? "bg-yellow-400 text-yellow-900 shadow-lg shadow-yellow-500/50"
+                            : selectedUser.rank === 2
+                            ? "bg-slate-300 text-slate-800 shadow-lg shadow-slate-400/50"
+                            : selectedUser.rank === 3
+                            ? "bg-orange-400 text-orange-900 shadow-lg shadow-orange-500/50"
+                            : isLight
+                            ? "bg-gray-100 text-gray-600 border border-gray-200"
+                            : "bg-white/10 text-gray-300 border border-white/20"
+                        }`}>
+                          {selectedUser.rank === 1 ? "1" : selectedUser.rank === 2 ? "2" : selectedUser.rank === 3 ? "3" : `#`}
+                        </div>
                       </div>
                     );
                   })()}
 
                   <div>
                     <h3
-                      className={`text-lg font-semibold ${
+                      className={`text-lg font-bold flex items-center gap-2 ${
                         isLight ? "text-gray-900" : "text-white"
                       }`}
                     >
                       {selectedUser.username}
+                      {selectedUser.rank <= 3 && (
+                        <span className="text-base">
+                          {selectedUser.rank === 1 ? "👑" : selectedUser.rank === 2 ? "🥈" : "🥉"}
+                        </span>
+                      )}
                     </h3>
                     {selectedUser.country && (
                       <p
@@ -1125,6 +1242,13 @@ export default function LeaderboardPage() {
                         }`}
                       >
                         {getCountryFlag(selectedUser.country) && getCountryFlag(selectedUser.country)} {selectedUser.country}
+                      </p>
+                    )}
+                    {selectedUser.userRank && (
+                      <p className={`text-xs mt-0.5 ${
+                        isLight ? "text-pink-600" : "text-pink-400"
+                      }`}>
+                        {selectedUser.userRank}
                       </p>
                     )}
                   </div>
@@ -1142,7 +1266,24 @@ export default function LeaderboardPage() {
                 </button>
               </div>
 
-              {selectedUser.bio ? (
+              {selectedUser.publicProfile === false && !isCurrentUser(selectedUser) ? (
+                <div className="py-4 text-center">
+                  <p
+                    className={`mb-2 text-sm ${
+                      isLight ? "text-gray-600" : "text-gray-400"
+                    }`}
+                  >
+                    This user has kept their profile private
+                  </p>
+                  <p
+                    className={`text-xs ${
+                      isLight ? "text-gray-500" : "text-gray-500"
+                    }`}
+                  >
+                    Profile details are hidden
+                  </p>
+                </div>
+              ) : selectedUser.bio ? (
                 <p
                   className={`mb-5 text-sm leading-6 ${
                     isLight ? "text-gray-600" : "text-gray-300"
@@ -1160,100 +1301,122 @@ export default function LeaderboardPage() {
                 </p>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div
-                  className={`rounded-xl border px-3 py-3 ${
-                    isLight
-                      ? "border-gray-200 bg-gray-50"
-                      : "border-white/10 bg-white/[0.03]"
-                  }`}
-                >
-                  <p
-                    className={`text-[10px] uppercase tracking-[0.15em] ${
-                      isLight ? "text-gray-500" : "text-gray-500"
+              {selectedUser.publicProfile === false ? null : (
+              <>
+                {/* Stats Grid - Gamified */}
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div
+                    className={`rounded-xl border px-3 py-3 ${
+                      isLight
+                        ? "border-gray-200 bg-gradient-to-br from-pink-50 to-purple-50"
+                        : "border-white/10 bg-gradient-to-br from-pink-500/10 to-purple-500/10"
                     }`}
                   >
-                    XP
-                  </p>
-                  <p
-                    className={`mt-1 text-base font-semibold ${
-                      isLight ? "text-gray-900" : "text-white"
+                    <p
+                      className={`text-[10px] uppercase tracking-[0.15em] ${
+                        isLight ? "text-gray-500" : "text-pink-400"
+                      }`}
+                    >
+                      ⚡ Points
+                    </p>
+                    <p
+                      className={`mt-1 text-base font-bold ${
+                        isLight ? "text-gray-900" : "text-white"
+                      }`}
+                    >
+                      {selectedUser.totalPoints.toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div
+                    className={`rounded-xl border px-3 py-3 ${
+                      isLight
+                        ? "border-gray-200 bg-gradient-to-br from-emerald-50 to-teal-50"
+                        : "border-white/10 bg-gradient-to-br from-emerald-500/10 to-teal-500/10"
                     }`}
                   >
-                    {selectedUser.totalPoints.toLocaleString()}
-                  </p>
+                    <p
+                      className={`text-[10px] uppercase tracking-[0.15em] ${
+                        isLight ? "text-gray-500" : "text-emerald-400"
+                      }`}
+                    >
+                      🏆 Streak
+                    </p>
+                    <p
+                      className={`mt-1 text-base font-bold ${
+                        isLight ? "text-gray-900" : "text-white"
+                      }`}
+                    >
+                      {selectedUser.currentStreak} days
+                    </p>
+                  </div>
                 </div>
 
-                <div
-                  className={`rounded-xl border px-3 py-3 ${
-                    isLight
-                      ? "border-gray-200 bg-gray-50"
-                      : "border-white/10 bg-white/[0.03]"
-                  }`}
-                >
-                  <p
-                    className={`text-[10px] uppercase tracking-[0.15em] ${
-                      isLight ? "text-gray-500" : "text-gray-500"
-                    }`}
-                  >
-                    Rank
-                  </p>
-                  <p
-                    className={`mt-1 text-base font-semibold ${
-                      isLight ? "text-gray-900" : "text-white"
-                    }`}
-                  >
-                    {selectedUser.userRank || "Beginner"}
-                  </p>
+                <div className="grid grid-cols-2 gap-3">
+                    <div
+                      className={`rounded-xl border px-3 py-3 ${
+                        isLight
+                          ? "border-gray-200 bg-gray-50"
+                          : "border-white/10 bg-white/[0.03]"
+                      }`}
+                    >
+                      <p
+                        className={`text-[10px] uppercase tracking-[0.15em] ${
+                          isLight ? "text-gray-500" : "text-gray-500"
+                        }`}
+                      >
+                        Rank
+                      </p>
+                      <p
+                        className={`mt-1 text-base font-semibold ${
+                          isLight ? "text-gray-900" : "text-white"
+                        }`}
+                      >
+                        {selectedUser.userRank || "Beginner"}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {selectedUser.publicProfile === false ? null : (
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {selectedUser.githubUrl && (
+                    <a
+                      href={selectedUser.githubUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition ${
+                        isLight
+                          ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+                          : "border-white/10 bg-white/[0.03] text-gray-300 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                    >
+                      <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                      </svg>
+                      GitHub
+                    </a>
+                  )}
+
+                  {selectedUser.linkedinUrl && (
+                    <a
+                      href={selectedUser.linkedinUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition ${
+                        isLight
+                          ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+                          : "border-white/10 bg-white/[0.03] text-gray-300 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                    >
+                      <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451c.979 0 1.771-.773 1.771-1.729V1.729C24 .774 23.204 0 22.225 0zM7.119 20.452H3.555V9h3.564v11.452zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zM20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286z" />
+                      </svg>
+                      LinkedIn
+                    </a>
+                  )}
                 </div>
-              </div>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                {selectedUser.githubUrl && (
-                  <a
-                    href={selectedUser.githubUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition ${
-                      isLight
-                        ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
-                        : "border-white/10 bg-white/[0.03] text-gray-300 hover:bg-white/[0.06] hover:text-white"
-                    }`}
-                  >
-                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-                    </svg>
-                    GitHub
-                  </a>
-                )}
-
-                {selectedUser.linkedinUrl && (
-                  <a
-                    href={selectedUser.linkedinUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition ${
-                      isLight
-                        ? "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
-                        : "border-white/10 bg-white/[0.03] text-gray-300 hover:bg-white/[0.06] hover:text-white"
-                    }`}
-                  >
-                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451c.979 0 1.771-.773 1.771-1.729V1.729C24 .774 23.204 0 22.225 0zM7.119 20.452H3.555V9h3.564v11.452zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zM20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286z" />
-                    </svg>
-                    LinkedIn
-                  </a>
-                )}
-              </div>
-
-              {selectedUser.publicProfile === false && !isCurrentUser(selectedUser) && (
-                <p
-                  className={`mt-4 text-center text-[10px] ${
-                    isLight ? "text-gray-500" : "text-gray-600"
-                  }`}
-                >
-                  This user has limited their profile visibility
-                </p>
               )}
 
               {/* Report button - only show for other users, not yourself */}

@@ -36,6 +36,7 @@ func RegisterRoutes(r *gin.Engine) {
 	protected.Use(middleware.AuthMiddleware())
 	{
 		protected.GET("/dashboard/stats", controllers.GetDashboardStats)
+		protected.GET("/activity/feed", controllers.GetActivityFeed)
 		protected.GET("/analytics", controllers.GetAnalytics)
 		protected.POST("/dashboard/reset-stats", controllers.ResetStats)
 		protected.GET("/profile", controllers.GetProfile)

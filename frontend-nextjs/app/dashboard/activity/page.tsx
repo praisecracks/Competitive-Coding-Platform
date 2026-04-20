@@ -1,28 +1,71 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertCircle,
-  Search,
-  Zap,
-} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Download, Filter } from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
 import PageFooter from "@/app/components/PageFooter";
 
-type ActivityItem = {
-  id?: number;
-  title?: string;
-  status?: string;
-  score?: number;
-  date?: string;
-  difficulty?: string;
-  category?: string;
+import type { ActivityItem, ActivityType, ActivityStatus } from "./types";
+import { formatDate, getDateGroup, isRecent as isRecentUtil, getDifficultyColors } from "./utils";
+
+import ActivityCard from "./components/ActivityCard";
+import ActivityFilters from "./components/ActivityFilters";
+import ActivityInsights from "./components/ActivityInsights";
+import DateGroupHeader from "./components/DateGroupHeader";
+import ActivityModal from "./components/ActivityModal";
+import SkeletonCard from "./components/SkeletonCard";
+
+// Icon map — keep this in page to avoid prop drilling, or move to a shared icon util
+import {
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Clock,
+  Swords,
+  BookOpen,
+  FileText,
+  Flame,
+  Trophy,
+  Award,
+  Medal,
+  Star,
+  Crown,
+  Gift,
+  Heart,
+  Sparkles,
+  User,
+  Settings,
+  Code2,
+  Target,
+  Flag,
+  Calendar,
+} from "lucide-react";
+
+const iconMap: Record<string, any> = {
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Clock,
+  Swords,
+  BookOpen,
+  FileText,
+  Flame,
+  Trophy,
+  Award,
+  Medal,
+  Star,
+  Crown,
+  Gift,
+  Heart,
+  Sparkles,
+  User,
+  Settings,
+  Code2,
+  Target,
+  Flag,
+  Calendar,
 };
 
 export default function ActivityPage() {
@@ -30,12 +73,21 @@ export default function ActivityPage() {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
+  // State
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState<"all" | "accepted" | "failed" | "pending">("all");
+  const [typeFilter, setTypeFilter] = useState<ActivityType | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<ActivityStatus | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set(["Today"]));
+  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const perPage = 20;
 
+  // Fetch activities
   useEffect(() => {
     async function fetchActivities() {
       try {
@@ -46,15 +98,18 @@ export default function ActivityPage() {
           return;
         }
 
-        const res = await fetch("/api/dashboard/stats", {
+        const res = await fetch("/api/activity/feed?limit=100", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!res.ok) throw new Error("Failed to fetch activities");
         const data = await res.json();
-        
-        const submissions = data.recentSubmissions || [];
-        setActivities(submissions);
+
+        const activities = (data.activities || []).map((a: any) => ({
+          ...a,
+          date: a.date || a.CreatedAt || new Date().toISOString(),
+        }));
+        setActivities(activities);
       } catch (e) {
         console.error("Failed to fetch activities", e);
         setError("Unable to load activity history. Please try again.");
@@ -65,266 +120,339 @@ export default function ActivityPage() {
     fetchActivities();
   }, [router]);
 
+  // Filtered list
   const filteredActivities = useMemo(() => {
     return activities.filter((item) => {
-      // Filter by status
-      if (filter !== "all") {
-        const normalized = item.status?.toLowerCase() || "";
-        if (filter === "accepted" && !["accepted", "completed", "passed", "correct"].some(s => normalized.includes(s))) return false;
-        if (filter === "failed" && !["failed", "runtime error", "time limit", "memory limit"].some(s => normalized.includes(s))) return false;
-        if (filter === "pending" && (normalized.includes("accepted") || normalized.includes("passed") || normalized.includes("failed"))) return false;
-      }
-      
-      // Filter by search
+      if (typeFilter !== "all" && item.type !== typeFilter) return false;
+      if (statusFilter !== "all" && item.status !== statusFilter) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         return (
           item.title?.toLowerCase().includes(q) ||
-          item.category?.toLowerCase().includes(q) ||
-          item.status?.toLowerCase().includes(q)
+          item.subtitle?.toLowerCase().includes(q) ||
+          item.description?.toLowerCase().includes(q)
         );
       }
-      
       return true;
     });
-  }, [activities, filter, searchQuery]);
+  }, [activities, typeFilter, statusFilter, searchQuery]);
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "Recent";
-    const date = new Date(dateStr);
+  // Group by date
+  const groupedActivities = useMemo(() => {
+    const groups: Record<string, ActivityItem[]> = {};
+    filteredActivities.forEach((activity) => {
+      const dateKey = getDateGroup(activity.date);
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(activity);
+    });
+    return groups;
+  }, [filteredActivities]);
+
+  // Metrics & Insights
+  const insights = useMemo(() => {
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
+    const submissions = activities.filter(
+      (a) => a.type === "submission" && a.status === "accepted"
+    );
+    const duelsWon = activities.filter((a) => a.type === "duel" && a.status === "won");
+    const learning = activities.filter(
+      (a) => a.type === "learning" || a.type === "achievement"
+    );
 
-  const getStatusStyles = (status?: string) => {
-    const normalized = status?.toLowerCase() || "";
-    const isSuccess = normalized === "accepted" || normalized === "completed" || normalized === "passed" || normalized === "correct";
-    const isError = normalized === "failed" || normalized === "runtime error" || normalized === "time limit exceeded" || normalized === "memory limit exceeded";
+    // Streak calculation
+    const dates = activities
+      .filter((a) => a.date)
+      .map((a) => new Date(a.date!).toDateString())
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
-    if (isSuccess) {
-      return { icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" />, text: "text-emerald-500", bg: "bg-emerald-500/20" };
+    let longestStreak = 0;
+    let currentStreak = 0;
+    if (dates.length > 0) {
+      const sorted = [...dates].sort(
+        (a, b) => new Date(a).getTime() - new Date(b).getTime()
+      );
+      let streak = 1;
+      for (let i = 1; i < sorted.length; i++) {
+        const prev = new Date(sorted[i - 1]);
+        const curr = new Date(sorted[i]);
+        const diffDays = Math.floor((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          streak++;
+        } else {
+          if (streak > longestStreak) longestStreak = streak;
+          streak = 1;
+        }
+      }
+      if (streak > longestStreak) longestStreak = streak;
+
+      // Current streak
+      let currStreak = 1;
+      for (let i = sorted.length - 1; i > 0; i--) {
+        const prev = new Date(sorted[i - 1]);
+        const curr = new Date(sorted[i]);
+        const diffDays = Math.floor((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          currStreak++;
+        } else {
+          break;
+        }
+      }
+      currentStreak = currStreak;
     }
-    if (isError) {
-      return { icon: <XCircle className="h-4 w-4 text-red-500" />, text: "text-red-500", bg: "bg-red-500/20" };
-    }
-    return { icon: <AlertCircle className="h-4 w-4 text-amber-500" />, text: "text-amber-500", bg: "bg-amber-500/20" };
-  };
 
-  const getDifficultyColors = (difficulty?: string) => {
-    if (difficulty === "Easy") return "text-emerald-600 bg-emerald-100";
-    if (difficulty === "Medium") return "text-amber-600 bg-amber-100";
-    if (difficulty === "Hard") return "text-red-600 bg-red-100";
-    return "";
-  };
-
-  const stats = useMemo(() => {
-    const accepted = activities.filter(a => ["accepted", "completed", "passed", "correct"].some(s => a.status?.toLowerCase().includes(s))).length;
-    const failed = activities.filter(a => a.status?.toLowerCase().includes("failed") || a.status?.toLowerCase().includes("runtime error") || a.status?.toLowerCase().includes("time limit")).length;
-    const totalPoints = activities.reduce((sum, a) => sum + (a.score ?? 0), 0);
-    return { accepted, failed, totalPoints };
+    return {
+      totalXp: activities.reduce(
+        (sum, a) => sum + (a.score || 0) + (a.xpAwarded || 0),
+        0
+      ),
+      submissionsThisWeek: activities.filter(
+        (a) => a.type === "submission" && a.date && new Date(a.date) >= weekAgo
+      ).length,
+      duelsWon: duelsWon.length,
+      learningActivities: learning.length,
+      longestStreak,
+      currentStreak,
+      mostActiveDay: "N/A", // Could calculate from dates
+      achievementsUnlocked: activities.filter((a) => a.type === "achievement").length,
+    };
   }, [activities]);
+
+  // Handlers
+  const toggleDateGroup = (group: string) => {
+    setExpandedDates((prev) => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+  };
+
+  const openModal = (activity: ActivityItem) => {
+    setSelectedActivity(activity);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedActivity(null);
+  };
+
+  // Export
+  const exportActivities = useCallback(
+    (format: "json" | "csv") => {
+      const data = filteredActivities;
+      if (format === "json") {
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `activity-export-${new Date().toISOString().split("T")[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        const headers = ["Title", "Type", "Status", "Score", "Date", "Description"];
+        const rows = data.map((a) => [
+          a.title,
+          a.type,
+          a.status || "",
+          (a.score || 0).toString(),
+          a.date || "",
+          a.subtitle || "",
+        ]);
+        const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `activity-export-${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    },
+    [filteredActivities]
+  );
+
+  // Icon getter
+  const getIcon = useCallback((iconName: string, size: number = 4) => {
+    const IconComponent = iconMap[iconName] || Clock;
+    return <IconComponent className={`h-${size} w-${size}`} />;
+  }, []);
+
+  // Sort groups
+  const sortedGroups = Object.entries(groupedActivities).sort(([a], [b]) => {
+    const order = ["Today", "Yesterday", "This Week", "This Month"];
+    const aIdx = order.indexOf(a);
+    const bIdx = order.indexOf(b);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    return a.localeCompare(b);
+  });
 
   return (
     <div className={`min-h-screen ${isLight ? "bg-[#f8fafc]" : "bg-[#020202]"}`}>
-      <div className={`border-b ${isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#0c0c12]"}`}>
+      <div
+        className={`border-b ${isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#0c0c12]"}`}
+      >
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          <button
-            onClick={() => router.push("/dashboard/profile")}
-            className={`mb-6 flex items-center gap-2 text-sm transition-colors ${
-              isLight ? "text-gray-500 hover:text-gray-900" : "text-gray-400 hover:text-white"
-            }`}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Profile
-          </button>
-
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          {/* Header */}
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className={`text-2xl font-bold ${isLight ? "text-gray-900" : "text-white"}`}>
-                Activity History
+              <button
+                onClick={() => router.push("/dashboard/profile")}
+                className={`mb-4 flex items-center gap-2 text-sm transition-colors ${
+                  isLight ? "text-gray-500 hover:text-gray-900" : "text-gray-400 hover:text-white"
+                }`}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Dashboard
+              </button>
+              <h1 className={`text-3xl font-bold ${isLight ? "text-gray-900" : "text-white"}`}>
+                Activity Feed
               </h1>
               <p className={`mt-1 text-sm ${isLight ? "text-gray-500" : "text-gray-400"}`}>
-                Track your challenges and learning journey
+                Track your journey and milestones
               </p>
             </div>
-            
-            {/* Quick Stats */}
-            {!loading && activities.length > 0 && (
-              <div className="flex gap-4">
-                <div className={`flex items-center gap-2 rounded-xl border px-4 py-2 ${isLight ? "border-emerald-200 bg-emerald-50" : "border-emerald-500/20 bg-emerald-500/10"}`}>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span className={`text-sm font-bold text-emerald-600 ${isLight ? "text-emerald-700" : "text-emerald-400"}`}>
-                    {stats.accepted}
-                  </span>
-                </div>
-                <div className={`flex items-center gap-2 rounded-xl border px-4 py-2 ${isLight ? "border-red-200 bg-red-50" : "border-red-500/20 bg-red-500/10"}`}>
-                  <XCircle className="h-4 w-4 text-red-500" />
-                  <span className={`text-sm font-bold text-red-600 ${isLight ? "text-red-700" : "text-red-400"}`}>
-                    {stats.failed}
-                  </span>
-                </div>
-                <div className={`flex items-center gap-2 rounded-xl border px-4 py-2 ${isLight ? "border-amber-200 bg-amber-50" : "border-amber-500/20 bg-amber-500/10"}`}>
-                  <Zap className="h-4 w-4 text-amber-500" />
-                  <span className={`text-sm font-bold text-amber-600 ${isLight ? "text-amber-700" : "text-amber-400"}`}>
-                    {stats.totalPoints} XP
-                  </span>
-                </div>
-              </div>
-            )}
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => exportActivities("json")}
+                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  isLight
+                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    : "bg-white/10 text-gray-300 hover:bg-white/20"
+                }`}
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </button>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors hidden md:flex ${
+                  isLight
+                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    : "bg-white/10 text-gray-300 hover:bg-white/20"
+                }`}
+              >
+                <Filter className="h-4 w-4" />
+                Filters
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Search */}
-        <div className="mb-4">
-          <div className={`flex items-center rounded-xl border px-4 py-3 ${isLight ? "border-gray-200 bg-white" : "border-white/10 bg-white/[0.05]"}`}>
-            <Search className={`mr-3 h-4 w-4 ${isLight ? "text-gray-400" : "text-gray-500"}`} />
-            <input
-              type="text"
-              placeholder="Search activities..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`flex-1 bg-transparent text-sm outline-none ${isLight ? "text-gray-900 placeholder:text-gray-400" : "text-white placeholder:text-gray-500"}`}
-            />
-          </div>
-        </div>
+        {/* Insights */}
+        <ActivityInsights insights={insights} isLight={isLight} />
 
-        {/* Status Filters */}
-        <div className="mb-6 flex flex-wrap gap-2">
-          {(["all", "accepted", "failed", "pending"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`rounded-xl px-4 py-2 text-xs font-semibold capitalize transition-all ${
-                filter === f
-                  ? "bg-pink-500 text-white"
-                  : isLight
-                  ? "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                  : "border border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06]"
-              }`}
-            >
-              {f === "all" ? "All" : f}
-            </button>
-          ))}
-        </div>
+        {/* Filters */}
+        <ActivityFilters
+          isLight={isLight}
+          typeFilter={typeFilter}
+          statusFilter={statusFilter}
+          searchQuery={searchQuery}
+          showFilters={showFilters}
+          onTypeChange={setTypeFilter}
+          onStatusChange={setStatusFilter}
+          onSearchChange={setSearchQuery}
+          onClearSearch={() => setSearchQuery("")}
+          onToggleFilters={() => setShowFilters(!showFilters)}
+        />
 
-        {/* Error State */}
-        {error && (
-          <div className={`rounded-xl border border-red-200 bg-red-50 p-4 ${isLight ? "text-red-700" : "text-red-400"}`}>
-            <p>{error}</p>
-          </div>
-        )}
-
-        {/* Loading */}
+        {/* Activity List */}
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-pink-500/30 border-t-pink-500" />
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonCard key={i} isLight={isLight} />
+            ))}
           </div>
-        ) : filteredActivities.length === 0 ? (
-          <div className={`flex flex-col items-center justify-center rounded-2xl border py-16 ${
-            isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#0c0c12]"
-          }`}>
-            <Clock className={`h-12 w-12 ${isLight ? "text-gray-300" : "text-gray-600"}`} />
-            <h3 className={`mt-4 text-lg font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-              No activity found
+        ) : error ? (
+          <div
+            className={`rounded-xl border p-8 text-center ${
+              isLight ? "border-red-200 bg-red-50" : "border-red-500/20 bg-red-500/10"
+            }`}
+          >
+            <p className="text-red-600">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-lg bg-pink-500 px-4 py-2 text-white hover:bg-pink-600"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : activities.length === 0 ? (
+          <div
+            className={`flex flex-col items-center justify-center rounded-2xl border py-16 ${
+              isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#0c0c12]"
+            }`}
+          >
+            <Flame className={`h-16 w-16 ${isLight ? "text-gray-300" : "text-gray-600"}`} />
+            <h3 className={`mt-4 text-xl font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+              No activities yet
             </h3>
-            <p className={`mt-2 text-sm ${isLight ? "text-gray-500" : "text-gray-400"}`}>
-              {searchQuery || filter !== "all" ? "Try adjusting your filters" : "Start solving challenges to see your activity here"}
+            <p className={`mt-2 text-center text-sm ${isLight ? "text-gray-500" : "text-gray-400"}`}>
+              Start solving challenges, dueling friends, and learning to build your activity history!
             </p>
-            {(searchQuery || filter !== "all") && (
-              <button
-                onClick={() => { setSearchQuery(""); setFilter("all"); }}
-                className={`mt-4 text-sm font-medium ${isLight ? "text-pink-600 hover:text-pink-700" : "text-pink-400 hover:text-pink-300"}`}
-              >
-                Clear filters
-              </button>
-            )}
-            {filter === "all" && !searchQuery && (
-              <button
-                onClick={() => router.push("/dashboard/challenges")}
-                className={`mt-4 rounded-xl px-6 py-2 text-sm font-semibold bg-pink-500 text-white hover:bg-pink-600`}
-              >
-                Explore Challenges
-              </button>
-            )}
           </div>
         ) : (
-          <div className="space-y-3">
-            {filteredActivities.map((item, index) => {
-              const statusStyles = getStatusStyles(item.status);
-              return (
-                <motion.div
-                  key={`${item.id ?? index}-${index}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(index * 0.03, 0.1) }}
-                  className={`flex items-center justify-between rounded-xl border p-4 ${
-                    isLight
-                      ? "border-gray-200 bg-white hover:border-gray-300"
-                      : "border-white/10 bg-white/[0.03] hover:border-white/15"
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className={statusStyles.icon} />
-                      <p className={`font-medium truncate ${isLight ? "text-gray-900" : "text-white"}`}>
-                        {item.title || `Challenge #${(item.id ?? index) + 1}`}
-                      </p>
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                      {item.difficulty && (
-                        <span className={`rounded px-2 py-0.5 font-medium ${getDifficultyColors(item.difficulty)}`}>
-                          {item.difficulty}
-                        </span>
-                      )}
-                      <span className={`px-2 py-0.5 rounded-full font-medium ${statusStyles.bg} ${statusStyles.text}`}>
-                        {item.status || "Pending"}
-                      </span>
-                      {item.category && (
-                        <span className={isLight ? "text-gray-500" : "text-gray-400"}>
-                          {item.category}
-                        </span>
-                      )}
-                      <span className={`flex items-center gap-1 ${isLight ? "text-gray-400" : "text-gray-500"}`}>
-                        <Clock className="h-3 w-3" />
-                        {formatDate(item.date)}
-                      </span>
-                    </div>
-                  </div>
+          <div className="space-y-6">
+            {sortedGroups.map(([group, groupActivities]) => (
+              <div key={group} className="space-y-3">
+                <DateGroupHeader
+                  group={group}
+                  count={groupActivities.length}
+                  isExpanded={expandedDates.has(group)}
+                  onToggle={() => toggleDateGroup(group)}
+                  isLight={isLight}
+                />
 
-                  <div className="ml-4 text-right">
-                    <p className={`text-lg font-bold ${
-                      item.status?.toLowerCase().includes("accept") || item.status?.toLowerCase().includes("pass") || item.status?.toLowerCase().includes("correct") 
-                        ? "text-emerald-500" 
-                        : item.status?.toLowerCase().includes("failed") || item.status?.toLowerCase().includes("error")
-                        ? "text-red-500"
-                        : "text-amber-500"
-                    }`}>
-                      +{item.score ?? 0} pts
-                    </p>
-                  </div>
-                </motion.div>
-              );
-            })}
+                <AnimatePresence>
+                  {expandedDates.has(group) && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="space-y-3 overflow-hidden"
+                    >
+                      {groupActivities.map((activity, idx) => (
+                        <ActivityCard
+                          key={activity.id || idx}
+                          activity={activity}
+                          index={idx}
+                          isLight={isLight}
+                          isRecent={isRecentUtil}
+                          formatDate={formatDate}
+                          getDifficultyColors={getDifficultyColors}
+                          onClick={openModal}
+                          getIcon={getIcon}
+                        />
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
           </div>
         )}
-
-        {!loading && filteredActivities.length > 0 && (
-          <p className={`mt-6 text-center text-xs ${isLight ? "text-gray-400" : "text-gray-500"}`}>
-            Showing {filteredActivities.length} of {activities.length} activities
-          </p>
-        )}
       </div>
+
+      {/* Modal */}
+      <ActivityModal
+        activity={selectedActivity}
+        isOpen={showModal}
+        isLight={isLight}
+        onClose={closeModal}
+        getIcon={getIcon}
+      />
+
       <PageFooter />
     </div>
   );

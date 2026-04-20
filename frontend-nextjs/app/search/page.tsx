@@ -11,17 +11,18 @@ function SearchResultsContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
 
-  const [results, setResults] = useState<SearchResults>({
-    users: [],
-    challenges: [],
-  });
+   const [results, setResults] = useState<SearchResults>({
+     users: [],
+     challenges: [],
+     courses: [],
+   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const handleSearch = async () => {
       if (!query.trim()) {
-        setResults({ users: [], challenges: [] });
+         setResults({ users: [], challenges: [], courses: [] });
         return;
       }
 

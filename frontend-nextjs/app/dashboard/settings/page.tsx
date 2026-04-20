@@ -122,6 +122,8 @@ export default function SettingsPage() {
     } catch {
       setError("Failed to load your settings.");
     } finally {
+      // Add minimum 1.2 second delay for skeleton visibility
+      await new Promise(resolve => setTimeout(resolve, 1000));
       setLoading(false);
     }
   };
@@ -281,9 +283,45 @@ export default function SettingsPage() {
   }, [profile.profile_pic]);
 
   if (loading) {
+    const skeletonBg = isLight ? "bg-gray-200" : "bg-white/10";
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-pink-500" />
+      <div
+        className={`min-h-screen ${
+          isLight ? "bg-[#f8fafc] text-gray-900" : "bg-[#050507] text-white"
+        }`}
+      >
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <header className="mb-10">
+            <div className={`h-8 w-48 animate-pulse rounded-lg ${skeletonBg}`} />
+          </header>
+          <div className="grid gap-6 lg:grid-cols-4">
+            {/* Sidebar skeleton */}
+            <div className="lg:col-span-1">
+              <div className={`rounded-xl border p-4 ${
+                isLight ? "border-gray-200" : "border-white/10"
+              }`}>
+                <div className="space-y-3">
+                  {[1,2,3,4].map(i => (
+                    <div key={i} className={`h-10 animate-pulse rounded-lg ${skeletonBg}`} />
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Content skeleton */}
+            <div className="lg:col-span-3">
+              <div className={`rounded-xl border p-6 space-y-6 ${
+                isLight ? "border-gray-200" : "border-white/10"
+              }`}>
+                <div className={`h-32 animate-pulse rounded-xl ${skeletonBg}`} />
+                <div className="space-y-4">
+                  <div className={`h-10 animate-pulse rounded-lg ${skeletonBg}`} />
+                  <div className={`h-10 animate-pulse rounded-lg ${skeletonBg}`} />
+                  <div className={`h-24 animate-pulse rounded-lg ${skeletonBg}`} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

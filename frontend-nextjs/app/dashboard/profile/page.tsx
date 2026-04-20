@@ -28,6 +28,7 @@ import {
   getUserLegacyProgressKey,
 } from "@/lib/auth";
 import { LEARNING_PATHS } from "@/app/dashboard/learning/data";
+import { getLearningProgress } from "@/lib/learning-api";
 
 type ProfileData = {
   id?: string;
@@ -71,7 +72,7 @@ type InsightItem = {
 
 type LearningProgressStore = {
   totalXp?: number;
-  paths?: Record<
+  paths: Record<
     string,
     {
       completedStepIds?: string[];
@@ -150,17 +151,10 @@ function truncateText(value: string, max: number) {
 
 async function getLearningProgressAPI(): Promise<LearningProgressStore> {
   try {
-    const response = await fetch("/api/learning/progress", {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("terminal_token")}`,
-      },
-    });
-    if (!response.ok) throw new Error("API not available");
+    const data = await getLearningProgress();
     
-    const data = await response.json();
     const converted: LearningProgressStore = { paths: {} };
     
-    // Add legacy_progress from MongoDB
     if (data.legacyProgress) {
       for (const [pathId, pathData] of Object.entries(data.legacyProgress)) {
         const p = pathData as any;
@@ -173,7 +167,6 @@ async function getLearningProgressAPI(): Promise<LearningProgressStore> {
       }
     }
     
-    // Also convert track progress to legacy format
     if (data.trackProgress) {
       if (!converted.paths) converted.paths = {};
       for (const [trackId, trackProgress] of Object.entries(data.trackProgress)) {
@@ -193,9 +186,14 @@ async function getLearningProgressAPI(): Promise<LearningProgressStore> {
         }
       }
     }
+    
+    if (data.streak?.currentStreak) {
+      converted.totalXp = data.streak.currentStreak * 10;
+    }
+    
     return converted;
-  } catch {
-    // Fallback to localStorage
+  } catch (e) {
+    console.warn("getLearningProgressAPI: API failed, falling back to localStorage", e);
     const userEmail = localStorage.getItem("user_email");
     const sanitized = userEmail ? userEmail.toLowerCase().replace(/[^a-z0-9@._-]/g, "_").slice(0, 64) : null;
     const result: LearningProgressStore = { paths: {} };
@@ -241,7 +239,7 @@ export default function ProfilePage() {
   const [referralLink, setReferralLink] = useState("");
   const [recentActivity, setRecentActivity] = useState<SubmissionItem[]>([]);
   const [imageError, setImageError] = useState(false);
-const [learningProgress, setLearningProgress] = useState<LearningProgressStore>({});
+  const [learningProgress, setLearningProgress] = useState<LearningProgressStore>({ paths: {} });
 
   const notify = useCallback(
     (msg: string, type: "success" | "error" = "success") => {
