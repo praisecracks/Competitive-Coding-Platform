@@ -164,6 +164,7 @@ async function getLearningProgressAPI(): Promise<LearningProgressStore> {
     if (data.legacyProgress) {
       for (const [pathId, pathData] of Object.entries(data.legacyProgress)) {
         const p = pathData as any;
+        if (!converted.paths) converted.paths = {};
         converted.paths[pathId] = { 
           completedStepIds: p?.completedStepIds || [],
           liked: p?.liked || false,
@@ -174,6 +175,7 @@ async function getLearningProgressAPI(): Promise<LearningProgressStore> {
     
     // Also convert track progress to legacy format
     if (data.trackProgress) {
+      if (!converted.paths) converted.paths = {};
       for (const [trackId, trackProgress] of Object.entries(data.trackProgress)) {
         const tp = trackProgress as any;
         const lessonIds: string[] = [];
@@ -1549,7 +1551,7 @@ const [learningProgress, setLearningProgress] = useState<LearningProgressStore>(
                 Recent Activity
               </h2>
               <button
-                onClick={() => router.push("/dashboard/challenges")}
+                onClick={() => router.push("/dashboard/activity")}
                 className={`text-xs transition ${
                   isLight
                     ? "text-pink-600 hover:text-pink-700"
