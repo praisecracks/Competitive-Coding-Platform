@@ -51,7 +51,7 @@ export default function FeatureHeroPanel() {
   };
 
   return (
-    <section id="features" className="mx-auto max-w-6xl">
+    <section id="features" className="mx-auto max-w-6xl scroll-mt-20">
       <div className="grid items-center gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
         <motion.div
           initial={{ opacity: 0, x: -32 }}

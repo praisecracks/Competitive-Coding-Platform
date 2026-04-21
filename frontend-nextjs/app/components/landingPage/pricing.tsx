@@ -110,7 +110,7 @@ function Pricing() {
   return (
     <section
       id="pricing"
-      className="relative overflow-hidden bg-[#020202] px-4 py-20 text-white sm:px-6 lg:px-8"
+      className="relative scroll-mt-20 overflow-hidden bg-[#020202] px-4 py-20 text-white sm:px-6 lg:px-8"
     >
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute left-[8%] top-16 h-72 w-72 rounded-full bg-pink-500/10 blur-[130px]" />

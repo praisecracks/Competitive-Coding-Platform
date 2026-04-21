@@ -62,13 +62,13 @@ export default function Header() {
           {/* Navigation */}
           <nav className="hidden items-center gap-7 md:flex">
             {navLinks.map((link) => (
-              <Link
+              <a
                 key={link.name}
                 href={link.href}
                 className="text-sm font-medium text-white/50 transition-colors duration-200 hover:text-white"
               >
                 {link.name}
-              </Link>
+              </a>
             ))}
           </nav>
 
@@ -156,13 +156,13 @@ export default function Header() {
                 animate={menuOpen ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: 0.1 + index * 0.07 }}
               >
-                <Link
-                  href={link.href}
-                  onClick={closeMenu}
-                  className="text-2xl font-semibold text-white transition-colors hover:text-pink-400"
-                >
-                  {link.name}
-                </Link>
+                 <a
+                   href={link.href}
+                   onClick={closeMenu}
+                   className="text-2xl font-semibold text-white transition-colors hover:text-pink-400"
+                 >
+                   {link.name}
+                 </a>
               </motion.div>
             ))}
           </nav>

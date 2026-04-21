@@ -54,6 +54,11 @@ body {
     linear-gradient(180deg, #020202 0%, #050505 45%, #08080b 100%);
 }
 
+#__next {
+  position: relative;
+  min-height: 100vh;
+}
+
 * {
   box-sizing: border-box;
 }

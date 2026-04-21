@@ -554,7 +554,6 @@ export default function Home() {
                   </div>
 
                   <div
-                    id="features"
                     className="rounded-2xl border border-white/[0.05] bg-white/[0.02] p-3.5"
                   >
                     <p className="text-[9px] uppercase tracking-[0.18em] text-white/35">

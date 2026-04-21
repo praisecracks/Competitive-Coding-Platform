@@ -188,7 +188,7 @@ export default function ChallengesPreview() {
   };
 
   return (
-    <section ref={containerRef} onMouseMove={handleMouseMove} id="challenges" className="relative overflow-hidden bg-[#020202] py-24 text-gray-100 sm:py-28">
+      <section ref={containerRef} onMouseMove={handleMouseMove} id="challenges" className="relative scroll-mt-20 overflow-hidden bg-[#020202] py-24 text-gray-100 sm:py-28">
       {/* Background */}
       <motion.div style={{ y }} className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute left-[7%] top-10 h-64 w-64 rounded-full bg-pink-500/6 blur-[140px]" />

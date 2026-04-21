@@ -41,9 +41,9 @@ export default function PricingFAQ() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <section
+      <section
     id="faq"
-     className="relative overflow-hidden py-20 text-white">
+     className="relative scroll-mt-20 overflow-hidden py-20 text-white">
       {/* background */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute left-[8%] top-10 h-56 w-56 rounded-full bg-pink-500/10 blur-[120px]" />

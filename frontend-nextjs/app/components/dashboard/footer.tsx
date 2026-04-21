@@ -47,7 +47,7 @@ export default function AppFooter() {
           <span className="hidden sm:inline text-gray-600 select-none">•</span>
 
           <span className="text-xs text-gray-600 select-none">
-            v1.0
+            v2.1
           </span>
         </div>
       </div>
