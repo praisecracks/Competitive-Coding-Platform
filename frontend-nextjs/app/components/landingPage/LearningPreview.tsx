@@ -254,7 +254,7 @@ export default function LearningPreview() {
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.6, delay: index * 0.15 }}
               className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${path.gradient} shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] cursor-pointer`}
-              onClick={() => router.push(`/learning/track/${path.previewTrack}`)}
+               onClick={() => path.previewTrack ? router.push(`/learning/track/${path.previewTrack}`) : router.push('/login?next=/dashboard/learning')}
             >
               {/* Decorative background elements */}
               <div className="absolute inset-0 opacity-20">
@@ -353,7 +353,7 @@ export default function LearningPreview() {
             }`}
           >
             <GraduationCap className="h-5 w-5" />
-            Browse all 7 tracks
+            Browse all tracks
           </a>
         </motion.div>
       </div>

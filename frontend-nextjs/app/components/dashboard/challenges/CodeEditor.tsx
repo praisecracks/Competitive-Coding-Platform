@@ -20,6 +20,7 @@ type Props = {
   hasAnalyzer?: boolean;
   showAnalyzer?: boolean;
   onToggleAnalyzer?: () => void;
+  isGuestMode?: boolean;
 };
 
 export default function CodeEditor({
@@ -37,6 +38,7 @@ export default function CodeEditor({
   hasAnalyzer = false,
   showAnalyzer = false,
   onToggleAnalyzer,
+  isGuestMode = false,
 }: Props) {
   const stats = useMemo(() => {
     const safeCode = typeof code === "string" ? code : "";
@@ -146,7 +148,11 @@ export default function CodeEditor({
                 onClick={onToggleAnalyzer}
                 className={`rounded-lg border px-3 py-2 text-sm transition ${
                   showAnalyzer
-                    ? "border-purple-500 bg-purple-500/20 text-purple-200"
+                    ? isGuestMode
+                      ? "border-purple-500/40 bg-purple-500/15 text-purple-300"
+                      : "border-purple-500 bg-purple-500/20 text-purple-200"
+                    : isGuestMode
+                    ? "border-purple-500/20 bg-purple-500/5 text-purple-400/70 hover:bg-purple-500/10"
                     : "border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20"
                 }`}
                 type="button"

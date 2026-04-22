@@ -583,6 +583,17 @@ function ChallengeDetail() {
   const [sessionStart] = useState(() => Date.now());
   const [analyzerResult, setAnalyzerResult] = useState<AnalyzerResult | null>(null);
   const [showAnalyzer, setShowAnalyzer] = useState(false);
+  const [guestFirstRunSuccess, setGuestFirstRunSuccess] = useState(false);
+  const [guestSubmitAttempted, setGuestSubmitAttempted] = useState(false);
+  const [guestSuccessDismissed, setGuestSuccessDismissed] = useState(false);
+
+  const dismissSubmitPrompt = useCallback(() => {
+    setGuestSubmitAttempted(false);
+  }, []);
+
+  const dismissSuccess = useCallback(() => {
+    setGuestSuccessDismissed(true);
+  }, []);
 
   const languageInitializedRef = useRef(false);
   const timeoutHandledRef = useRef(false);
@@ -891,7 +902,7 @@ function ChallengeDetail() {
     setResultModal(buildResultModal("timeout", lastScore ?? 0, 0, 0));
   }, [challenge, timeLeftSeconds, missionState, addTerminalLine, lastScore]);
 
-  const handleRunCode = async () => {
+   const handleRunCode = async () => {
     const token =
       typeof window !== "undefined"
         ? window.localStorage.getItem("terminal_token")
@@ -929,7 +940,7 @@ function ChallengeDetail() {
     }
 
     if (isGuestMode && !token) {
-      addTerminalLine("Running in demo mode...");
+      addTerminalLine("Demo mode: Running your code in a sandbox environment.");
     }
 
     try {
@@ -1021,9 +1032,16 @@ function ChallengeDetail() {
       setShowAnalyzer(true);
       setRunCount((prev) => prev + 1);
 
-      addTerminalLine(
-        "Run completed. Mission remains active until a valid submission is accepted."
-      );
+      // Guest-first success feedback
+      if (isGuestMode && runCount === 0) {
+        setGuestFirstRunSuccess(true);
+        addTerminalLine("Nice work! Your code ran successfully.");
+        addTerminalLine("Create an account to save progress, submit solutions, and unlock full features.");
+      } else {
+        addTerminalLine(
+          "Run completed. Mission remains active until a valid submission is accepted."
+        );
+      }
     } catch (error) {
       console.error("Run error:", error);
       addTerminalLine("Run failed due to a network error.");
@@ -1049,7 +1067,9 @@ function ChallengeDetail() {
         : null;
 
     if (isGuestMode) {
-      addTerminalLine("Submission blocked: Create an account to submit and save progress.");
+      setGuestSubmitAttempted(true);
+      addTerminalLine("Note: Submission requires a free account.");
+      addTerminalLine("Create an account to save your progress and submit solutions.");
       return;
     }
 
@@ -1116,7 +1136,7 @@ function ChallengeDetail() {
         );
 
         console.error("Submission failed:", res.status, errorText);
-        addTerminalLine(`Submission failed: ${message}`);
+        addTerminalLine(`Submission error: ${message}`);
 
         setResultModal(buildResultModal("submission_error", 0, 0, 0, message));
         return;
@@ -1168,7 +1188,7 @@ function ChallengeDetail() {
 
       if (normalized.status === "accepted") {
         setMissionState("completed");
-        addTerminalLine("Challenge completed: submission accepted.");
+        addTerminalLine("🎉 Challenge completed! Your submission has been accepted.");
 
         setResultModal(
           buildResultModal(
@@ -1312,7 +1332,7 @@ function ChallengeDetail() {
         )}
 
         {isGuestMode && (
-          <div className="mb-4 rounded-2xl border border-purple-500/20 bg-purple-500/[0.08] px-4 py-3">
+          <div className="mb-4 rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-500/[0.12] to-purple-500/[0.06] px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/20">
@@ -1320,17 +1340,20 @@ function ChallengeDetail() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 15h7m9-4h7m-3-8l3 3m0 0l-3 3" />
                   </svg>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-white">Demo Mode</p>
-                  <p className="text-xs text-gray-400">Create an account to unlock full features, Live Thinker, compete with others, and save progress.</p>
-                </div>
+                 <div>
+                   <p className="text-sm font-medium text-white">You are previewing CodeMaster</p>
+                   <p className="text-xs text-gray-400">Run code now. Create an account to save progress, submit solutions, and unlock full features.</p>
+                 </div>
               </div>
-              <button
-                onClick={() => router.push("/signup")}
-                className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90"
-              >
-                Create Account
-              </button>
+                <button
+                  onClick={() => {
+                    const currentUrl = window.location.href;
+                    router.push(`/signup?redirect=${encodeURIComponent(currentUrl)}`);
+                  }}
+                  className="rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-95"
+                >
+                  Create Account
+                </button>
             </div>
           </div>
         )}
@@ -1345,33 +1368,46 @@ function ChallengeDetail() {
           sessionState={sessionMeta.state}
           workspaceTab={workspaceTab}
           onTabChange={setWorkspaceTab}
-          onBack={() => router.push("/dashboard/challenges")}
+          onBack={() => {
+            if (isGuestMode) {
+              router.push("/#challenges");
+            } else {
+              router.push("/dashboard/challenges");
+            }
+          }}
+          isGuestMode={isGuestMode}
         />
 
-        <ChallengeWorkspace
-          challenge={challenge}
-          activeTab={workspaceTab}
-          code={code}
-          language={language}
-          terminalHistory={terminalHistory}
-          running={running}
-          submitting={submitting}
-          isEditorLocked={editorLocked}
-          editorLockMessage={editorLockMessage}
-          timeLeftLabel={countdownLabel}
-          missionState={missionState}
-          lastScore={lastScore}
-          starterCodeMap={starterCodeMap}
-          onCodeChange={setCode}
-          onLanguageChange={setLanguage}
-          onRun={handleRunCode}
-          onSubmit={handleSubmitCode}
-          onReset={handleResetCode}
-          onReplay={() => resetMission({ resetCode: true })}
-          analyzerResult={analyzerResult}
-          showAnalyzer={showAnalyzer}
-          onToggleAnalyzer={() => setShowAnalyzer(!showAnalyzer)}
-        />
+         <ChallengeWorkspace
+           challenge={challenge}
+           activeTab={workspaceTab}
+           code={code}
+           language={language}
+           terminalHistory={terminalHistory}
+           running={running}
+           submitting={submitting}
+           isEditorLocked={editorLocked}
+           editorLockMessage={editorLockMessage}
+           timeLeftLabel={countdownLabel}
+           missionState={missionState}
+           lastScore={lastScore}
+           starterCodeMap={starterCodeMap}
+           onCodeChange={setCode}
+           onLanguageChange={setLanguage}
+           onRun={handleRunCode}
+           onSubmit={handleSubmitCode}
+           onReset={handleResetCode}
+           onReplay={() => resetMission({ resetCode: true })}
+           analyzerResult={analyzerResult}
+           showAnalyzer={showAnalyzer}
+           onToggleAnalyzer={() => setShowAnalyzer(!showAnalyzer)}
+           isGuestMode={isGuestMode}
+           guestFirstRunSuccess={guestFirstRunSuccess}
+           guestSubmitAttempted={guestSubmitAttempted}
+           guestSuccessDismissed={guestSuccessDismissed}
+           onDismissSubmitPrompt={dismissSubmitPrompt}
+           onDismissSuccess={dismissSuccess}
+         />
 
         <ResultModal
           modal={resultModal}

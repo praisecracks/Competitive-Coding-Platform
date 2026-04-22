@@ -12,6 +12,9 @@ type Props = {
   lastScore: number | null;
   missionState: MissionState;
   timeLeftLabel: string;
+  isGuestMode?: boolean;
+  guestSubmitAttempted?: boolean;
+  onDismissSubmitPrompt?: () => void;
 };
 
 export default function SubmissionPanel({
@@ -22,6 +25,9 @@ export default function SubmissionPanel({
   lastScore,
   missionState,
   timeLeftLabel,
+  isGuestMode = false,
+  guestSubmitAttempted = false,
+  onDismissSubmitPrompt,
 }: Props) {
   const lineCount = code.split("\n").length;
   const charCount = code.length;
@@ -287,14 +293,50 @@ export default function SubmissionPanel({
           </p>
         </div>
 
+        {/* Guest submit conversion prompt - secondary CTA */}
+        {isGuestMode && guestSubmitAttempted && (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-3 py-2.5 opacity-80 hover:opacity-100 transition-opacity">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-white/90">Create an account to submit</p>
+                <p className="text-xs text-gray-500">Save your progress and continue learning.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => {
+                    if (onDismissSubmitPrompt) onDismissSubmitPrompt();
+                  }}
+                  className="rounded-lg border border-white/8 bg-white/[0.02] px-2.5 py-1.5 text-[11px] font-medium text-gray-400 transition hover:text-white hover:bg-white/[0.05]"
+                  type="button"
+                >
+                  Continue
+                </button>
+                <button
+                  onClick={() => window.location.href = "/signup"}
+                  className="rounded-lg bg-gradient-to-r from-pink-500/80 to-purple-500/80 px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:opacity-95"
+                  type="button"
+                >
+                  Create Account
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           <button
             onClick={onSubmit}
             disabled={submitDisabled}
-            className="w-full rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-3 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`w-full rounded-2xl px-4 py-3 text-sm font-medium transition ${
+              isGuestMode
+                ? "border border-white/10 bg-white/[0.03] text-gray-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            }`}
             type="button"
           >
-            {submitting
+            {isGuestMode
+              ? "Submit (Account Required)"
+              : submitting
               ? "Submitting..."
               : missionActive
               ? "Submit Solution"

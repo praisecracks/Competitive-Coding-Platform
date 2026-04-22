@@ -365,7 +365,7 @@ export default function TerminalConsole({
       <div
         ref={terminalRef}
         className="relative flex h-full min-h-[340px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#05060a] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]"
-        style={!expanded && isDesktop ? { height } : undefined}
+        style={!expanded ? { height } : undefined}
       >
         {!expanded && isDesktop && (
           <button
@@ -378,10 +378,8 @@ export default function TerminalConsole({
           </button>
         )}
 
-        <div className={!isDesktop ? "overflow-hidden flex-1" : "flex-1"}>
-          <div className={!isDesktop ? "h-full overflow-y-auto" : ""}>
-            {terminalContent}
-          </div>
+        <div className="flex-1 min-h-0 flex flex-col">
+          {terminalContent}
         </div>
       </div>
 

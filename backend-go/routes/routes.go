@@ -31,6 +31,9 @@ func RegisterRoutes(r *gin.Engine) {
 		challenges.POST("/:id/open", middleware.AuthMiddleware(), controllers.MarkChallengeOpened)
 	}
 
+	// Execution route (run allowed for guests)
+	r.POST("/run", middleware.OptionalAuthMiddleware(), controllers.RunCode)
+
 	// Protected routes
 	protected := r.Group("/")
 	protected.Use(middleware.AuthMiddleware())
@@ -94,8 +97,7 @@ func RegisterRoutes(r *gin.Engine) {
 			notifications.GET("/system", controllers.GetSystemNotifications)
 		}
 
-		// Submission routes
-		protected.POST("/run", controllers.RunCode)
+		// Submission routes (auth required)
 		protected.POST("/submit", controllers.SubmitCode)
 
 		// Learning Progress routes
@@ -108,26 +110,11 @@ func RegisterRoutes(r *gin.Engine) {
 			learning.DELETE("/journal/:id", controllers.DeleteJournalEntry)
 			learning.PUT("/legacy-progress", controllers.UpdateLegacyProgress)
 		}
+
+		// Reports
+		protected.POST("/report", controllers.SubmitReport)
+
+		// Feedback (user can submit)
+		protected.POST("/feedback", controllers.SubmitFeedback)
 	}
-
-	// Reports
-	protected.POST("/report", controllers.SubmitReport)
-
-	// Feedback (user can submit)
-	protected.POST("/feedback", controllers.SubmitFeedback)
-
-	// Leaderboard and Search
-	r.GET("/leaderboard", controllers.GetLeaderboard)
-
-	search := r.Group("/search")
-	search.Use(middleware.OptionalAuthMiddleware())
-	{
-		search.GET("", controllers.GetSearch)
-	}
-
-	r.GET("/search/user/:id", controllers.GetUserByID)
-	r.GET("/users/search", controllers.SearchUserByQuery)
-
-	// News Proxy
-	r.GET("/news-proxy", controllers.ProxyNews)
 }

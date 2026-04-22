@@ -19,6 +19,7 @@ type ChallengeHeaderProps = {
   workspaceTab: WorkspaceTab;
   onTabChange: (tab: WorkspaceTab) => void;
   onBack: () => void;
+  isGuestMode?: boolean;
 };
 
 const tabs: WorkspaceTab[] = ["problem", "examples", "constraints"];
@@ -40,6 +41,7 @@ export default function ChallengeHeader({
   workspaceTab,
   onTabChange,
   onBack,
+  isGuestMode = false,
 }: ChallengeHeaderProps) {
   const difficultyClasses = (() => {
     const value = challenge.difficulty?.toLowerCase() || "";
@@ -100,6 +102,11 @@ export default function ChallengeHeader({
 
     return "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-200";
   })();
+
+  // Guest mode: dimmer stats containers
+  const guestStatClass = isGuestMode
+    ? "opacity-70 dark:opacity-60 hover:opacity-90 transition-opacity"
+    : "";
 
   return (
     <div className="mb-4 overflow-hidden rounded-[28px] border border-slate-200/90 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06),0_2px_10px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-[#0a0a0a] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
@@ -170,7 +177,7 @@ export default function ChallengeHeader({
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5 2xl:min-w-[540px]">
-            <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left shadow-sm sm:px-3 sm:text-center dark:border-white/10 dark:bg-white/[0.03]">
+            <div className={`rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left shadow-sm sm:px-3 sm:text-center dark:border-white/10 dark:bg-white/[0.03] ${guestStatClass}`}>
               <p className="text-[9px] uppercase tracking-[0.16em] text-slate-500 dark:text-gray-500 sm:text-[10px]">
                 Score
               </p>
@@ -179,7 +186,7 @@ export default function ChallengeHeader({
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left shadow-sm sm:px-3 sm:text-center dark:border-white/10 dark:bg-white/[0.03]">
+            <div className={`rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left shadow-sm sm:px-3 sm:text-center dark:border-white/10 dark:bg-white/[0.03] ${guestStatClass}`}>
               <p className="text-[9px] uppercase tracking-[0.16em] text-slate-500 dark:text-gray-500 sm:text-[10px]">
                 Lines
               </p>
@@ -188,7 +195,7 @@ export default function ChallengeHeader({
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left shadow-sm sm:px-3 sm:text-center dark:border-white/10 dark:bg-white/[0.03]">
+            <div className={`rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left shadow-sm sm:px-3 sm:text-center dark:border-white/10 dark:bg-white/[0.03] ${guestStatClass}`}>
               <p className="text-[9px] uppercase tracking-[0.16em] text-slate-500 dark:text-gray-500 sm:text-[10px]">
                 Chars
               </p>
@@ -198,7 +205,7 @@ export default function ChallengeHeader({
             </div>
 
             <div
-              className={`rounded-xl border px-2.5 py-2 text-left shadow-sm sm:px-3 sm:text-center ${timerClasses}`}
+              className={`rounded-xl border px-2.5 py-2 text-left shadow-sm sm:px-3 sm:text-center ${timerClasses} ${guestStatClass}`}
             >
               <p className="text-[9px] uppercase tracking-[0.16em] text-inherit/80 sm:text-[10px]">
                 Timer
@@ -208,7 +215,7 @@ export default function ChallengeHeader({
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left shadow-sm sm:px-3 sm:text-center xl:block dark:border-white/10 dark:bg-white/[0.03]">
+            <div className={`rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left shadow-sm sm:px-3 sm:text-center xl:block dark:border-white/10 dark:bg-white/[0.03] ${guestStatClass}`}>
               <p className="text-[9px] uppercase tracking-[0.16em] text-slate-500 dark:text-gray-500 sm:text-[10px]">
                 ID
               </p>

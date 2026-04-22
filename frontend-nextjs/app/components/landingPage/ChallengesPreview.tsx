@@ -1,42 +1,19 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
-import { ArrowRight, Clock3, Layers3, Sparkles, Swords, Trophy, Flame, Zap, Target, ChevronRight } from "lucide-react";
+import { ArrowRight, Clock3, Layers3, Sparkles, Swords, Trophy, Flame, Zap, ChevronRight } from "lucide-react";
 
-const previewChallenges = [
-  {
-    id: 1,
-    title: "Reverse String",
-    difficulty: "Easy",
-    category: "Strings",
-    description: "Reverse the given string without using built-in reverse methods.",
-    duration: "5 mins",
-    status: "Starter Mission",
-    accentColor: "#10B981",
-  },
-  {
-    id: 2,
-    title: "Two Sum",
-    difficulty: "Easy",
-    category: "Arrays",
-    description: "Find two numbers in an array that add up to a target value.",
-    duration: "8 mins",
-    status: "Popular Mission",
-    accentColor: "#EC4899",
-  },
-  {
-    id: 3,
-    title: "Valid Parentheses",
-    difficulty: "Medium",
-    category: "Stacks",
-    description: "Check whether the brackets in a string are properly matched.",
-    duration: "10 mins",
-    status: "Core Mission",
-    accentColor: "#A855F7",
-  },
-];
+type Challenge = {
+  id: number;
+  title: string;
+  description: string;
+  difficulty: string;
+  category: string;
+  duration: number;
+  tags: string[];
+};
 
 const competitiveFeatures = [
   { icon: Swords, title: "Live Duels", description: "Challenge other developers in real-time", color: "#EC4899" },
@@ -62,19 +39,26 @@ const getStatusStyles = (status: string) => {
   }
 };
 
-function TiltCard({ challenge, index }: { challenge: typeof previewChallenges[0]; index: number }) {
+// Status mapping based on difficulty for real challenges
+const getStatusFromChallenge = (challenge: Challenge): string => {
+  if (challenge.difficulty === "Easy") return "Starter Mission";
+  if (challenge.difficulty === "Medium") return "Popular Mission";
+  return "Core Mission";
+};
+
+function TiltCard({ challenge, index, accentColor }: { challenge: Challenge; index: number; accentColor: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  
+
   const springConfig = { stiffness: 300, damping: 25 };
   const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [6, -6]), springConfig);
   const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-6, 6]), springConfig);
 
   const glowX = useSpring(useTransform(x, [-0.5, 0.5], ["0%", "100%"]), { stiffness: 200, damping: 20 });
   const glowY = useSpring(useTransform(y, [-0.5, 0.5], ["0%", "100%"]), { stiffness: 200, damping: 20 });
-  const spotlight = useMotionTemplate`radial-gradient(600px circle at ${glowX}px ${glowY}px, ${challenge.accentColor}12, transparent 70%)`;
+  const spotlight = useMotionTemplate`radial-gradient(600px circle at ${glowX}px ${glowY}px, ${accentColor}12, transparent 70%)`;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return;
@@ -102,38 +86,42 @@ function TiltCard({ challenge, index }: { challenge: typeof previewChallenges[0]
       <div className="group relative overflow-hidden rounded-[28px] border border-white/[0.06] bg-[#0A0A0C] p-6 transition-all duration-500 hover:border-white/12 sm:p-7">
         {/* Spotlight */}
         <motion.div style={{ background: spotlight }} className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500" animate={{ opacity: isHovered ? 1 : 0 }} />
-        
+
         {/* Grid Pattern */}
         <div className="pointer-events-none absolute inset-0 opacity-[0.02] [background-image:linear-gradient(rgba(255,255,255,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.5)_1px,transparent_1px)] [background-size:24px_24px]" />
-        
+
         {/* Top Line */}
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-        
+
         {/* Bottom Glow */}
-        <div className="absolute bottom-0 inset-x-0 h-28 transition-opacity duration-500" style={{ background: `linear-gradient(to top, ${challenge.accentColor}06, transparent)`, opacity: isHovered ? 1 : 0.3 }} />
-        
+        <div className="absolute bottom-0 inset-x-0 h-28 transition-opacity duration-500" style={{ background: `linear-gradient(to top, ${accentColor}06, transparent)`, opacity: isHovered ? 1 : 0.3 }} />
+
         {/* Hover Glow */}
-        <div className="absolute -inset-px rounded-[28px] opacity-0 transition-opacity duration-500 blur-xl" style={{ background: `linear-gradient(135deg, ${challenge.accentColor}15, transparent 60%)`, opacity: isHovered ? 0.4 : 0 }} />
+        <div className="absolute -inset-px rounded-[28px] opacity-0 transition-opacity duration-500 blur-xl" style={{ background: `linear-gradient(135deg, ${accentColor}15, transparent 60%)`, opacity: isHovered ? 0.4 : 0 }} />
 
         <div className="relative z-10">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-400">
-                <Sparkles className="h-3.5 w-3.5" style={{ color: challenge.accentColor }} />
-                Mission #{challenge.id}
+                <Sparkles className="h-3.5 w-3.5" style={{ color: accentColor }} />
+                Mission #{String(challenge.id).padStart(3, "0")}
               </div>
               <h3 className="text-2xl font-bold tracking-tight text-white transition-colors duration-300 group-hover:text-white">{challenge.title}</h3>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]" style={{ boxShadow: `0 0 20px ${challenge.accentColor}15` }}>
-              <Layers3 className="h-5 w-5" style={{ color: challenge.accentColor }} />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]" style={{ boxShadow: `0 0 20px ${accentColor}15` }}>
+              <Layers3 className="h-5 w-5" style={{ color: accentColor }} />
             </div>
           </div>
 
           {/* Badges */}
           <div className="mt-5 flex flex-wrap gap-2.5">
-            <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${getDifficultyStyles(challenge.difficulty)}`}>{challenge.difficulty}</span>
-            <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${getStatusStyles(challenge.status)}`}>{challenge.status}</span>
+            <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${getDifficultyStyles(challenge.difficulty)}`}>
+              {challenge.difficulty}
+            </span>
+            <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${getStatusStyles(getStatusFromChallenge(challenge))}`}>
+              {getStatusFromChallenge(challenge)}
+            </span>
           </div>
 
           {/* Meta */}
@@ -144,7 +132,7 @@ function TiltCard({ challenge, index }: { challenge: typeof previewChallenges[0]
             </span>
             <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-gray-400">
               <Clock3 className="h-3.5 w-3.5" />
-              {challenge.duration}
+              {challenge.duration} min
             </span>
           </div>
 
@@ -154,10 +142,14 @@ function TiltCard({ challenge, index }: { challenge: typeof previewChallenges[0]
           <div className="mt-6 border-t border-white/[0.06] pt-5">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-gray-500">
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: challenge.accentColor }} />
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: accentColor }} />
                 <span>Preview only</span>
               </div>
-              <Link href="/login" className="group/btn inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-white transition-all duration-300 hover:gap-3" style={{ background: `linear-gradient(135deg, ${challenge.accentColor}12, ${challenge.accentColor}06)`, border: `1px solid ${challenge.accentColor}25` }}>
+              <Link
+                href={`/challenges/${challenge.id}?guest=true`}
+                className="group/btn inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-white transition-all duration-300 hover:gap-3"
+                style={{ background: `linear-gradient(135deg, ${accentColor}12, ${accentColor}06)`, border: `1px solid ${accentColor}25` }}
+              >
                 <span>Start</span>
                 <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
               </Link>
@@ -175,27 +167,49 @@ export default function ChallengesPreview() {
   const mouseY = useMotionValue(0);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], [0, -15]);
-  
+
   const sectionGlowX = useSpring(mouseX, { stiffness: 100, damping: 20 });
   const sectionGlowY = useSpring(mouseY, { stiffness: 100, damping: 20 });
   const sectionSpotlight = useMotionTemplate`radial-gradient(800px circle at ${sectionGlowX}px ${sectionGlowY}px, rgba(168,85,247,0.05), transparent 50%)`;
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
     mouseX.set(e.clientX - rect.left);
     mouseY.set(e.clientY - rect.top);
   };
 
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      try {
+        const res = await fetch("/api/challenges");
+        if (res.ok) {
+          const data = await res.json();
+          // Take first 3 challenges, sorted by id
+          const sorted = Array.isArray(data) ? data.sort((a: Challenge, b: Challenge) => a.id - b.id) : [];
+          setChallenges(sorted.slice(0, 3));
+        }
+      } catch (error) {
+        console.error("Failed to fetch challenges:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChallenges();
+  }, []);
+
   return (
-      <section ref={containerRef} onMouseMove={handleMouseMove} id="challenges" className="relative scroll-mt-20 overflow-hidden bg-[#020202] py-24 text-gray-100 sm:py-28">
+    <section ref={containerRef} onMouseMove={handleMouseMove} id="challenges" className="relative scroll-mt-20 overflow-hidden bg-[#020202] py-24 text-gray-100 sm:py-28">
       {/* Background */}
       <motion.div style={{ y }} className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute left-[7%] top-10 h-64 w-64 rounded-full bg-pink-500/6 blur-[140px]" />
         <div className="absolute right-[10%] top-16 h-72 w-72 rounded-full bg-purple-500/6 blur-[130px]" />
         <div className="absolute bottom-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-fuchsia-500/5 blur-[120px]" />
       </motion.div>
-      
+
       <motion.div style={{ background: sectionSpotlight }} className="pointer-events-none absolute inset-0 -z-10 opacity-50" />
       <div className="pointer-events-none absolute inset-0 -z-10 opacity-[0.025] [background-image:linear-gradient(rgba(255,255,255,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.5)_1px,transparent_1px)] [background-size:56px_56px]" />
 
@@ -232,9 +246,51 @@ export default function ChallengesPreview() {
 
         {/* Challenge Cards */}
         <motion.div style={{ y }} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {previewChallenges.map((challenge, index) => (
-            <TiltCard key={challenge.id} challenge={challenge} index={index} />
-          ))}
+          {loading
+            ? [1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="group relative overflow-hidden rounded-[28px] border border-white/[0.06] bg-[#0A0A0C] p-6 transition-all duration-500 sm:p-7"
+                >
+                  <div className="absolute inset-0 opacity-[0.02] [background-image:linear-gradient(rgba(255,255,255,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.5)_1px,transparent_1px)] [background-size:24px_24px]" />
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+                  <div className="absolute bottom-0 inset-x-0 h-28 transition-opacity duration-500" style={{ background: `linear-gradient(to top, #6B728006, transparent)`, opacity: 0.3 }} />
+
+                  <div className="relative z-10">
+                    <div className="mb-3 flex items-start justify-between">
+                      <div className="h-6 w-24 animate-pulse rounded-lg bg-white/10" />
+                      <div className="h-6 w-16 animate-pulse rounded-lg bg-white/10" />
+                    </div>
+                    <div className="h-8 w-3/4 animate-pulse rounded-lg bg-white/10 mb-3" />
+                    <div className="h-4 w-full animate-pulse rounded bg-white/10 mb-2" />
+                    <div className="h-4 w-2/3 animate-pulse rounded bg-white/10 mb-5" />
+                    <div className="mt-6 border-t border-white/[0.06] pt-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="h-4 w-24 animate-pulse rounded bg-white/10" />
+                        <div className="h-9 w-20 animate-pulse rounded-xl bg-white/10" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            : challenges.map((challenge, index) => {
+                const accentColor = (() => {
+                  switch (challenge.difficulty) {
+                    case "Easy": return "#10B981";
+                    case "Medium": return "#EC4899";
+                    case "Hard": return "#A855F7";
+                    default: return "#6B7280";
+                  }
+                })();
+                return (
+                  <TiltCard
+                    key={challenge.id}
+                    challenge={challenge}
+                    index={index}
+                    accentColor={accentColor}
+                  />
+                );
+              })}
         </motion.div>
 
         {/* Bottom CTA */}

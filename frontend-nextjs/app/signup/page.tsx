@@ -7,7 +7,7 @@ import Image from "next/image";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import GuestGuard from "../components/GuestGuard";
-import { isAuthenticated, persistUserSession } from "@/lib/auth";
+import { isAuthenticated, persistUserSession, sanitizeRedirect } from "@/lib/auth";
 import logo from "../../assets/CodeMaster_Logo.png";
 import { BoltIcon, TrophyIcon } from "@heroicons/react/24/outline";
 
@@ -126,6 +126,7 @@ function SignupForm() {
   const [showPasswordRules, setShowPasswordRules] = useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [notification, setNotification] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [redirect, setRedirect] = useState("/dashboard");
 
   const notify = (msg: string, type: "success" | "error" = "error") => {
     setNotification({ msg, type });
@@ -149,6 +150,8 @@ function SignupForm() {
       if (refCode) {
         setReferralCode(refCode);
       }
+      const redirectParam = params.get("redirect");
+      setRedirect(sanitizeRedirect(redirectParam));
     }
 
     setCheckingSession(false);
@@ -338,18 +341,11 @@ function SignupForm() {
       }
 
       if (data?.token) {
-        persistUserSession({
-          token: data.token,
-          username: data.user?.username || cleanUsername,
-          email: data.user?.email || cleanEmail,
-          country: data.user?.country || country,
-          profilePic: data.user?.profilePic || "",
-        });
-
+        persistUserSession(data);
         setStatus("SUCCESS");
 
         window.setTimeout(() => {
-          router.replace("/dashboard");
+          router.replace(redirect);
         }, 900);
 
         return;
@@ -361,7 +357,7 @@ function SignupForm() {
         router.replace(
           `/login?message=${encodeURIComponent(
             "Account created successfully. Please sign in."
-          )}`
+          )}&redirect=${encodeURIComponent(redirect)}`
         );
       }, 1000);
     } catch (error) {
@@ -523,6 +519,8 @@ function SignupForm() {
                       <button
                         type="button"
                         onClick={() => {
+                          // Store redirect for OAuth callback
+                          localStorage.setItem("oauth_redirect", redirect);
                           const backendURL =
                             process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
                           window.location.href = `${backendURL}/auth/github/login`;

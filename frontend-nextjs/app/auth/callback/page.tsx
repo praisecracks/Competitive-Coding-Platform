@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { persistUserSession } from "@/lib/auth";
+import { persistUserSession, sanitizeRedirect } from "@/lib/auth";
 
 function AuthCallback() {
   const router = useRouter();
@@ -32,9 +32,14 @@ function AuthCallback() {
         role: role || "user",
       });
 
+      // Check for stored redirect from OAuth flow
+      const storedRedirect = localStorage.getItem("oauth_redirect");
+      localStorage.removeItem("oauth_redirect"); // Clean up
+      const redirectUrl = sanitizeRedirect(storedRedirect);
+
       // Force a small delay to ensure localStorage is written before redirecting
       const timer = setTimeout(() => {
-        window.location.href = "/dashboard";
+        window.location.href = redirectUrl;
       }, 100);
       return () => clearTimeout(timer);
     } else {

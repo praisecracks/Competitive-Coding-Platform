@@ -275,6 +275,8 @@ function LoginForm() {
                       <button
                         type="button"
                         onClick={() => {
+                          // Store redirect for OAuth callback
+                          localStorage.setItem("oauth_redirect", redirect);
                           const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
                           window.location.href = `${backendURL}/auth/github/login`;
                         }}
