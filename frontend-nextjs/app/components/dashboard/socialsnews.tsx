@@ -4,6 +4,15 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  "http://127.0.0.1:8080";
+
+const buildNewsProxyUrl = (query: string) => {
+  return `${API_BASE_URL}/api/news-proxy?${query}`;
+};
+
 interface NewsItem {
   id: string;
   title: string;
@@ -133,7 +142,7 @@ const FALLBACK_NEWS: Record<SourceType, NewsItem[]> = {
       sourceIcon: <GitHubIcon />,
       url: "#",
       timestamp: new Date().toISOString(),
-      summary: "GitHub data is temporarily unavailable. Try refreshing in a moment.",
+      summary: "GitHub updates are temporarily unavailable. Auto-rotation will keep checking other sources.",
       category: "coding",
       engagement: { likes: 0, comments: 0 },
       author: { name: "GitHub", username: "@github" },
@@ -147,7 +156,7 @@ const FALLBACK_NEWS: Record<SourceType, NewsItem[]> = {
       sourceIcon: <DevToIcon />,
       url: "#",
       timestamp: new Date().toISOString(),
-      summary: "DEV Community feed is temporarily unavailable.",
+      summary: "DEV Community updates are temporarily unavailable. Try refreshing in a moment.",
       category: "coding",
       engagement: { likes: 0, comments: 0 },
       author: { name: "DEV", username: "@dev" },
@@ -161,7 +170,7 @@ const FALLBACK_NEWS: Record<SourceType, NewsItem[]> = {
       sourceIcon: <HackerNewsIcon />,
       url: "#",
       timestamp: new Date().toISOString(),
-      summary: "Hacker News is temporarily unavailable.",
+      summary: "Hacker News updates are temporarily unavailable. Auto-rotation will continue.",
       category: "tech",
       engagement: { likes: 0, comments: 0 },
       author: { name: "Hacker News", username: "hn" },
@@ -175,7 +184,7 @@ const FALLBACK_NEWS: Record<SourceType, NewsItem[]> = {
       sourceIcon: <RedditIcon />,
       url: "#",
       timestamp: new Date().toISOString(),
-      summary: "Reddit feed is temporarily unavailable.",
+      summary: "Reddit updates are temporarily unavailable. You can switch sources manually.",
       category: "tech",
       engagement: { likes: 0, comments: 0 },
       author: { name: "Reddit", username: "u/reddit" },
@@ -242,166 +251,159 @@ export default function SocialsNews() {
     });
   }, []);
 
-  const fetchGitHubTrending = useCallback(async (): Promise<NewsItem[]> => {
-    const response = await fetch("/api/news-proxy?source=github", {
-      cache: "no-store",
-    });
+   const safeFetchJson = async (url: string) => {
+     try {
+       const response = await fetch(url, { cache: "no-store" });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch GitHub repositories");
-    }
+       if (!response.ok) {
+         console.warn("Tech Pulse fetch failed:", url, response.status);
+         return null;
+       }
 
-    const data = await response.json();
-    if (!Array.isArray(data.items)) return [];
+       return response.json();
+     } catch (error) {
+       console.warn("Tech Pulse fetch error:", url, error);
+       return null;
+     }
+   };
 
-    return data.items.map((repo: any, index: number) => ({
-      id: `github-${repo.id ?? index}`,
-      title: repo.name || "Untitled repository",
-      summary:
-        repo.description ||
-        `${repo.stargazers_count ?? 0} stars • ${repo.forks_count ?? 0} forks`,
-      source: "GitHub",
-      sourceIcon: <GitHubIcon />,
-      url: repo.html_url || "#",
-      timestamp: repo.created_at
-        ? new Date(repo.created_at).toISOString()
-        : new Date().toISOString(),
-      category: "coding",
-      engagement: {
-        likes: repo.stargazers_count ?? 0,
-        comments: repo.open_issues_count ?? 0,
-      },
-      author: {
-        name: repo.owner?.login || "GitHub",
-        username: `@${repo.owner?.login || "github"}`,
-        avatar: repo.owner?.avatar_url,
-      },
-    }));
-  }, []);
+    const fetchGitHubTrending = useCallback(async (): Promise<NewsItem[]> => {
+      const data = await safeFetchJson(buildNewsProxyUrl("source=github"));
 
-  const fetchDevToNews = useCallback(async (): Promise<NewsItem[]> => {
-    const response = await fetch("/api/news-proxy?source=devto", {
-      cache: "no-store",
-    });
+     if (!data || !Array.isArray(data.items)) {
+       return FALLBACK_NEWS.github;
+     }
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch DEV articles");
-    }
+     return data.items.map((repo: any, index: number) => ({
+       id: `github-${repo.id ?? index}`,
+       title: repo.name || "Untitled repository",
+       summary:
+         repo.description ||
+         `${repo.stargazers_count ?? 0} stars • ${repo.forks_count ?? 0} forks`,
+       source: "GitHub",
+       sourceIcon: <GitHubIcon />,
+       url: repo.html_url || "#",
+       timestamp: repo.created_at
+         ? new Date(repo.created_at).toISOString()
+         : new Date().toISOString(),
+       category: "coding",
+       engagement: {
+         likes: repo.stargazers_count ?? 0,
+         comments: repo.open_issues_count ?? 0,
+       },
+       author: {
+         name: repo.owner?.login || "GitHub",
+         username: `@${repo.owner?.login || "github"}`,
+         avatar: repo.owner?.avatar_url,
+       },
+     }));
+   }, []);
 
-    const articles = await response.json();
-    if (!Array.isArray(articles)) return [];
+    const fetchDevToNews = useCallback(async (): Promise<NewsItem[]> => {
+      const articles = await safeFetchJson(buildNewsProxyUrl("source=devto"));
 
-    return articles.map((article: any, index: number) => ({
-      id: `devto-${article.id ?? index}`,
-      title: article.title || "Untitled article",
-      summary: article.description || article.title || "Developer article",
-      source: "DEV Community",
-      sourceIcon: <DevToIcon />,
-      url: article.url || "#",
-      timestamp: article.published_at || new Date().toISOString(),
-      category: "coding",
-      engagement: {
-        likes: article.positive_reactions_count ?? 0,
-        comments: article.comments_count ?? 0,
-      },
-      author: {
-        name: article.user?.name || "DEV Author",
-        username: `@${article.user?.username || "dev"}`,
-        avatar: article.user?.profile_image,
-      },
-    }));
-  }, []);
+     if (!Array.isArray(articles)) {
+       return FALLBACK_NEWS.devto;
+     }
 
-  const fetchHackerNews = useCallback(async (): Promise<NewsItem[]> => {
-    const response = await fetch("/api/news-proxy?source=hackernews_ids", {
-      cache: "no-store",
-    });
+     return articles.map((article: any, index: number) => ({
+       id: `devto-${article.id ?? index}`,
+       title: article.title || "Untitled article",
+       summary: article.description || article.title || "Developer article",
+       source: "DEV Community",
+       sourceIcon: <DevToIcon />,
+       url: article.url || "#",
+       timestamp: article.published_at || new Date().toISOString(),
+       category: "coding",
+       engagement: {
+         likes: article.positive_reactions_count ?? 0,
+         comments: article.comments_count ?? 0,
+       },
+       author: {
+         name: article.user?.name || "DEV Author",
+         username: `@${article.user?.username || "dev"}`,
+         avatar: article.user?.profile_image,
+       },
+     }));
+   }, []);
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch Hacker News ids");
-    }
+    const fetchHackerNews = useCallback(async (): Promise<NewsItem[]> => {
+      const storyIds = await safeFetchJson(buildNewsProxyUrl("source=hackernews_ids"));
 
-    const storyIds = await response.json();
-    if (!Array.isArray(storyIds)) return [];
+      if (!Array.isArray(storyIds)) {
+        return FALLBACK_NEWS.hackernews;
+      }
 
-    const topIds = storyIds.slice(0, 8);
+      const topIds = storyIds.slice(0, 8);
 
-    const stories = await Promise.all(
-      topIds.map(async (id: number) => {
-        const storyRes = await fetch(
-          `/api/news-proxy?source=hackernews_item&id=${id}`,
-          { cache: "no-store" }
-        );
+      const stories = await Promise.all(
+        topIds.map(async (id: number) => {
+          return safeFetchJson(buildNewsProxyUrl(`source=hackernews_item&id=${id}`));
+        })
+      );
 
-        if (!storyRes.ok) return null;
-        return storyRes.json();
-      })
-    );
+     const validStories = stories.filter(Boolean);
 
-    return stories.filter(Boolean).map((story: any, index: number) => ({
-      id: `hn-${story?.id ?? index}`,
-      title: story?.title || "Untitled story",
-      summary:
-        story?.text?.slice(0, 120) ||
-        `${story?.score ?? 0} points • ${story?.descendants ?? 0} comments`,
-      source: "Hacker News",
-      sourceIcon: <HackerNewsIcon />,
-      url:
-        story?.url || `https://news.ycombinator.com/item?id=${story?.id ?? index}`,
-      timestamp: story?.time
-        ? new Date(story.time * 1000).toISOString()
-        : new Date().toISOString(),
-      category: "tech",
-      engagement: {
-        likes: story?.score ?? 0,
-        comments: story?.descendants ?? 0,
-      },
-      author: {
-        name: story?.by || "Hacker News",
-        username: story?.by || "hn",
-      },
-    }));
-  }, []);
+     if (!validStories.length) {
+       return FALLBACK_NEWS.hackernews;
+     }
 
-  const fetchRedditTech = useCallback(async (): Promise<NewsItem[]> => {
-    const response = await fetch("/api/news-proxy?source=reddit", {
-      cache: "no-store",
-    });
+     return validStories.map((story: any, index: number) => ({
+       id: `hn-${story?.id ?? index}`,
+       title: story?.title || "Untitled story",
+       summary:
+         story?.text?.slice(0, 120) ||
+         `${story?.score ?? 0} points • ${story?.descendants ?? 0} comments`,
+       source: "Hacker News",
+       sourceIcon: <HackerNewsIcon />,
+       url:
+         story?.url || `https://news.ycombinator.com/item?id=${story?.id ?? index}`,
+       timestamp: story?.time
+         ? new Date(story.time * 1000).toISOString()
+         : new Date().toISOString(),
+       category: "tech",
+       engagement: {
+         likes: story?.score ?? 0,
+         comments: story?.descendants ?? 0,
+       },
+       author: {
+         name: story?.by || "Hacker News",
+         username: story?.by || "hn",
+       },
+     }));
+   }, []);
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch Reddit posts");
-    }
+    const fetchRedditTech = useCallback(async (): Promise<NewsItem[]> => {
+      const data = await safeFetchJson(buildNewsProxyUrl("source=reddit"));
+     const children = data?.data?.children;
 
-    const data = await response.json();
-    const children = data?.data?.children;
+     if (!Array.isArray(children)) {
+       return FALLBACK_NEWS.reddit;
+     }
 
-    if (!Array.isArray(children)) return [];
-
-    return children.map((post: any, index: number) => ({
-      id: `reddit-${post?.data?.id ?? index}`,
-      title: post?.data?.title || "Untitled post",
-      summary:
-        post?.data?.selftext?.slice(0, 120) ||
-        `${post?.data?.score ?? 0} points • ${post?.data?.num_comments ?? 0} comments`,
-      source: "Reddit",
-      sourceIcon: <RedditIcon />,
-      url: post?.data?.permalink
-        ? `https://reddit.com${post.data.permalink}`
-        : "#",
-      timestamp: post?.data?.created_utc
-        ? new Date(post.data.created_utc * 1000).toISOString()
-        : new Date().toISOString(),
-      category: "tech",
-      engagement: {
-        likes: post?.data?.score ?? 0,
-        comments: post?.data?.num_comments ?? 0,
-      },
-      author: {
-        name: post?.data?.author || "Reddit",
-        username: `u/${post?.data?.author || "reddit"}`,
-      },
-    }));
-  }, []);
+     return children.map((post: any, index: number) => ({
+       id: `reddit-${post?.data?.id ?? index}`,
+       title: post?.data?.title || "Untitled post",
+       summary:
+         post?.data?.selftext?.slice(0, 120) ||
+         `${post?.data?.score ?? 0} points • ${post?.data?.num_comments ?? 0} comments`,
+       source: "Reddit",
+       sourceIcon: <RedditIcon />,
+       url: post?.data?.permalink ? `https://reddit.com${post.data.permalink}` : "#",
+       timestamp: post?.data?.created_utc
+         ? new Date(post.data.created_utc * 1000).toISOString()
+         : new Date().toISOString(),
+       category: "tech",
+       engagement: {
+         likes: post?.data?.score ?? 0,
+         comments: post?.data?.num_comments ?? 0,
+       },
+       author: {
+         name: post?.data?.author || "Reddit",
+         username: `u/${post?.data?.author || "reddit"}`,
+       },
+     }));
+   }, []);
 
   const getNewsForSource = useCallback(
     async (source: SourceType): Promise<NewsItem[]> => {
@@ -439,14 +441,25 @@ export default function SocialsNews() {
 
         if (activeRequestIdRef.current !== requestId) return;
 
-        if (!fetchedNews.length) {
-          throw new Error(`No data from ${source}`);
-        }
+        const finalNews = fetchedNews.length ? fetchedNews : FALLBACK_NEWS[source];
 
-        cacheRef.current[source] = fetchedNews;
-        setNews(fetchedNews);
+        cacheRef.current[source] = finalNews;
+        setNews(finalNews);
+
+        const isFallback = finalNews.some((item) => item.id.startsWith("fallback-"));
+        setError(isFallback ? "Showing fallback updates while this source reconnects." : null);
+
+        if (isFallback && autoRotate) {
+          if (failoverTimerRef.current) {
+            clearTimeout(failoverTimerRef.current);
+          }
+
+          failoverTimerRef.current = setTimeout(() => {
+            rotateToNextSource();
+          }, 2500);
+        }
       } catch (err) {
-        console.error(`Failed to fetch from ${source}:`, err);
+        console.warn(`Tech Pulse source fallback used for ${source}:`, err);
 
         if (activeRequestIdRef.current !== requestId) return;
 
@@ -455,7 +468,7 @@ export default function SocialsNews() {
           : FALLBACK_NEWS[source];
 
         setNews(fallback);
-        setError(`Unable to fetch from ${currentSourceConfig.name}.`);
+        setError("Showing fallback updates while this source reconnects.");
 
         if (autoRotate) {
           if (failoverTimerRef.current) {
@@ -464,7 +477,7 @@ export default function SocialsNews() {
 
           failoverTimerRef.current = setTimeout(() => {
             rotateToNextSource();
-          }, 2000);
+          }, 2500);
         }
       } finally {
         if (activeRequestIdRef.current === requestId) {
@@ -472,7 +485,7 @@ export default function SocialsNews() {
         }
       }
     },
-    [autoRotate, currentSourceConfig.name, getNewsForSource, rotateToNextSource]
+    [autoRotate, getNewsForSource, rotateToNextSource]
   );
 
   const handleManualRefresh = useCallback(() => {
@@ -681,19 +694,14 @@ export default function SocialsNews() {
       )}
 
       {error && !loading && (
-        <div className="p-6 text-center">
-          <div className="mb-2 text-3xl">⚠️</div>
-          <p className={`text-sm ${isLight ? "text-rose-600" : "text-red-400"}`}>
-            {error}
-          </p>
-          <button
-            onClick={handleManualRefresh}
-            className={`mt-3 text-xs ${
-              isLight ? "text-pink-600 hover:text-pink-700" : "text-pink-400 hover:text-pink-300"
-            }`}
-          >
-            Try Again
-          </button>
+        <div
+          className={`border-b px-5 py-2 text-center text-[11px] ${
+            isLight
+              ? "border-amber-200 bg-amber-50 text-amber-700"
+              : "border-amber-500/10 bg-amber-500/[0.06] text-amber-300"
+          }`}
+        >
+          {error}
         </div>
       )}
 
@@ -769,9 +777,7 @@ export default function SocialsNews() {
 
       <div
         className={`border-t px-5 py-3 ${
-          isLight
-            ? "border-gray-200 bg-gray-50"
-            : "border-white/10 bg-white/5"
+          isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-white/5"
         }`}
       >
         <div className="flex items-center justify-between text-[10px] text-gray-500">

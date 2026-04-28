@@ -8,7 +8,14 @@ import SocialsNews from "../components/dashboard/socialsnews";
 import RankModal from "../components/dashboard/RankModal";
 import WelcomeOnboardingModal from "../components/dashboard/WelcomeOnboardingModal";
 import { clearUserSession } from "@/lib/auth";
-import { Copy, Check } from "lucide-react";
+import {
+  Copy,
+  Check,
+  PlayCircle,
+  RotateCcw,
+  Activity,
+  Trophy,
+} from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import FeedbackFAB from "../components/FeedbackFAB";
 import { getLearningProgress } from "@/lib/learning-api";
@@ -78,7 +85,9 @@ export default function DashboardPage() {
   const [statsError, setStatsError] = useState("");
   const [isRankModalOpen, setIsRankModalOpen] = useState(false);
   const [isCopied, setIsCheck] = useState(false);
-  const [activeLearning, setActiveLearning] = useState<ActiveLearning | null>(null);
+  const [activeLearning, setActiveLearning] = useState<ActiveLearning | null>(
+    null
+  );
 
   const tips = useMemo(
     () => [
@@ -101,6 +110,56 @@ export default function DashboardPage() {
     return tips[dayOfYear % tips.length];
   }, [tips]);
 
+  const lastSubmission = data.recentSubmissions[0];
+
+  const lastSubmissionFailed = useMemo(() => {
+    if (!lastSubmission) return false;
+    const status = lastSubmission.status.toLowerCase();
+    return status === "failed" || status === "rejected";
+  }, [lastSubmission]);
+
+  const smartActions = useMemo(
+    () => [
+      {
+        title: activeLearning ? "Continue Learning" : "Start Learning",
+        desc: activeLearning
+          ? `Resume ${activeLearning.title}`
+          : "Begin a structured learning path",
+        icon: PlayCircle,
+        route: activeLearning
+          ? `/dashboard/learning/track/${activeLearning.trackId}`
+          : "/dashboard/learning",
+        highlight: true,
+      },
+      {
+        title: lastSubmissionFailed ? "Retry Last Challenge" : "Practice Challenges",
+        desc: lastSubmissionFailed
+          ? `Retry ${lastSubmission?.title}`
+          : "Solve focused coding problems",
+        icon: RotateCcw,
+        route: lastSubmissionFailed
+          ? `/dashboard/challenges/${lastSubmission?.id}`
+          : "/dashboard/challenges",
+        highlight: lastSubmissionFailed,
+      },
+      {
+        title: "View Activity",
+        desc: "Review your recent submissions",
+        icon: Activity,
+        route: "/dashboard/activity",
+        highlight: false,
+      },
+      {
+        title: "Leaderboard",
+        desc: "Compare your ranking",
+        icon: Trophy,
+        route: "/dashboard/leaderboard",
+        highlight: false,
+      },
+    ],
+    [activeLearning, lastSubmission, lastSubmissionFailed]
+  );
+
   const handleCopyTip = () => {
     navigator.clipboard.writeText(dailyTip);
     setIsCheck(true);
@@ -114,9 +173,7 @@ export default function DashboardPage() {
         : null;
 
     const name =
-      typeof window !== "undefined"
-        ? localStorage.getItem("user_name")
-        : null;
+      typeof window !== "undefined" ? localStorage.getItem("user_name") : null;
 
     if (!token) {
       router.replace("/login?redirect=/dashboard");
@@ -132,41 +189,50 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    async function loadLearningProgress() {
-      try {
-        const progress = await getLearningProgress();
-        const trackProgress = progress.trackProgress || {};
-        
-        // Find tracks with progress (started but not completed)
-        let mostRecent: ActiveLearning | null = null;
-        
-        for (const [trackId, track] of Object.entries(trackProgress)) {
-          const completedLessons = (track as any)?.completedLessonIds?.length || 0;
-          const completedTopics = (track as any)?.completedTopicIds?.length || 0;
-          
-          if (completedLessons > 0 || completedTopics > 0) {
-            // Just take the first track with progress
-            if (!mostRecent) {
-              mostRecent = {
-                trackId,
-                topicId: undefined, // Let the track page decide which topic
-                title: trackId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                progressPercent: 0
-              };
-              break;
-            }
-          }
+  async function loadLearningProgress() {
+    try {
+      const progress = await getLearningProgress();
+      const trackProgress = progress.trackProgress || {};
+
+      let mostRecent: ActiveLearning | null = null;
+
+      for (const [trackId, track] of Object.entries(trackProgress)) {
+        const completedLessons =
+          (track as any)?.completedLessonIds?.length || 0;
+        const completedTopics =
+          (track as any)?.completedTopicIds?.length || 0;
+
+        const totalCompleted = completedLessons + completedTopics;
+
+        if (totalCompleted > 0) {
+          const progressPercent = Math.min(
+            100,
+            Math.round(totalCompleted * 5) // simple scaling for now
+          );
+
+          mostRecent = {
+            trackId,
+            topicId: undefined,
+            title: trackId
+              .replace(/-/g, " ")
+              .replace(/\b\w/g, (l) => l.toUpperCase()),
+            progressPercent,
+          };
+
+          break;
         }
-        
-        if (mostRecent) {
-          setActiveLearning(mostRecent);
-        }
-      } catch (e) {
-        console.error("Failed to load learning progress", e);
       }
+
+      if (mostRecent) {
+        setActiveLearning(mostRecent);
+      }
+    } catch (e) {
+      console.error("Failed to load learning progress", e);
     }
-    loadLearningProgress();
-  }, []);
+  }
+
+  loadLearningProgress();
+}, []);
 
   const fetchDashboardData = async (token: string) => {
     try {
@@ -188,11 +254,7 @@ export default function DashboardPage() {
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => "");
-        console.error(
-          "Dashboard stats request failed:",
-          res.status,
-          errorText
-        );
+        console.error("Dashboard stats request failed:", res.status, errorText);
         setData(defaultData);
         setStatsError("Live dashboard stats are unavailable right now.");
         return;
@@ -259,32 +321,36 @@ export default function DashboardPage() {
         actionTitle={
           activeLearning
             ? `Continue: ${activeLearning.title}`
-            : data.recentSubmissions.length > 0
-            ? `Continue: ${data.recentSubmissions[0].title}`
+            : lastSubmission
+            ? `Continue: ${lastSubmission.title}`
             : "Start your next challenge"
         }
         actionSubtitle={
           activeLearning
             ? `You're ${activeLearning.progressPercent}% through this track. Keep going!`
-            : data.recentSubmissions.length > 0
+            : lastSubmission
             ? "Jump back into your most recent learning activity and keep the momentum going."
             : "Explore challenges and begin building your progress with a focused first step."
         }
         actionButtonLabel={
           activeLearning
             ? "Continue Learning"
-            : data.recentSubmissions.length > 0
-            ? "Continue Learning"
+            : lastSubmission
+            ? "Continue Practice"
             : "Start Learning"
         }
         secondaryButtonLabel="Explore Challenges"
         onActionClick={() => {
           if (activeLearning) {
             if (activeLearning.topicId) {
-              router.push(`/dashboard/learning/track/${activeLearning.trackId}/topic/${activeLearning.topicId}`);
+              router.push(
+                `/dashboard/learning/track/${activeLearning.trackId}/topic/${activeLearning.topicId}`
+              );
             } else {
               router.push(`/dashboard/learning/track/${activeLearning.trackId}`);
             }
+          } else if (lastSubmission) {
+            router.push(`/dashboard/challenges/${lastSubmission.id}`);
           } else {
             router.push("/dashboard/learning");
           }
@@ -335,68 +401,96 @@ export default function DashboardPage() {
           />
 
           <div
-            className={`rounded-xl border p-5 ${
+            className={`rounded-2xl border p-5 ${
               isLight
                 ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
                 : "border-white/10 bg-[#0a0a0a]"
             }`}
           >
-            <h2
-              className={`mb-4 text-sm font-semibold ${
-                isLight ? "text-gray-900" : "text-white"
-              }`}
-            >
-              Quick Actions
-            </h2>
-
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                {
-                  title: "Start Challenge",
-                  desc: "Solve a new problem",
-                  route: "/dashboard/challenges",
-                },
-                {
-                  title: "Leaderboard",
-                  desc: "Check rankings",
-                  route: "/dashboard/leaderboard",
-                },
-                {
-                  title: "Profile",
-                  desc: "View your profile",
-                  route: "/dashboard/profile",
-                },
-                {
-                  title: "Settings",
-                  desc: "Manage your account",
-                  route: "/dashboard/settings",
-                },
-              ].map((item) => (
-                <button
-                  key={item.title}
-                  onClick={() => router.push(item.route)}
-                  className={`rounded-lg border p-3 text-left transition ${
-                    isLight
-                      ? "border-gray-200 bg-gray-50 hover:bg-gray-100"
-                      : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05]"
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2
+                  className={`text-sm font-semibold ${
+                    isLight ? "text-gray-900" : "text-white"
                   }`}
                 >
-                  <p
-                    className={`text-sm font-medium ${
-                      isLight ? "text-gray-900" : "text-white"
+                  Smart Actions
+                </h2>
+                <p
+                  className={`mt-1 text-xs ${
+                    isLight ? "text-gray-500" : "text-gray-500"
+                  }`}
+                >
+                  Fast shortcuts based on your current progress.
+                </p>
+              </div>
+
+              <span
+                className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] ${
+                  isLight
+                    ? "border-pink-200 bg-pink-50 text-pink-600"
+                    : "border-pink-500/20 bg-pink-500/[0.08] text-pink-300"
+                }`}
+              >
+                Guided
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {smartActions.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    key={item.title}
+                    onClick={() => router.push(item.route)}
+                    className={`group rounded-2xl border p-4 text-left transition-all duration-200 ${
+                      item.highlight
+                        ? isLight
+                          ? "border-pink-200 bg-gradient-to-br from-pink-50 to-white hover:border-pink-300 hover:shadow-[0_12px_28px_rgba(236,72,153,0.12)]"
+                          : "border-pink-500/20 bg-gradient-to-br from-pink-500/[0.1] to-white/[0.03] hover:border-pink-500/35"
+                        : isLight
+                        ? "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white"
+                        : "border-white/10 bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.05]"
                     }`}
                   >
-                    {item.title}
-                  </p>
-                  <p
-                    className={`mt-1 text-xs ${
-                      isLight ? "text-gray-500" : "text-gray-500"
-                    }`}
-                  >
-                    {item.desc}
-                  </p>
-                </button>
-              ))}
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                          item.highlight
+                            ? isLight
+                              ? "bg-pink-100 text-pink-600"
+                              : "bg-pink-500/15 text-pink-300"
+                            : isLight
+                            ? "bg-white text-gray-600"
+                            : "bg-white/[0.05] text-gray-300"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`text-sm font-semibold ${
+                            isLight
+                              ? "text-gray-900 group-hover:text-pink-600"
+                              : "text-white group-hover:text-pink-200"
+                          }`}
+                        >
+                          {item.title}
+                        </p>
+                        <p
+                          className={`mt-1 line-clamp-2 text-xs leading-5 ${
+                            isLight ? "text-gray-500" : "text-gray-500"
+                          }`}
+                        >
+                          {item.desc}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -431,14 +525,11 @@ export default function DashboardPage() {
                 {isCopied ? (
                   <Check className="h-3.5 w-3.5 text-emerald-500" />
                 ) : (
-                  <Copy
-                    className={`h-3.5 w-3.5 ${
-                      isLight ? "text-gray-500" : ""
-                    }`}
-                  />
+                  <Copy className={`h-3.5 w-3.5 ${isLight ? "text-gray-500" : ""}`} />
                 )}
               </button>
             </div>
+
             <p
               className={`text-sm leading-relaxed ${
                 isLight ? "text-gray-700" : "text-gray-300"

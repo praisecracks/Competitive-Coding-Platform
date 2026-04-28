@@ -46,8 +46,20 @@ export default function ProgressOverview({
 }: ProgressOverviewProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
+
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const [animatedStats, setAnimatedStats] = useState({
+    totalSolved: 0,
+    challengesWon: 0,
+    challengesPlayed: 0,
+    rank: 0,
+    totalPoints: 0,
+    easySolved: 0,
+    mediumSolved: 0,
+    hardSolved: 0,
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -67,9 +79,94 @@ export default function ProgressOverview({
     };
   }, [isResetModalOpen, mounted]);
 
+  useEffect(() => {
+    const animateValue = (
+      start: number,
+      end: number,
+      key: keyof typeof animatedStats,
+      duration = 900
+    ) => {
+      let startTime: number | null = null;
+
+      const step = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const easedProgress =
+          progress < 0.5
+            ? 2 * progress * progress
+            : -1 + (4 - 2 * progress) * progress;
+
+        const value = Math.floor(start + (end - start) * easedProgress);
+
+        setAnimatedStats((prev) => ({
+          ...prev,
+          [key]: value,
+        }));
+
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          setAnimatedStats((prev) => ({
+            ...prev,
+            [key]: end,
+          }));
+        }
+      };
+
+      requestAnimationFrame(step);
+    };
+
+    const targets = {
+      totalSolved: stats.totalSolved,
+      challengesWon: stats.challengesWon,
+      challengesPlayed: stats.challengesPlayed,
+      rank: stats.rank,
+      totalPoints: stats.totalPoints,
+      easySolved: stats.easySolved,
+      mediumSolved: stats.mediumSolved,
+      hardSolved: stats.hardSolved,
+    };
+
+    Object.entries(targets).forEach(([key, end]) => {
+      const typedKey = key as keyof typeof animatedStats;
+
+      if (animatedStats[typedKey] !== end) {
+        animateValue(animatedStats[typedKey], end, typedKey);
+      }
+    });
+  }, [stats]);
+
   const overallTotal = totals.easy + totals.medium + totals.hard;
+
   const overallPercentage =
     overallTotal > 0 ? Math.round((stats.totalSolved / overallTotal) * 100) : 0;
+
+  const progressInsight = useMemo(() => {
+    if (stats.totalSolved === 0) {
+      return "Start with one Easy challenge today. Small wins build consistency.";
+    }
+
+    if (stats.easySolved > 0 && stats.mediumSolved === 0) {
+      return "You are building a strong foundation. Try one Medium challenge when you feel ready.";
+    }
+
+    if (stats.mediumSolved > 0 && stats.hardSolved === 0) {
+      return "Good progress. Keep improving your Medium streak before jumping into Hard challenges.";
+    }
+
+    if (overallPercentage >= 70) {
+      return "You are making strong progress. Keep solving consistently to maintain momentum.";
+    }
+
+    return "Keep practicing consistently. Every solved challenge improves your problem-solving speed.";
+  }, [
+    stats.totalSolved,
+    stats.easySolved,
+    stats.mediumSolved,
+    stats.hardSolved,
+    overallPercentage,
+  ]);
 
   const difficultyStats = useMemo(
     () => [
@@ -125,15 +222,21 @@ export default function ProgressOverview({
   };
 
   const getSubmissionKey = (
-    sub: { id: number; title: string; status: string; score: number; date: string },
+    sub: {
+      id: number;
+      title: string;
+      status: string;
+      score: number;
+      date: string;
+    },
     index: number
   ) => {
     return `${sub.id}-${sub.title}-${sub.date}-${index}`;
   };
 
-  const statCardClass = isLight
-    ? "rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)]"
-    : "rounded-2xl border border-white/10 bg-white/[0.04] p-4";
+  const enhancedStatCardClass = isLight
+    ? "rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition-all hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(15,23,42,0.1)]"
+    : "rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition-all hover:-translate-y-1 hover:bg-white/[0.06]";
 
   const panelClass = isLight
     ? "rounded-2xl border border-gray-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
@@ -153,7 +256,9 @@ export default function ProgressOverview({
               exit={{ opacity: 0 }}
               onClick={() => setIsResetModalOpen(false)}
               className={`absolute inset-0 h-screen w-screen ${
-                isLight ? "bg-slate-900/60 backdrop-blur-sm" : "bg-black/80 backdrop-blur-md"
+                isLight
+                  ? "bg-slate-900/60 backdrop-blur-sm"
+                  : "bg-black/80 backdrop-blur-md"
               }`}
             />
 
@@ -213,7 +318,9 @@ export default function ProgressOverview({
                   <button
                     onClick={() => setIsResetModalOpen(false)}
                     className={`w-full py-2 text-[10px] font-semibold uppercase tracking-[0.18em] transition-colors ${
-                      isLight ? "text-gray-500 hover:text-gray-900" : "text-gray-500 hover:text-white"
+                      isLight
+                        ? "text-gray-500 hover:text-gray-900"
+                        : "text-gray-500 hover:text-white"
                     }`}
                   >
                     Go Back
@@ -231,7 +338,7 @@ export default function ProgressOverview({
     <>
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <div className={statCardClass}>
+          <div className={enhancedStatCardClass}>
             <p
               className={`text-[11px] uppercase tracking-[0.18em] ${
                 isLight ? "text-gray-500" : "text-gray-500"
@@ -244,17 +351,11 @@ export default function ProgressOverview({
                 isLight ? "text-gray-900" : "text-white"
               }`}
             >
-              {stats.totalSolved}
+              {animatedStats.totalSolved}
             </p>
           </div>
 
-          <div
-            className={`group relative transition ${
-              isLight
-                ? "rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
-                : "rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.06]"
-            }`}
-          >
+          <div className={`${enhancedStatCardClass} group relative`}>
             <p
               className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${
                 isLight ? "text-gray-500" : "text-gray-500"
@@ -269,7 +370,7 @@ export default function ProgressOverview({
                   isLight ? "text-gray-900" : "text-white"
                 }`}
               >
-                {stats.challengesWon}
+                {animatedStats.challengesWon}
               </p>
               <span
                 className={`pb-1 text-sm font-medium ${
@@ -283,7 +384,7 @@ export default function ProgressOverview({
                   isLight ? "text-gray-500" : "text-gray-400"
                 }`}
               >
-                {stats.challengesPlayed}
+                {animatedStats.challengesPlayed}
               </p>
             </div>
 
@@ -299,7 +400,12 @@ export default function ProgressOverview({
               }`}
               title="Reset Stats"
             >
-              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="h-3 w-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -310,14 +416,7 @@ export default function ProgressOverview({
             </button>
           </div>
 
-          <button
-            onClick={onRankClick}
-            className={`text-left transition ${
-              isLight
-                ? "rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
-                : "rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.06]"
-            }`}
-          >
+          <button onClick={onRankClick} className={`${enhancedStatCardClass} text-left`}>
             <p
               className={`text-[11px] uppercase tracking-[0.18em] ${
                 isLight ? "text-gray-500" : "text-gray-500"
@@ -330,18 +429,11 @@ export default function ProgressOverview({
                 isLight ? "text-gray-900" : "text-white"
               }`}
             >
-              #{stats.rank}
+              #{animatedStats.rank}
             </p>
           </button>
 
-          <button
-            onClick={onRankClick}
-            className={`text-left transition ${
-              isLight
-                ? "rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
-                : "rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.06]"
-            }`}
-          >
+          <button onClick={onRankClick} className={`${enhancedStatCardClass} text-left`}>
             <p
               className={`text-[11px] uppercase tracking-[0.18em] ${
                 isLight ? "text-gray-500" : "text-gray-500"
@@ -354,7 +446,7 @@ export default function ProgressOverview({
                 isLight ? "text-gray-900" : "text-white"
               }`}
             >
-              {stats.totalPoints}
+              {animatedStats.totalPoints}
             </p>
           </button>
         </div>
@@ -362,17 +454,27 @@ export default function ProgressOverview({
         <div className={panelClass}>
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h3 className={`text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+              <h3
+                className={`text-sm font-semibold ${
+                  isLight ? "text-gray-900" : "text-white"
+                }`}
+              >
                 Progress Overview
               </h3>
-              <p className={`mt-1 text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>
+              <p
+                className={`mt-1 text-xs ${
+                  isLight ? "text-gray-500" : "text-gray-500"
+                }`}
+              >
                 Track your challenge completion across difficulty levels.
               </p>
             </div>
 
             <div
               className={`rounded-xl border px-3.5 py-2 ${
-                isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-white/[0.03]"
+                isLight
+                  ? "border-gray-200 bg-gray-50"
+                  : "border-white/10 bg-white/[0.03]"
               }`}
             >
               <p
@@ -383,15 +485,44 @@ export default function ProgressOverview({
                 Overall Completion
               </p>
               <div className="mt-1 flex items-center gap-2">
-                <span className={`text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+                <span
+                  className={`text-sm font-semibold ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
                   {stats.totalSolved}/{overallTotal}
                 </span>
-                <span className={isLight ? "text-gray-400" : "text-gray-500"}>•</span>
-                <span className={`text-sm font-medium ${isLight ? "text-pink-600" : "text-pink-300"}`}>
+                <span className={isLight ? "text-gray-400" : "text-gray-500"}>
+                  •
+                </span>
+                <span
+                  className={`text-sm font-medium ${
+                    isLight ? "text-pink-600" : "text-pink-300"
+                  }`}
+                >
                   {overallPercentage}%
                 </span>
               </div>
             </div>
+          </div>
+
+          <div
+            className={`mb-5 rounded-2xl border px-4 py-3 ${
+              isLight
+                ? "border-pink-100 bg-pink-50/60 text-pink-800"
+                : "border-pink-500/10 bg-pink-500/[0.06] text-pink-200"
+            }`}
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.18em]">
+              Progress Insight
+            </p>
+            <p
+              className={`mt-1 text-sm leading-6 ${
+                isLight ? "text-gray-700" : "text-gray-300"
+              }`}
+            >
+              {progressInsight}
+            </p>
           </div>
 
           <div className="space-y-5">
@@ -402,18 +533,26 @@ export default function ProgressOverview({
               return (
                 <div key={diff.label}>
                   <div className="mb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-medium ${isLight ? "text-gray-700" : "text-gray-300"}`}>
-                        {diff.label}
-                      </span>
-                    </div>
+                    <span
+                      className={`text-sm font-medium ${
+                        isLight ? "text-gray-700" : "text-gray-300"
+                      }`}
+                    >
+                      {diff.label}
+                    </span>
 
                     <div className="flex items-center gap-2 text-xs">
                       <span className={isLight ? "text-gray-500" : "text-gray-400"}>
                         {diff.solved}/{diff.total}
                       </span>
-                      <span className={isLight ? "text-gray-400" : "text-gray-600"}>•</span>
-                      <span className={`font-medium ${isLight ? "text-gray-700" : "text-gray-300"}`}>
+                      <span className={isLight ? "text-gray-400" : "text-gray-600"}>
+                        •
+                      </span>
+                      <span
+                        className={`font-medium ${
+                          isLight ? "text-gray-700" : "text-gray-300"
+                        }`}
+                      >
                         {percentage}%
                       </span>
                     </div>
@@ -436,42 +575,114 @@ export default function ProgressOverview({
         </div>
 
         <div className={panelClass}>
-          <h3 className={`mb-4 text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-            Recent Activity
-          </h3>
+          <div className="mb-4 flex items-center justify-between">
+            <h3
+              className={`text-sm font-semibold ${
+                isLight ? "text-gray-900" : "text-white"
+              }`}
+            >
+              Recent Activity
+            </h3>
 
-          <div className="space-y-3">
+            <button
+              onClick={() => {
+                window.location.href = "/dashboard/activity";
+              }}
+              className={`text-xs font-medium transition-colors ${
+                isLight
+                  ? "text-pink-600 hover:text-pink-700"
+                  : "text-pink-400 hover:text-pink-300"
+              }`}
+            >
+              View All →
+            </button>
+          </div>
+
+          <div className="flex min-h-[180px] flex-col justify-center">
             {recentSubmissions.length === 0 ? (
-              <p className={`py-4 text-center text-sm ${isLight ? "text-gray-500" : "text-gray-500"}`}>
-                No submissions yet. Start coding!
-              </p>
-            ) : (
-              recentSubmissions.slice(0, 3).map((sub, index) => (
+              <div className="flex flex-col items-center justify-center text-center">
                 <div
-                  key={getSubmissionKey(sub, index)}
-                  className={`flex items-center justify-between border-b py-2.5 last:border-0 ${
-                    isLight ? "border-gray-200" : "border-white/5"
+                  className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full ${
+                    isLight
+                      ? "bg-gray-100 text-gray-400"
+                      : "bg-white/5 text-gray-500"
                   }`}
                 >
-                  <div>
-                    <p className={`text-sm font-medium ${isLight ? "text-gray-900" : "text-white"}`}>
-                      {sub.title}
-                    </p>
-                    <p className={`text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>
-                      {sub.date}
-                    </p>
-                  </div>
-
-                  <div className="text-right">
-                    <p className={`text-xs font-medium ${getStatusColor(sub.status)}`}>
-                      {sub.status}
-                    </p>
-                    <p className={`text-xs ${isLight ? "text-gray-500" : "text-gray-500"}`}>
-                      Score: {sub.score}
-                    </p>
-                  </div>
+                  ✦
                 </div>
-              ))
+
+                <p
+                  className={`text-sm font-medium ${
+                    isLight ? "text-gray-900" : "text-white"
+                  }`}
+                >
+                  No activity yet
+                </p>
+
+                <p
+                  className={`mt-1 text-xs ${
+                    isLight ? "text-gray-500" : "text-gray-500"
+                  }`}
+                >
+                  Start a challenge to begin tracking progress.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentSubmissions.slice(0, 3).map((sub, index) => (
+                  <motion.div
+                    key={getSubmissionKey(sub, index)}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`group border-b pb-3 last:border-0 ${
+                      isLight ? "border-gray-200" : "border-white/5"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`truncate text-sm font-medium ${
+                            isLight ? "text-gray-900" : "text-white"
+                          }`}
+                        >
+                          {sub.title}
+                        </p>
+
+                        <div className="mt-1 flex items-center gap-2 text-xs">
+                          <span
+                            className={
+                              isLight ? "text-gray-500" : "text-gray-500"
+                            }
+                          >
+                            {sub.date}
+                          </span>
+
+                          <span
+                            className={`h-1 w-1 rounded-full ${
+                              isLight ? "bg-gray-400" : "bg-gray-600"
+                            }`}
+                          />
+
+                          <span className={`font-medium ${getStatusColor(sub.status)}`}>
+                            {sub.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <p
+                          className={`text-xs font-semibold ${getStatusColor(
+                            sub.status
+                          )}`}
+                        >
+                          Score: {sub.score}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -481,7 +692,7 @@ export default function ProgressOverview({
             onClick={onStartChallenge}
             className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 py-3 font-medium text-white transition-opacity hover:opacity-90"
           >
-            Start Challenge
+            Practice Challenges
           </button>
 
           <button

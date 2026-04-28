@@ -43,7 +43,7 @@ export default function ActivityFilters({
       </button>
 
       <div
-        className={`overflow-hidden rounded-xl border transition-all duration-300 ${
+        className={`overflow-hidden rounded-xl sm:mt-2 transition-all duration-300 ${
           isLight ? "border-gray-200 bg-white" : "border-white/10 bg-white/[0.03]"
         } ${showFilters ? "max-h-96 opacity-100" : "max-h-0 opacity-0 md:max-h-96 md:opacity-100"}`}
       >

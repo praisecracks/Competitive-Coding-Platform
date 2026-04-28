@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 
 interface WelcomeSectionProps {
@@ -30,36 +31,38 @@ export default function WelcomeSection({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className={`relative overflow-hidden rounded-[24px] border px-4 py-4 sm:px-5 sm:py-5 lg:rounded-[28px] lg:p-6 xl:p-4 ${
+      className={`relative overflow-hidden rounded-[24px] border px-4 py-4 sm:px-5 sm:py-5 lg:rounded-[28px] lg:p-6 xl:p-5 ${
         isLight
-          ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+          ? "border-gray-200 bg-white shadow-[0_14px_38px_rgba(15,23,42,0.07)]"
           : "border-white/10 bg-[#09090c]"
       }`}
     >
       <div
         className={`absolute inset-0 ${
           isLight
-            ? "bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.08),transparent_28%),radial-gradient(circle_at_left,rgba(236,72,153,0.05),transparent_24%)]"
-            : "bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_28%),radial-gradient(circle_at_left,rgba(236,72,153,0.08),transparent_24%)]"
-        }`}
-      />
-      <div
-        className={`absolute inset-0 ${
-          isLight
-            ? "opacity-[0.02] [background-image:linear-gradient(rgba(15,23,42,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.08)_1px,transparent_1px)] [background-size:28px_28px]"
-            : "opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:28px_28px]"
+            ? "bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.1),transparent_28%),radial-gradient(circle_at_left,rgba(236,72,153,0.06),transparent_24%)]"
+            : "bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.14),transparent_28%),radial-gradient(circle_at_left,rgba(236,72,153,0.09),transparent_24%)]"
         }`}
       />
 
-      <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
-        <div className="max-w-2xl">
+      <div
+        className={`absolute inset-0 ${
+          isLight
+            ? "opacity-[0.025] [background-image:linear-gradient(rgba(15,23,42,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.1)_1px,transparent_1px)] [background-size:28px_28px]"
+            : "opacity-[0.05] [background-image:linear-gradient(rgba(255,255,255,0.09)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.09)_1px,transparent_1px)] [background-size:28px_28px]"
+        }`}
+      />
+
+      <div className="relative flex flex-col gap-5 lg:flex-row lg:items-stretch lg:justify-between lg:gap-6">
+        <div className="flex max-w-2xl flex-col justify-center">
           <span
-            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] sm:px-3 sm:text-[10px] sm:tracking-[0.22em] ${
+            className={`inline-flex w-fit items-center gap-2 rounded-full border px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] sm:px-3 sm:text-[10px] sm:tracking-[0.22em] ${
               isLight
                 ? "border-pink-200 bg-pink-50 text-pink-600"
                 : "border-pink-500/20 bg-pink-500/[0.08] text-pink-200"
             }`}
           >
+            <Sparkles className="h-3 w-3" />
             Dashboard overview
           </span>
 
@@ -79,28 +82,51 @@ export default function WelcomeSection({
               isLight ? "text-gray-600" : "text-gray-400"
             }`}
           >
-            Track your progress, continue learning with intention, and sharpen your
-            coding mastery one challenge at a time.
+            Track your progress, continue learning with intention, and sharpen
+            your coding mastery one challenge at a time.
           </p>
         </div>
 
-        <div
-          className={`w-full rounded-[20px] border p-3.5 backdrop-blur-sm sm:p-4 lg:max-w-md lg:rounded-[24px] ${
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.08 }}
+          className={`relative w-full overflow-hidden rounded-[22px] border p-4 backdrop-blur-sm lg:max-w-md lg:rounded-[26px] ${
             isLight
-              ? "border-gray-200 bg-gray-50 shadow-[0_8px_24px_rgba(15,23,42,0.05)]"
-              : "border-white/10 bg-white/[0.03]"
+              ? "border-pink-100 bg-white shadow-[0_14px_35px_rgba(236,72,153,0.08)]"
+              : "border-pink-500/15 bg-white/[0.035] shadow-[0_20px_60px_rgba(0,0,0,0.22)]"
           }`}
         >
-          <p
-            className={`text-[10px] font-medium uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.22em] ${
-              isLight ? "text-gray-500" : "text-gray-500"
+          <div
+            className={`absolute inset-x-0 top-0 h-px ${
+              isLight
+                ? "bg-gradient-to-r from-transparent via-pink-300 to-transparent"
+                : "bg-gradient-to-r from-transparent via-pink-500/60 to-transparent"
             }`}
-          >
-            Next action
-          </p>
+          />
+
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p
+              className={`text-[10px] font-semibold uppercase tracking-[0.2em] sm:text-[11px] ${
+                isLight ? "text-pink-600" : "text-pink-300"
+              }`}
+            >
+              Next move
+            </p>
+
+            <span
+              className={`rounded-full border px-2.5 py-1 text-[10px] font-medium ${
+                isLight
+                  ? "border-pink-200 bg-pink-50 text-pink-600"
+                  : "border-pink-500/20 bg-pink-500/[0.08] text-pink-200"
+              }`}
+            >
+              Recommended
+            </span>
+          </div>
 
           <h2
-            className={`mt-2 text-sm font-semibold leading-6 tracking-tight sm:text-[15px] lg:text-lg lg:leading-tight ${
+            className={`text-base font-semibold leading-6 tracking-tight sm:text-lg ${
               isLight ? "text-gray-900" : "text-white"
             }`}
           >
@@ -108,33 +134,34 @@ export default function WelcomeSection({
           </h2>
 
           <p
-            className={`mt-1.5 text-[12px] leading-5 sm:text-[13px] sm:leading-6 lg:mt-2 lg:text-sm ${
+            className={`mt-2 text-[13px] leading-6 sm:text-sm ${
               isLight ? "text-gray-600" : "text-gray-400"
             }`}
           >
             {actionSubtitle}
           </p>
 
-          <div className="mt-3 flex gap-2 sm:mt-4 lg:mt-5 lg:flex-col xl:flex-row xl:gap-2.5">
+          <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
             <button
               onClick={onActionClick}
-              className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 px-3.5 py-2.5 text-sm font-medium text-white transition duration-200 hover:opacity-95 lg:px-4 lg:py-3"
+              className="group flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(236,72,153,0.22)] transition duration-200 hover:opacity-95"
             >
               {actionButtonLabel}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </button>
 
             <button
               onClick={onSecondaryActionClick}
-              className={`rounded-xl border px-3.5 py-2.5 text-sm font-medium transition duration-200 lg:px-4 lg:py-3 ${
+              className={`rounded-xl border px-4 py-3 text-sm font-medium transition duration-200 ${
                 isLight
-                  ? "border-gray-200 bg-white text-gray-800 hover:bg-gray-100"
+                  ? "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
                   : "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
               }`}
             >
               {secondaryButtonLabel}
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
     </motion.section>
   );

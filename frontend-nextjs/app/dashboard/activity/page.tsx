@@ -305,7 +305,7 @@ export default function ActivityPage() {
           <div className="flex items-center justify-between">
             <div>
               <button
-                onClick={() => router.push("/dashboard/profile")}
+                onClick={() => router.push("/")}
                 className={`mb-4 flex items-center gap-2 text-sm transition-colors ${
                   isLight ? "text-gray-500 hover:text-gray-900" : "text-gray-400 hover:text-white"
                 }`}
