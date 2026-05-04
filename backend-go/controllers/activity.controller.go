@@ -223,7 +223,7 @@ func fetchLearningProgress(ctx context.Context, userID string, activities *[]mod
 
 	lp := learningProgress[0]
 
-	// 7-day streak milestone
+	// Learning streak milestones
 	if lp.Streak.CurrentStreak >= 7 {
 		*activities = append(*activities, models.Activity{
 			ID:        fmt.Sprintf("streak_%d_%d", lp.Streak.CurrentStreak, time.Now().Unix()),
@@ -240,13 +240,12 @@ func fetchLearningProgress(ctx context.Context, userID string, activities *[]mod
 		})
 	}
 
-	// 30-day streak milestone
 	if lp.Streak.CurrentStreak >= 30 {
 		*activities = append(*activities, models.Activity{
 			ID:        fmt.Sprintf("streak_30_%d", time.Now().Unix()),
 			Type:      models.ActivityAchievement,
-			Title:     "30-Day Streak Master!",
-			Subtitle:  "Unwavering dedication",
+			Title:     "30-Day Learning Streak Master!",
+			Subtitle:  "Unwavering dedication to learning",
 			Status:    models.StatusCompleted,
 			Score:     500,
 			Icon:      "Flame",
@@ -254,6 +253,39 @@ func fetchLearningProgress(ctx context.Context, userID string, activities *[]mod
 			BGColor:   "bg-orange-500/20",
 			Date:      lp.Streak.LastLearningDate,
 			CreatedAt: lp.Streak.LastLearningDate,
+		})
+	}
+
+	// Challenge streak milestones
+	if lp.ChallengeStreak.CurrentStreak >= 7 {
+		*activities = append(*activities, models.Activity{
+			ID:        fmt.Sprintf("challenge_streak_%d_%d", lp.ChallengeStreak.CurrentStreak, time.Now().Unix()),
+			Type:      models.ActivityAchievement,
+			Title:     fmt.Sprintf("%d-Day Challenge Streak!", lp.ChallengeStreak.CurrentStreak),
+			Subtitle:  "Crushing challenges consistently",
+			Status:    models.StatusCompleted,
+			Score:     100,
+			Icon:      "Zap",
+			Color:     "text-emerald-500",
+			BGColor:   "bg-emerald-500/20",
+			Date:      lp.ChallengeStreak.LastChallengeDate,
+			CreatedAt: lp.ChallengeStreak.LastChallengeDate,
+		})
+	}
+
+	if lp.ChallengeStreak.CurrentStreak >= 30 {
+		*activities = append(*activities, models.Activity{
+			ID:        fmt.Sprintf("challenge_streak_30_%d", time.Now().Unix()),
+			Type:      models.ActivityAchievement,
+			Title:     "30-Day Challenge Streak Master!",
+			Subtitle:  "Code warrior in the making",
+			Status:    models.StatusCompleted,
+			Score:     500,
+			Icon:      "Zap",
+			Color:     "text-cyan-500",
+			BGColor:   "bg-cyan-500/20",
+			Date:      lp.ChallengeStreak.LastChallengeDate,
+			CreatedAt: lp.ChallengeStreak.LastChallengeDate,
 		})
 	}
 

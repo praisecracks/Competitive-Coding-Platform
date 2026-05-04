@@ -11,6 +11,7 @@ import Footer from "./components/Footer";
 import Pricing from "./components/landingPage/pricing";
 import PricingFAQ from "./components/landingPage/PricingFAQ";
 import { isAuthenticated } from "@/lib/auth";
+import ScrollReveal from "./components/landingPage/layout/ScrollReveal";
 
 export default function Page() {
   const router = useRouter();
@@ -40,12 +41,30 @@ export default function Page() {
       <Header />
 
       <main className="min-h-screen overflow-hidden bg-[#020202] pt-20 text-white">
-        <Home />
-        <Features />
-        <LearningPreview />
-        <ChallengesPreview />
-        <Pricing />
-        <PricingFAQ />
+        <section id="home">
+          <Home />
+        </section>
+
+        <section id="features">
+          <Features />
+        </section>
+
+        <section id="learning">
+          <LearningPreview />
+        </section>
+
+        <section id="challenges">
+          <ChallengesPreview />
+        </section>
+
+        <section id="pricing">
+          <Pricing />
+        </section>
+
+        <section id="faq">
+          <PricingFAQ />
+        </section>
+
         <Footer />
       </main>
     </>

@@ -31,6 +31,12 @@ export interface StreakData {
   lastLearningDate: string;
 }
 
+export interface ChallengeStreak {
+  currentStreak: number;
+  longestStreak: number;
+  lastChallengeDate: string;
+}
+
 export interface JournalEntry {
   id: string;
   type: "course_completion" | "topic_completion";
@@ -57,6 +63,7 @@ export interface LearningProgress {
   trackProgress: Record<string, TrackProgress>;
   legacyProgress: Record<string, LegacyPathProgress>;
   streak: StreakData;
+  challengeStreak: ChallengeStreak;
   journal: JournalEntry[];
   createdAt?: string;
   updatedAt?: string;
@@ -96,6 +103,7 @@ function fallbackToLocalStorage(sanitized: string | null): LearningProgress {
     trackProgress: {},
     legacyProgress: {},
     streak: { currentStreak: 0, longestStreak: 0, lastLearningDate: "" },
+    challengeStreak: { currentStreak: 0, longestStreak: 0, lastChallengeDate: "" },
     journal: [],
   };
 
@@ -117,6 +125,11 @@ function fallbackToLocalStorage(sanitized: string | null): LearningProgress {
     const localStreak = localStorage.getItem(`codemaster_learning_streak_v1_${sanitized}`);
     if (localStreak) {
       result.streak = JSON.parse(localStreak);
+    }
+
+    const localChallengeStreak = localStorage.getItem(`codemaster_learning_challenge_streak_${sanitized}`);
+    if (localChallengeStreak) {
+      result.challengeStreak = JSON.parse(localChallengeStreak);
     }
 
     const localJournal = localStorage.getItem(`codemaster_learning_journal_${sanitized}`);
@@ -151,6 +164,20 @@ export async function updateStreak(completedLesson: boolean = true): Promise<Str
 
   if (!res.ok) {
     throw new Error("Failed to update streak");
+  }
+
+  return res.json();
+}
+
+export async function updateChallengeStreak(): Promise<ChallengeStreak> {
+  const res = await fetch(`${API_BASE_URL}/learning/challenge-streak`, {
+    method: "POST",
+    headers: await getAuthHeaders(),
+    body: JSON.stringify({}),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to update challenge streak");
   }
 
   return res.json();

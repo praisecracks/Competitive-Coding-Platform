@@ -137,7 +137,9 @@ func RegisterRoutes(r *gin.Engine) {
 		{
 			notifications.GET("", controllers.GetNotifications)
 			notifications.POST("/mark-read/:id", controllers.MarkNotificationRead)
-			notifications.GET("/system", controllers.GetSystemNotifications)
+			notifications.GET("/system", middleware.AdminOnly(), controllers.GetSystemNotifications)
+			notifications.GET("/dismissed", controllers.GetDismissedNotifications)
+			notifications.POST("/dismiss/:id", controllers.DismissNotification)
 		}
 
 		// =========================
@@ -153,7 +155,8 @@ func RegisterRoutes(r *gin.Engine) {
 			learning.GET("/progress", controllers.GetLearningProgress)
 			learning.PUT("/track-progress", controllers.UpdateTrackProgress)
 
-			learning.POST("/streak", controllers.UpdateStreak)
+			learning.POST("/streak", controllers.UpdateLearningStreak)
+			learning.POST("/challenge-streak", controllers.UpdateChallengeStreak)
 
 			learning.POST("/journal", controllers.AddJournalEntry)
 			learning.DELETE("/journal/:id", controllers.DeleteJournalEntry)

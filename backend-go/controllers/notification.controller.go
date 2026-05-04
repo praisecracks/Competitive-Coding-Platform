@@ -14,6 +14,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// SystemUserID is the fixed user ID for system notifications
+const SystemUserID = "admin"
+
 // GetNotifications returns all notifications for the authenticated user
 func GetNotifications(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
@@ -120,8 +123,8 @@ func GetSystemNotifications(c *gin.Context) {
 		SetSort(bson.D{{Key: "created_at", Value: -1}}).
 		SetLimit(20)
 
-	// Get notifications with user_id = "admin" (system notifications)
-	cursor, err := notificationsCollection.Find(ctx, bson.M{"user_id": "admin"}, opts)
+	// Get notifications with user_id = SystemUserID (system notifications)
+	cursor, err := notificationsCollection.Find(ctx, bson.M{"user_id": SystemUserID}, opts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "FETCH_FAILED"})
 		return
@@ -134,10 +137,99 @@ func GetSystemNotifications(c *gin.Context) {
 		return
 	}
 
-	// Mark all fetched system notifications as read
-	for _, n := range notifications {
-		notificationsCollection.UpdateOne(ctx, bson.M{"_id": n.ID}, bson.M{"$set": bson.M{"read": true}})
-	}
+	// Mark all fetched system notifications as read — REMOVED per UX fix
+	// for _, n := range notifications {
+	// 	notificationsCollection.UpdateOne(ctx, bson.M{"_id": n.ID}, bson.M{"$set": bson.M{"read": true}})
+	// }
 
 	c.JSON(http.StatusOK, notifications)
+}
+
+// NotificationDismissal represents a user's dismissal of a notification
+type NotificationDismissal struct {
+	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	UserID         string             `json:"user_id" bson:"user_id"`
+	NotificationID string             `json:"notification_id" bson:"notification_id"`
+	DismissedAt    time.Time          `json:"dismissed_at" bson:"dismissed_at"`
+}
+
+// GetDismissedNotifications returns list of dismissed notification IDs for the authenticated user
+func GetDismissedNotifications(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "AUTH_REQUIRED"})
+		return
+	}
+	userID, ok := userIDValue.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "INVALID_USER_CONTEXT"})
+		return
+	}
+
+	cursor, err := database.NotificationDismissalsCollection.Find(ctx, bson.M{"user_id": userID})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "FETCH_FAILED"})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var dismissals []NotificationDismissal
+	if err := cursor.All(ctx, &dismissals); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "PARSE_FAILED"})
+		return
+	}
+
+	ids := make([]string, len(dismissals))
+	for i, d := range dismissals {
+		ids[i] = d.NotificationID
+	}
+
+	c.JSON(http.StatusOK, ids)
+}
+
+// DismissNotification records that a user dismissed a notification (idempotent)
+func DismissNotification(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "AUTH_REQUIRED"})
+		return
+	}
+	userID, ok := userIDValue.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "INVALID_USER_CONTEXT"})
+		return
+	}
+
+	notificationID := c.Param("id")
+	if notificationID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "MISSING_NOTIFICATION_ID"})
+		return
+	}
+
+	// Upsert: create dismissal if not exists; no-op if already exists
+	_, err := database.NotificationDismissalsCollection.UpdateOne(
+		ctx,
+		bson.M{
+			"user_id":         userID,
+			"notification_id": notificationID,
+		},
+		bson.M{
+			"$set": bson.M{
+				"dismissed_at": time.Now().UTC(),
+			},
+		},
+		options.Update().SetUpsert(true),
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DISMISS_FAILED"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Notification dismissed"})
 }

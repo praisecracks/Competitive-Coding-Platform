@@ -3,1105 +3,1202 @@ import { LearningTrack } from "../data";
 export const systemDesign: LearningTrack = {
   id: "system-design",
   title: "System Design",
-  subtitle: "Beginner to Hero",
-  description: "Design scalable systems from APIs to microservices. Master architectural patterns, caching strategies, and real-world system fundamentals",
+  subtitle: "Beginner to System Architecture",
+  description: "Complete system design journey from understanding what makes apps scale to building reliable, high-performance systems. Every concept taught with real-world stories and analogies.",
   type: "additional",
   icon: "CircuitBoard",
   color: "orange",
-  coverImage: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80&w=600",
-  totalHours: 38,
+  coverImage: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80&w=800",
+  totalHours: 52,
   language: "multi",
   category: "System Design",
   topics: [
+    // ==================== TOPIC 1: INTRODUCTION TO SYSTEM DESIGN ====================
     {
-      id: "sd-api-design",
-      title: "API Design",
-      description: "Design RESTful APIs and GraphQL",
-      duration: "60 min",
-      subtopics: [
-        {
-          id: "api-rest",
-          title: "RESTful API Principles",
-          content: {
-            explanation: [
-              "REST (Representational State Transfer) is the standard for web APIs. Key principles:",
-              "",
-              "1. **Resources as nouns**: Use URI paths like /users, /orders, not /getUsers",
-              "",
-              "2. **HTTP methods semantically**:",
-              "- GET — retrieve (safe, idempotent)",
-              "- POST — create new resource",
-              "- PUT — replace entire resource",
-              "- PATCH — partial update",
-              "- DELETE — remove",
-              "",
-              "3. **Status codes**: 200 (OK), 201 (Created), 400 (Bad), 401 (Unauthorized), 404 (Not found), 500 (Server error)",
-              "",
-              "4. **Version early**: /v1/users to allow evolution"
-            ],
-            example: {
-              title: "REST API Examples",
-              code: `# Good REST API design
-
-GET    /api/v1/users          # List users
-GET    /api/v1/users/123     # Get user 123
-POST   /api/v1/users         # Create user
-PUT    /api/v1/users/123     # Update user 123 (full)
-PATCH  /api/v1/users/123    # Partial update
-DELETE /api/v1/users/123    # Delete user 123
-
-# Nested resources
-GET    /api/v1/users/123/orders          # User's orders
-POST   /api/v1/users/123/orders          # Create order for user
-
-# Response format
-{
-  "data": {
-    "id": 123,
-    "name": "John Doe",
-    "email": "john@example.com"
-  },
-  "meta": {
-    "page": 1,
-    "total": 100,
-    "per_page": 20
-  }
-}`,
-              explanation: "Use plural nouns for resources. Version your API early. Include pagination meta."
-            },
-            practice: "Design an API for a todo list application."
-          }
-        },
-        {
-          id: "api-query",
-          title: "Query Parameters & Filtering",
-          content: {
-            explanation: [
-              "Query parameters make APIs flexible:",
-              "",
-              "1. **Pagination**: ?page=1&limit=20",
-              "2. **Filtering**: ?status=active&type=premium",
-              "3. **Sorting**: ?sort=created_at&order=desc",
-              "4. **Field selection**: ?fields=id,name,email",
-              "5. **Search**: ?q=search+term",
-              "",
-              "Pattern: Use consistent parameter names across APIs."
-            ],
-            example: {
-              title: "Query Parameters",
-              code: `# Pagination
-GET /api/v1/users?page=2&limit=20
-
-# Filtering
-GET /api/v1/users?status=active&country=US
-GET /api/v1/products?min_price=10&max_price=100
-
-# Sorting (sort by field, order = asc/desc)
-GET /api/v1/users?sort=created_at&order=desc
-
-# Field selection (reduce bandwidth)
-GET /api/v1/users?fields=id,name,email
-
-# Combined
-GET /api/v1/users?page=1&limit=10&status=active&sort=name&order=asc&fields=id,name`,
-              explanation: "Combine multiple query parameters for complex queries. Use default values when parameters are missing."
-            },
-            practice: "Add query parameters to filter and sort a products API."
-          }
-        },
-        {
-          id: "api-graphql",
-          title: "GraphQL vs REST",
-          content: {
-            explanation: [
-              "GraphQL is an alternative that gives clients more control:",
-              "",
-              "**REST issues** (over-fetching):",
-              "- GET /user/123 returns all fields",
-              "- Need multiple endpoints for related data",
-              "",
-              "**GraphQL solution** (single endpoint):",
-              "- Client specifies exactly what it needs",
-              "- Single request for multiple related resources",
-              "",
-              "When to choose:",
-              "- GraphQL: complex UI, multiple nested fetches",
-              "- REST: simple CRUD, caching important, bandwidth constrained"
-            ],
-            example: {
-              title: "GraphQL Query",
-              code: `# GraphQL query - exactly what you need
-query GetUserData {
-  user(id: 123) {
-    name
-    email
-    posts(first: 5, orderBy: { createdAt: DESC }) {
-      edges {
-        node {
-          title
-          createdAt
-        }
-      }
-    }
-  }
-}
-
-# Response
-{
-  "data": {
-    "user": {
-      "name": "John",
-      "email": "john@example.com",
-      "posts": {
-        "edges": [
-          { "node": { "title": "My First Post", "createdAt": "2024-01-01" } }
-        ]
-      }
-    }
-  }
-}`,
-              explanation: "GraphQL is flexible but adds complexity. REST is simpler but can over-fetch data."
-            },
-            practice: "Write a GraphQL query to get a user and their last 5 posts."
-          }
-        },
-        {
-          id: "api-error",
-          title: "Error Handling",
-          content: {
-            explanation: [
-              "Good error responses help clients handle issues:",
-              "",
-              "1. **Use standard status codes**:",
-              "- 400: Client error (bad request)",
-              "- 401: Unauthorized (not logged in)",
-              "- 403: Forbidden (logged in but no access)",
-              "- 404: Not found",
-              "- 429: Too many requests (rate limit)",
-              "- 500: Server error",
-              "",
-              "2. **Include helpful message**: Error code, message, details",
-              "",
-              "3. **Consistent format**: All errors in same structure"
-            ],
-            example: {
-              title: "Error Responses",
-              code: `# 400 Bad Request
-{
-  "error": {
-    "code": "INVALID_EMAIL",
-    "message": "Email format is invalid",
-    "field": "email"
-  }
-}
-
-# 401 Unauthorized
-{
-  "error": {
-    "code": "UNAUTHORIZED",
-    "message": "Authentication required",
-    "details": "Include Authorization header"
-  }
-}
-
-# 404 Not Found
-{
-  "error": {
-    "code": "USER_NOT_FOUND",
-    "message": "User with ID 123 not found"
-  }
-}
-
-# 429 Rate Limited
-{
-  "error": {
-    "code": "RATE_LIMITED",
-    "message": "Too many requests",
-    "retry_after": 60
-  }
-}`,
-              explanation: "Include error codes that clients canprogrammaticallyhandle. Include field for validation errors."
-            },
-            practice: "Design error response for failed user registration with validation errors."
-          }
-        }
-      ]
-    },
-    {
-      id: "sd-scalability",
-      title: "Scalability Basics",
-      description: "Handle growth and load",
-      duration: "65 min",
-      subtopics: [
-        {
-          id: "scale-vertical-horizontal",
-          title: "Vertical vs Horizontal Scaling",
-          content: {
-            explanation: [
-              "Scaling handles increased load:",
-              "",
-              "**Vertical scaling**: Add more power to existing machine",
-              "- More CPU, RAM, disk",
-              "- Simple, no code changes",
-              "- Hard limits (can't scale infinitely)",
-              "- Cost grows non-linearly",
-              "",
-              "**Horizontal scaling**: Add more machines",
-              "- More instances behind load balancer",
-              "- Can scale infinitely (in theory)",
-              "- Need stateless services",
-              "- More complex",
-              "",
-              "Tip: Start with vertical, move to horizontal as needed."
-            ],
-            example: {
-              title: "Horizontal Scaling Architecture",
-              code: `# Incoming traffic
-      ↓
-[Load Balancer]
-      ↓
-┌─────▼─────┐
-│ Server 1  │ (stateless)
-└───────────┘
-┌───────────┐
-│ Server 2  │ (stateless)
-└───────────┘
-┌───────────┐
-│ Server 3  │ (stateless)
-└───────────┘
-      ↓
-  [Database]
-
-# Key: Make services stateless
-# Bad: sessions stored in memory
-# Good: sessions in Redis/database
-# Or: JWT tokens (stateless auth)`,
-              explanation: "Horizontal scaling is better for growth. Enable it from the start: use stateless services and external session storage."
-            },
-            practice: "Design a horizontally scalable user service."
-          }
-        },
-        {
-          id: "scale-database",
-          title: "Database Scaling",
-          content: {
-            explanation: [
-              "Databases are often the bottleneck. Scaling strategies:",
-              "",
-              "1. **Read replicas**: Distribute read queries",
-              "- One primary (write), multiple replicas (read)",
-              "- Eventually consistent (not immediately)",
-              "- Good for read-heavy workloads",
-              "",
-              "2. **Vertical scaling**: Bigger database server",
-              "- Eventually hits hardware limits",
-              "- Expensive at high scale",
-              "",
-              "3. **Sharding**: Split data across databases",
-              "- Complex to implement",
-              "- Need to choose partition key",
-              "",
-              "4. **Caching**: Reduce database load (later)"
-            ],
-            example: {
-              title: "Read Replicas",
-              code: `# Database topology
-        [Primary DB]
-           ��
-        ┌────┼────┐
-        │         │
-    [Replica 1] [Replica 2]
-        (reads)
-
-# Application code
-func getUser(id int64) (*User, error) {
-    // Try read replica first
-    user, err := replicaDB.Get(id)
-    if err != nil {
-        return nil, err
-    }
-    if user != nil {
-        return user, nil
-    }
-    // Fall back to primary
-    return primaryDB.Get(id)
-}
-
-# Writes always go to primary
-func createUser(user *User) error {
-    return primaryDB.Create(user)
-}`,
-              explanation: "Use read replicas for read-heavy workloads (most apps!). Replicas are eventually consistent."
-            },
-            practice: "Design a database architecture for a social media app."
-          }
-        },
-        {
-          id: "scale-load-balancer",
-          title: "Load Balancing",
-          content: {
-            explanation: [
-              "Load balancers distribute traffic across servers:",
-              "",
-              "1. **Round robin**: Cycle through servers",
-              "2. **Least connections**: Send to least busy",
-              "3. **IP hash**: Same IP to same server (sticky sessions)",
-              "4. **Weighted**: More capacity = more traffic",
-              "",
-              "Levels:",
-              "- DNS load balancing (low-tech)",
-              "- Application load balancer (layer 7)",
-              "- Network load balancer (layer 4)",
-              "",
-              "Health checks are critical for removing failed servers."
-            ],
-            example: {
-              title: "Load Balancer Setup",
-              code: `# Health check configuration
-# Check every 10 seconds
-# Mark unhealthy after 3 failed checks
-# Remove from pool after unhealthy
-
-health_check {
-  path: /health
-  interval: 10s
-  timeout: 5s
-  unhealthy_threshold: 3
-  healthy_threshold: 2
-}
-
-# Routing strategies
-round_robin:  # Equal distribution
-least_connections:  # To least busy server  
-ip_hash:  # Sticky sessions (shopping cart)
-weighted:  # Unequal based on capacity`,
-              explanation: "Use health checks to detect failed servers. Choose routing strategy based on your needs."
-            },
-            practice: "Design a load balancer health check flow."
-          }
-        },
-        {
-          id: "scale-cdn",
-          title: "CDN and Edge Computing",
-          content: {
-            explanation: [
-              "CDN (Content Delivery Network) brings content closer to users:",
-              "",
-              "How it works:",
-              "- Cache content at edge locations worldwide",
-              "- User gets content from nearest edge",
-              "- Reduces latency significantly",
-              "",
-              "What to cache:",
-              "- Static assets (images, CSS, JS)",
-              "- API responses (if rarely changing)",
-              "",
-              "Dynamic content:",
-              "- Use edge functions to personalize",
-              "- Vercel Edge, Cloudflare Workers"
-            ],
-            example: {
-              title: "CDN Caching",
-              code: `# CDN cache headers
-# Static assets - cache long
-Cache-Control: public, max-age=31536000, immutable
-
-# API responses - cache short
-Cache-Control: public, max-age=60, s-maxage=60
-
-# Don't cache private data
-Cache-Control: private
-
-# In Vercel/Next.js
-// At build time
-export async function getStaticProps() {
-  return {
-    revalidate: 60,  // regenerate every 60s
-  }
-}
-
-// Edge function
-export default function handler(req) {
-  const user = getUserFromCookie(req)
-  return JSON.stringify({ name: user.name })
-}`,
-              explanation: "Cache static assets for a long time. Use revalidation for dynamic content. Edge functions personalize cached content."
-            },
-            practice: "Design a caching strategy for a news website."
-          }
-        }
-      ]
-    },
-    {
-      id: "sd-caching",
-      title: "Caching Strategies",
-      description: "Redis, CDN, and cache patterns",
-      duration: "55 min",
-      subtopics: [
-        {
-          id: "cache-basics",
-          title: "Cache Fundamentals",
-          content: {
-            explanation: [
-              "Caching stores frequently accessed data in fast storage:",
-              "",
-              "Why:",
-              "- Database reads are slow (ms)",
-              "- Cache reads are fast (µs)",
-              "- Orders of magnitude faster",
-              "",
-              "Types:",
-              "1. **Local**: In-memory (process)",
-              "2. **Distributed**: Redis/Memcached (across servers)",
-              "3. **CDN**: Edge locations",
-              "",
-              "Key principle: Cache can go stale. Design for it."
-            ],
-            example: {
-              title: "Redis Cache Pattern",
-              code: `def get_user(user_id):
-    # Try cache first
-    cache_key = f"user:{user_id}"
-    user = redis.get(cache_key)
-    
-    if user:
-        return json.loads(user)
-    
-    # Cache miss - get from database
-    user = database.get(f"SELECT * FROM users WHERE id = ?", user_id)
-    
-    if user:
-        # Store in cache (1 hour TTL)
-        redis.setex(cache_key, 3600, json.dumps(user))
-    
-    return user`,
-              explanation: "Cache-aside pattern: Check cache first, fallback to database, store result in cache with TTL."
-            },
-            practice: "Implement cache-aside for getting user profile."
-          }
-        },
-        {
-          id: "cache-strategies",
-          title: "Cache Strategies",
-          content: {
-            explanation: [
-              "Different strategies for different use cases:",
-              "",
-              "1. **Cache-aside (lazy)**: Application manages cache",
-              "- Check cache first, on miss get from DB, store in cache",
-              "- Simple, popular",
-              "",
-              "2. **Write-through**: Write to cache and DB together",
-              "- Cache always has latest",
-              "- Overwrites on every write",
-              "",
-              "3. **Write-back**: Write to cache, async to DB",
-              "- Fast writes",
-              "- Risk of data loss",
-              "",
-              "Cache invalidation: The hard part! TTL or explicit delete."
-            ],
-            example: {
-              title: "Cache Invalidation",
-              code: `# When to invalidate cache
-# 1. Time-based (TTL)
-redis.setex(key, 300, value)  # 5 min TTL
-
-# 2. On write (write-through)
-def update_user(user):
-    database.update(user)
-    redis.set(key, json.dumps(user))  # update cache too
-    redis.setex(f"user:{user.id}", 3600, ...)
-
-# 3. On delete (write-back)
-def delete_user(user_id):
-    database.delete(user_id)
-    redis.delete(f"user:{user_id}")  # delete cache
-    
-# 4. Using tags (advanced)
-redis.sadd("user:tags:admin", user_id)
-redis.sadd("user:tags:vip", user_id)
-# Invalidate all admin users
-redis.delete("user:tags:*")`,
-              explanation: "Choose strategy based on read/write ratio. Write-heavy use write-through, read-heavy use cache-aside."
-            },
-            practice: "Design cache invalidation for a user profile that updates frequently."
-          }
-        },
-        {
-          id: "cache-patterns",
-          title: "Cache Patterns",
-          content: {
-            explanation: [
-              "Advanced caching patterns:",
-              "",
-              "1. **Cache warming**: Pre-fill cache on startup",
-              "- No cold cache misses",
-              "- Can use stale data",
-              "",
-              "2. **Stale-while-revalidate**: Allow stale data temporarily",
-              "- Serve old while refreshing in background",
-              "",
-              "3. **Cache stampede prevention** (thundering herd):",
-              "- Only one request fetches on cache miss",
-              "",
-              "4. **Hot keys**: Popular data that gets accessed a lot",
-              "- Pre-warm these keys",
-              "- Replicate to more instances"
-            ],
-            example: {
-              title: "Stampede Prevention",
-              code: `def get_user_cached(user_id):
-    key = f"user:{user_id}"
-    
-    # Check cache
-    cached = redis.get(key)
-    if cached:
-        return json.loads(cached)
-    
-    # Only one fetches when cache miss
-    # Use key with SETNX or similar
-    lock_key = f"lock:{key}"
-    if redis.setnx(lock_key, 1):
-        try:
-            # Fetch from database
-            user = db.get(user_id)
-            if user:
-                redis.setex(key, 300, json.dumps(user))
-        finally:
-            redis.delete(lock_key)
-    else:
-        # Wait and retry
-        time.sleep(0.1)
-        return get_user_cached(user_id)
-    
-    return user`,
-              explanation: "Prevent thundering herd: Only one request fetches on cache miss. Use distributed lock or first-write policy."
-            },
-            practice: "Design a cache system that handles hot keys."
-          }
-        }
-      ]
-    },
-    {
-      id: "sd-microservices",
-      title: "Microservices Basics",
-      description: "Service decomposition patterns",
-      duration: "70 min",
-      subtopics: [
-        {
-          id: "ms-monolith",
-          title: "Monolith vs Microservices",
-          content: {
-            explanation: [
-              "Two architectural styles:",
-              "",
-              "**Monolith**: Everything in one deployment",
-              "- Simple to develop",
-              "- Simple to deploy",
-              "- Simple to test",
-              "- Can become complex at scale",
-              "",
-              "**Microservices**: Small, independent services",
-              "- Can scale independently",
-              "- Different tech stacks",
-              "- Can deploy independently",
-              "- More complex",
-              "",
-              "Start with monolith, evolve to microservices when needed. Premature splitting adds complexity."
-            ],
-            example: {
-              title: "When to Split",
-              code: `# Monolith - good for:
-# - Small team (< 5 engineers)
-# - Startup/pivot phase
-# - Simple domain
-# - Fast iteration needed
-
-# Microservices - good for:
-# - Different scaling needs per component
-# - Different tech requirements
-# - Large team (> 20 engineers)
-# - Independent deployment needs
-
-# Signs it's time to split:
-# 1. Deploy one component breaks whole system
-# 2. Team steps on each other's toes
-# 3. Some components need 10x scale of others
-# 4. Different teams own different domains`,
-              explanation: "Don't over-engineer. Start simple, split when complexity outweighs benefits."
-            },
-            practice: "Design criteria for deciding when to split a monolith."
-          }
-        },
-        {
-          id: "ms-communication",
-          title: "Service Communication",
-          content: {
-            explanation: [
-              "Services need to communicate:",
-              "",
-              "1. **Synchronous (request-response)**",
-              "- REST/gRPC APIs",
-              "- Blocks until response",
-              "- Simpler to understand",
-              "",
-              "2. **Asynchronous (message queues)**",
-              "- Event-driven",
-              "- Lower coupling",
-              "- More complex",
-              "",
-              "Key: Services should be loosely coupled. Events are better for independence."
-            ],
-            example: {
-              title: "Service Communication",
-              code: `# Synchronous: REST API call
-user_service.get_user(id)
-order_service.create_order(data)
-
-# Using gRPC (faster)
-user_client := pb.NewUserServiceClient(conn)
-resp, err := user_client.GetUser(ctx, &pb.GetUserRequest{Id: id})
-
-# Asynchronous: Message queue
-# User created event
-publisher.Publish("user.created", UserCreatedEvent{
-    UserID: newUser.ID,
-    Email: newUser.Email,
-})
-
-# Consumer (order service) handles it
-consumer.Subscribe("user.created", func(event UserCreatedEvent) {
-    // Create user account in order service
-})`,
-              explanation: "Synchronous is simpler for workflows. Asynchronous is better for independence and eventual consistency."
-            },
-            practice: "Design event flow for user registration in multiple services."
-          }
-        },
-        {
-          id: "ms-circuit",
-          title: "Circuit Breaker",
-          content: {
-            explanation: [
-              "Circuit breaker prevents cascade failures:",
-              "",
-              "States:",
-              "1. **Closed**: Normal operation",
-              "2. **Open**: Failing, reject calls",
-              "3. **Half-open**: Testing recovery",
-              "",
-              "When to use: External service calls that might fail. Don't let one failure bring down your service."
-            ],
-            example: {
-              title: "Circuit Breaker Implementation",
-              code: `type CircuitBreaker struct {
-    failures int
-    threshold int
-    timeout   time.Duration
-    state     int  // 0: closed, 1: open, 2: half-open
-}
-
-func (cb *CircuitBreaker) Call(fn func() error) error {
-    if cb.state == 1 {  // open
-        return fmt.Errorf("circuit open")
-    }
-    
-    err := fn()
-    
-    if err != nil {
-        cb.failures++
-        if cb.failures >= cb.threshold {
-            cb.state = 1
-            go cb.resetAfterTimeout()
-        }
-        return err
-    }
-    
-    cb.failures = 0
-    cb.state = 0  // closed
-    return nil
-}
-
-func (cb *CircuitBreaker) resetAfterTimeout() {
-    time.Sleep(cb.timeout)
-    cb.state = 2  // half-open
-}`,
-              explanation: "When failures exceed threshold, open circuit. Accept few test requests to test recovery."
-            },
-            practice: "Add circuit breaker to a service that calls an external API."
-          }
-        },
-        {
-          id: "ms-discovery",
-          title: "Service Discovery",
-          content: {
-            explanation: [
-              "Services need to find each other:",
-              "",
-              "1. **DNS**: Simple, but slow updates",
-              "2. **Service registry**: Dynamic (Consul, Eureka)",
-              "3. **Load balancer**: Client LB is common",
-              "",
-              "Client-side discovery: Client looks up from registry",
-              "Server-side: Load balancer decides",
-              "",
-              "Health checks ensure only healthy instances receive traffic."
-            ],
-            example: {
-              title: "Service Registry",
-              code: `# Service registers on startup
-service := &ServiceInstance{
-    ID:        generateUUID(),
-    Name:      "user-service",
-    Address:    "user-service-1:8080",
-    Port:       8080,
-    HealthURL:  "http://user-service-1:8080/health",
-}
-registry.Register(service)
-
-# Heartbeat to stay alive
-go func() {
-    for {
-        registry.Heartbeat(service.ID)
-        time.Sleep(30 * time.Second)
-    }
-}()
-
-# Client looks up
-instances, _ := registry.Find("user-service")
-# Choose one (random, round-robin, etc.)
-selected := choose(instances)`,
-              explanation: "Services register themselves. Client discovers from registry. Use health checks for reliability."
-            },
-            practice: "Design a service registry that handles instance registration and health checks."
-          }
-        }
-      ]
-    },
-    {
-      id: "sd-security",
-      title: "Security Fundamentals",
-      description: "Authentication and authorization",
-      duration: "55 min",
-      subtopics: [
-        {
-          id: "security-auth",
-          title: "Auth: JWT vs Sessions",
-          content: {
-            explanation: [
-              "Two main authentication approaches:",
-              "",
-              "1. **Sessions**: Server stores user state",
-              "- Server maintains session ID",
-              "- Cookie/header references session",
-              "- Easy to revoke",
-              "- State required",
-              "",
-              "2. **JWT** (JSON Web Token): Client stores token",
-              "- Token contains user info (claims)",
-              "- Server validates signature only",
-              "- Stateless",
-              "- Harder to revoke",
-              "",
-              "Token: header.payload.signature"
-            ],
-            example: {
-              title: "JWT Authentication",
-              code: `# Client stores token
-# Login
-POST /login { email, password }
-Response: { token: "eyJhbGciOiJIUz..." }
-
-# Subsequent requests
-GET /api/users
-Authorization: Bearer eyJhbGciOiJIUz...
-
-# JWT payload (payload)
-{
-  "sub": "1234567890",
-  "name": "John Doe",
-  "email": "john@example.com",
-  "iat": 1516239022,
-  "exp": 1516242622
-}
-
-# Server validates (no DB lookup needed!)
-func ValidateToken(tokenString string) (*Claims, error) {
-    token, err := jwt.ParseWithClaims(tokenString, &Claims{}, keyFunc)
-    if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-        return claims, nil
-    }
-    return nil, err
-}`,
-              explanation: "Use JWT for stateless services. Use sessions when you need easy revocation or don't want token management."
-            },
-            practice: "Implement JWT authentication flow."
-          }
-        },
-        {
-          id: "security-authorization",
-          title: "Authorization: RBAC vs ACL",
-          content: {
-            explanation: [
-              "Authorization controls what users can do:",
-              "",
-              "1. **RBAC** (Role-Based Access Control):",
-              "- Users have roles (admin, user, moderator)",
-              "- Roles have permissions",
-              "- Simple to manage",
-              "",
-              "2. **ACL** (Access Control Lists):",
-              "- Per-resource permissions",
-              "- Fine-grained control",
-              "- More complex",
-              "",
-              "3. **ABAC** (Attribute-Based): Context-based policies",
-              "",
-              "Principle: Least privilege — minimum access needed"
-            ],
-            example: {
-              title: "RBAC Implementation",
-              code: `# Define roles and permissions
-roles := map[string][]string{
-    "admin": {"read", "write", "delete", "manage_users"},
-    "moderator": {"read", "write", "delete_content"},
-    "user": {"read"},
-}
-
-# Middleware checks permission
-func requirePermission(permission string) HandlerFunc {
-    return func(c *Context) {
-        role := c.Get("user_role").(string)
-        perms := roles[role]
-        
-        hasPermission := false
-        for _, p := range perms {
-            if p == permission {
-                hasPermission = true
-                break
-            }
-        }
-        
-        if !hasPermission {
-            c.JSON(403, Error{"Forbidden"})
-            return
-        }
-        
-        c.Next()
-    }
-}
-
-// Usage
-r.DELETE("/users/:id", requirePermission("manage_users"), deleteUser)`,
-              explanation: "Assign users roles. Check permissions on protected resources. Keep roles simple for most apps."
-            },
-            practice: "Design RBAC for a blog system with authors and readers."
-          }
-        },
-        {
-          id: "security-https",
-          title: "HTTPS and TLS",
-          content: {
-            explanation: [
-              "HTTPS encrypts traffic in transit:",
-              "",
-              "How it works:",
-              "1. Client connects, server sends certificate",
-              "2. Client verifies certificate (trusted CA)",
-              "3. Generate session key (asymmetric encryption)",
-              "4. Encrypt/decrypt with session key (symmetric)",
-              "",
-              "TLS 1.3 is latest standard. Use it for all traffic.",
-              "",
-              "Certificate: Get from Let's Encrypt (free) or buy."
-            ],
-            example: {
-              title: "HTTPS in Go",
-              code: `// Create TLS configuration
-cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
-if err != nil {
-    log.Fatal(err)
-}
-
-config := &tls.Config{
-    Certificates: []tls.Certificate{cert},
-    MinVersion: tls.VersionTLS12,
-    // TLS 1.3 only (requires modern clients)
-    CurvePreferences: []tls.CurveID{
-        tls.CurveP256,
-        tls.X25519,
-    },
-    CipherSuites: []uint16{
-        tls.TLS_AES_128_GCM_SHA256,
-        tls.TLS_CHACHA20_POLY1305_SHA256,
-    },
-}
-
-server := &http.Server{
-    Addr:      ":https",
-    TLSConfig:   config,
-    Handler:    router,
-}
-
-server.ListenAndServeTLS()`,
-              explanation: "Use HTTPS everywhere, even for private services. Set up auto-redirect HTTP → HTTPS."
-            },
-            practice: "Set up automatic redirect from HTTP to HTTPS."
-          }
-        }
-      ]
-    },
-    {
-      id: "sd-message-queues",
-      title: "Message Queues",
-      description: "Event-driven communication and async processing",
+      id: "sd-introduction",
+      title: "Introduction to System Design",
+      description: "Understand what system design means and why it matters for building real-world applications.",
       duration: "50 min",
       subtopics: [
         {
-          id: "mq-intro",
-          title: "Introduction to Message Queues",
+          id: "sd-what-is-system-design",
+          title: "What is System Design?",
+          type: "read",
+          duration: "12 min",
           content: {
             explanation: [
-              "Message queues enable asynchronous communication between services.",
-              "",
-              "**Why use message queues?**",
-              "- Decouple producers from consumers",
-              "- Handle traffic bursts (buffering)",
-              "- Enable async processing",
-              "- Build event-driven systems",
-              "",
-              "**Core concepts**:",
-              "- Producer: sends messages",
-              "- Consumer: receives messages",
-              "- Queue: stores messages temporarily",
-              "- Broker: manages the queue"
+              "System design is the art of planning how an application works behind the scenes. It answers: 'How do we handle millions of users?'",
+              "Think about Instagram. One person posting a photo is easy. But 500 million people posting? That's a system design challenge.",
+              "A good system design makes your app FAST, RELIABLE, and SCALABLE. It doesn't crash when lots of people use it.",
+              "Bad system design? Your app freezes on New Year's Eve when everyone tries to send 'Happy New Year' messages at once.",
+              "System design is like urban planning. One house is easy. A city of millions needs roads, traffic lights, and public transit."
             ],
             example: {
-              title: "Message Queue Architecture",
-              code: `# Without queue: synchronous
-# User places order → waits → order processed → email sent
-# If email service down, entire order fails
+              title: "The Lemonade Stand Analogy",
+              code: `// Stage 1: One customer
+// You: One pitcher of lemonade. One friend helping.
+// Works fine for 10 customers.
 
-# With queue: asynchronous
-# 1. User places order → saved to database
-# 2. Order saved to message queue
-# 3. Response sent to user immediately
-# 4. Background: consumer picks up order → processes → sends email
-# Even if email service temporarily down, order is safe in queue`,
-              explanation: "Message queues act as a buffer between services, ensuring reliability even when some services are down."
+// Stage 2: 100 customers (School Fair)
+// Problem: Long lines! People get angry and leave.
+// Solution: Add 3 more friends, more pitchers.
+
+// Stage 3: 10,000 customers (City Festival)
+// Problem: Can't make enough lemonade fast enough.
+// Solution: Build a factory, hire delivery trucks, add online ordering.
+
+// System design is planning for Stage 3 before Stage 2 breaks.`,
+              explanation: "Small systems are simple. Large systems need careful planning. System design helps you grow without breaking."
             },
-            practice: "Draw a diagram showing how a message queue decouples order processing from inventory management."
+            practice: "Think of an app you love that got slow or crashed when it became popular. Why did that happen?"
           }
         },
         {
-          id: "mq-rabbitmq",
-          title: "RabbitMQ",
+          id: "sd-why-matters",
+          title: "Why System Design Matters",
+          type: "read",
+          duration: "10 min",
           content: {
             explanation: [
-              "RabbitMQ is a popular open-source message broker.",
-              "",
-              "**Key concepts**:",
-              "- Exchange: routes messages to queues",
-              "- Queue: stores messages",
-              "- Binding: links exchange to queue",
-              "- Routing key: determines which queue gets the message",
-              "",
-              "**Exchange types**:",
-              "- Direct: exact match on routing key",
-              "- Fanout: sends to all bound queues",
-              "- Topic: pattern matching on routing key",
-              "- Headers: match on message headers"
+              "Every popular app started small. Twitter began with a few thousand users. Now it handles millions of tweets per minute.",
+              "Without good design, success can kill your app. That's called the 'success disaster'.",
+              "Amazon handles 2.5 million orders per DAY during holidays. That's 30 orders per second!",
+              "Good design saves money. A poorly designed system might need 100 servers. A good design needs 10 servers.",
+              "System design separates toy projects from real companies. Anyone can build for 100 users. Few can build for 100 million."
             ],
             example: {
-              title: "RabbitMQ Example",
-              code: `# Producer sends to exchange
-channel.exchange_declare(exchange="orders", type="topic")
+              title: "Numbers Tell the Story",
+              code: `// Small app (100 users):
+// - 1 server (like a laptop)
+// - Cost: $50/month
+// - Works fine
 
-# Publish with routing key
-channel.basic_publish(
-    exchange="orders",
-    routing_key="order.created",
-    body=order_data
-)
+// Medium app (10,000 users):
+// - 5 servers
+// - Cost: $500/month
+// - Need load balancing
 
-# Consumer binds to queue
-channel.queue_bind(queue="email_service", exchange="orders", routing_key="order.*")`,
-              explanation: "RabbitMQ uses exchanges as intermediaries - producers send to exchanges, exchanges route to queues based on rules."
+// Large app (1,000,000 users):
+// - 100+ servers across multiple locations
+// - Cost: $10,000+/month
+// - Need databases, caching, CDNs, queues
+
+// System design chooses the right setup for each stage.`,
+              explanation: "What works for 100 users breaks for 10,000. System design helps you plan for growth without rebuilding everything."
             },
-            practice: "Create a scenario where orders go to one queue and inventory updates to another, both using the same exchange."
+            practice: "List 3 apps that grew very fast. Did they have outages during their growth?"
           }
         },
         {
-          id: "mq-kafka",
-          title: "Apache Kafka",
+          id: "sd-history",
+          title: "The Story of System Design",
+          type: "read",
+          duration: "8 min",
           content: {
             explanation: [
-              "Kafka is a distributed event streaming platform, not just a message queue.",
-              "",
-              "**Differences from RabbitMQ**:",
-              "- Append-only logs (durable, replayable)",
-              "- Ordered within partitions",
-              "- Consumer groups for parallel processing",
-              "- High throughput for big data",
-              "",
-              "**Kafka concepts**:",
-              "- Topic: category of messages",
-              "- Partition: ordered segments within topic",
-              "- Offset: position in partition",
-              "- Consumer Group: shared consumption"
+              "In the early days of the internet (1990s), websites were simple. One server, one database. That was enough.",
+              "Then came Google, Amazon, and Facebook. They grew so fast that one server couldn't keep up. Engineers had to invent new ways to scale.",
+              "They created load balancers, caches, and distributed databases. These became the building blocks of modern system design.",
+              "Today, system design is a formal discipline. Engineers study patterns that work (and failures that don't).",
+              "The best lessons come from outages. When a big site goes down, engineers learn what NOT to do."
             ],
             example: {
-              title: "Kafka Example",
-              code: `# Create topic
-kafka.create_topic("user_events", partitions=3)
+              title: "Famous Outages",
+              code: `// 2009: Twitter's "Fail Whale"
+// Too many users at once. Site kept crashing.
+// Lesson: Plan for traffic spikes.
 
-# Producer
-producer.send("user_events", {"user_id": 123, "event": "signup"})
+// 2012: Amazon Prime Day outage
+// Too many orders at once. Database couldn't keep up.
+// Lesson: Scale databases before you need them.
 
-# Consumer group
-consumer = KafkaConsumer("user_events", group_id="analytics")
-for message in consumer:
-    process(message.value)
+// 2021: Facebook DNS outage
+// One configuration change took down all of Facebook.
+// Lesson: Test changes carefully. Have rollback plans.
 
-# Multiple consumers in same group share the work
-# Each partition goes to one consumer in the group`,
-              explanation: "Kafka's log-based approach means messages persist and can be replayed - great for audit trails and event sourcing."
+// Every outage teaches us something about system design.`,
+              explanation: "The best system designers learn from past failures. Understanding why systems break helps you build stronger ones."
             },
-            practice: "Design a Kafka setup for tracking user clicks across a website. How would you handle 1 million events per second?"
+            practice: "Research one major internet outage. What caused it? How could better design have prevented it?"
           }
         },
         {
-          id: "mq-patterns",
-          title: "Message Queue Patterns",
+          id: "sd-building-blocks",
+          title: "The Building Blocks of Systems",
+          type: "read",
+          duration: "12 min",
           content: {
             explanation: [
-              "**Common patterns**:",
-              "",
-              "**Pub/Sub**: One producer, many consumers (notifications, logs)",
-              "",
-              "**Task Queue**: One producer, one consumer (async jobs)",
-              "",
-              "**Event Sourcing**: Store all changes as events (audit trail)",
-              "",
-              "**Saga Pattern**: Choreography or orchestration for distributed transactions",
-              "",
-              "**At-least-once vs exactly-once**: Handle duplicates vs guarantee delivery"
+              "Every system has the same basic ingredients. Just like a house has walls, roof, and doors.",
+              "CLIENTS: Your phone, laptop, or browser. They ASK for things.",
+              "SERVERS: Powerful computers that ANSWER requests. They do the heavy work.",
+              "DATABASES: Where data lives permanently. User profiles, posts, messages all stored here.",
+              "CACHES: Fast temporary storage. Like your brain remembering an answer.",
+              "LOAD BALANCERS: Traffic cops. They decide which server handles each request.",
+              "MESSAGE QUEUES: Like a task list. Helps services talk without waiting."
             ],
             example: {
-              title: "Pub/Sub Pattern",
-              code: `# Publisher: order status updates
-for status in ["confirmed", "packed", "shipped", "delivered"]:
-    publish("order_events", order_id, status)
+              title: "The Restaurant Analogy",
+              code: `// Restaurant = Your System
+// - CLIENTS = You (the hungry customer)
+// - SERVER = Waiter (takes your order)
+// - KITCHEN = Application Server (cooks your food)
+// - FRIDGE = Database (stores ingredients)
+// - PRE-MADE DISHES = Cache (ready-to-serve popular items)
+// - HOST = Load Balancer (seats you at an available table)
+// - ORDER TICKET BOARD = Message Queue (orders waiting to be cooked)
 
-# Subscribers:
-# - Email service subscribes to all events
-# - Inventory service subscribes to "confirmed" only
-# - Tracking service subscribes to "shipped"
-# - Analytics subscribes to all events`,
-              explanation: "Pub/Sub allows different services to react to the same events without the producer knowing about them."
+// Without load balancer: Some tables get 10 customers, some get zero.
+// Without cache: Every meal cooked from scratch. Slow!
+// Without message queue: Waiter waits at kitchen for food. Customer waits longer.`,
+              explanation: "Each building block has a job. Together, they create a system that can handle thousands of requests at once."
             },
-            practice: "Design a system where a payment triggers: inventory reservation, loyalty points, and notification - using message queues."
+            practice: "Draw a simple diagram of how you think Instagram works. Label the clients, servers, databases, and caches."
+          }
+        }
+      ]
+    },
+    // ==================== TOPIC 2: SCALING BASICS ====================
+    {
+      id: "sd-scaling-basics",
+      title: "Scaling: Growing Your System",
+      description: "Learn how to handle more users without breaking your app.",
+      duration: "55 min",
+      subtopics: [
+        {
+          id: "sd-vertical-scaling",
+          title: "Vertical Scaling: Getting a Bigger Server",
+          type: "read",
+          duration: "12 min",
+          content: {
+            explanation: [
+              "Vertical scaling means making your existing server MORE POWERFUL. More RAM, faster CPU, bigger storage.",
+              "It's like upgrading from a sedan to a truck. Same vehicle, just bigger and stronger.",
+              "Vertical scaling is SIMPLE. No code changes needed. Just pay for a better server.",
+              "BUT there's a limit. You can only make one server so powerful.",
+              "Also, bigger servers get EXPENSIVE. Double the power often costs more than double the price."
+            ],
+            example: {
+              title: "Vertical Scaling Example",
+              code: `// Start: 2 CPU, 4GB RAM → 1,000 users → $50/month
+// Upgrade: 4 CPU, 8GB RAM → 2,000 users → $150/month
+// Upgrade: 16 CPU, 64GB RAM → 8,000 users → $800/month
+// Eventually you can't get bigger servers.`,
+              explanation: "Vertical scaling is great for starting out. But costs grow faster than capacity."
+            },
+            practice: "What's the biggest server you've ever heard of? Why might even that not be enough for some apps?"
+          }
+        },
+        {
+          id: "sd-horizontal-scaling",
+          title: "Horizontal Scaling: Adding More Servers",
+          type: "read",
+          duration: "14 min",
+          content: {
+            explanation: [
+              "Horizontal scaling means adding MORE servers instead of bigger ones.",
+              "It's like opening more checkout lanes at a grocery store.",
+              "Horizontal scaling has NO theoretical limit. Need 10x users? Add 10x servers.",
+              "Key requirement: Make services STATELESS. Don't store user data in server memory!"
+            ],
+            example: {
+              title: "Horizontal Scaling in Action",
+              code: `// One server: handles all 1,000 users. If it crashes? Site down!
+
+// Ten servers with load balancer:
+// Server 1: users 1-100
+// Server 2: users 101-200
+// ...
+// Server 10: users 901-1000
+
+// If Server 5 crashes: Only 100 users lose connection!
+// Key: Store sessions in Redis, not server memory!`,
+              explanation: "Horizontal scaling is how Google, Facebook, and Amazon handle billions of users."
+            },
+            practice: "Why do large websites sometimes go down for 'some users' but not everyone?"
+          }
+        },
+        {
+          id: "sd-load-balancers",
+          title: "Load Balancers: The Traffic Directors",
+          type: "read",
+          duration: "14 min",
+          content: {
+            explanation: [
+              "A load balancer sits in front of your servers. Every request hits the load balancer FIRST.",
+              "Common rules: Round Robin (server 1, then 2, then 3). Least Connections (send to least busy). IP Hash (same user to same server).",
+              "Health checks: Load balancer regularly asks 'Are you alive?' If a server dies, traffic stops."
+            ],
+            example: {
+              title: "Load Balancer in Action",
+              code: `// Round Robin example:
+// Request 1: Server 1
+// Request 2: Server 2
+// Request 3: Server 3
+// Request 4: Server 1 (cycles back)
+
+// Health check configuration:
+// Check every 10 seconds
+// Mark server unhealthy after 3 failed checks
+// Stop sending traffic to unhealthy servers`,
+              explanation: "Load balancers make horizontal scaling possible. Without them, some servers would be overloaded while others sit idle."
+            },
+            practice: "If you run a website with 100 servers and one server stops responding, what should the load balancer do?"
+          }
+        },
+        {
+          id: "sd-stateless",
+          title: "Stateless vs Stateful Services",
+          type: "read",
+          duration: "10 min",
+          content: {
+            explanation: [
+              "STATELESS: Doesn't remember anything between requests. Like a vending machine.",
+              "STATEFUL: Remembers things. Like a shopping cart.",
+              "Stateless services are EASY to scale. Stateful services are HARD to scale.",
+              "Best practice: Make services stateless. Store state in databases or caches."
+            ],
+            example: {
+              title: "Stateless vs Stateful",
+              code: `// STATELESS (good for scaling):
+function getUserProfile(userId) {
+    return db.query("SELECT * FROM users WHERE id = ?", userId);
+}
+// Any server can handle any request!
+
+// STATEFUL (bad for scaling):
+let sessions = {}; // Stored in server memory!
+function login(userId) {
+    sessions[userId] = { loggedIn: true };
+}
+// If Server 1 crashes, user's session is gone!
+
+// FIX: Store sessions in Redis (shared cache)`,
+              explanation: "Stateless services scale easily. Move state out of servers and into shared databases or caches."
+            },
+            practice: "Is a file upload service stateless or stateful? What about a chat room service?"
+          }
+        }
+      ]
+    },
+    // ==================== TOPIC 3: DATABASE SCALING ====================
+    {
+      id: "sd-database-scaling",
+      title: "Database Scaling",
+      description: "Learn how to handle massive amounts of data and queries.",
+      duration: "50 min",
+      subtopics: [
+        {
+          id: "sd-read-replicas",
+          title: "Read Replicas: Distribute the Load",
+          type: "read",
+          duration: "14 min",
+          content: {
+            explanation: [
+              "Most apps read data way more than they write. Instagram: 100 reads for every 1 write.",
+              "Read replicas are copies of your database that handle ONLY read queries.",
+              "Trade-off: Replicas are eventually consistent. Writes may take seconds to appear.",
+              "Perfect for: News feeds, product catalogs. Not for: Banking balances."
+            ],
+            example: {
+              title: "Read Replicas Architecture",
+              code: `//      [Primary DB] (handles writes)
+//         ↓        ↓
+//    [Replica 1] [Replica 2] (handle reads)
+
+function getUser(id) {
+    // Try read replica first
+    let user = replicaDB.query("SELECT * FROM users WHERE id = ?", id);
+    if (user) return user;
+    // Fall back to primary
+    return primaryDB.query("SELECT * FROM users WHERE id = ?", id);
+}
+
+function createUser(user) {
+    // Writes always go to primary
+    return primaryDB.insert("users", user);
+}`,
+              explanation: "Read replicas are the easiest way to scale databases. Most apps are 90% reads!"
+            },
+            practice: "Would a banking app use read replicas for account balances? Why or why not?"
+          }
+        },
+        {
+          id: "sd-database-indexes",
+          title: "Database Indexes: Finding Data Fast",
+          type: "read",
+          duration: "12 min",
+          content: {
+            explanation: [
+              "An index is like a book's index. Instead of reading every page, you jump to the right page.",
+              "Without index: Full table scan (slow). With index: Instant lookup (fast).",
+              "Trade-off: Indexes make reads faster but writes slower (must update the index)."
+            ],
+            example: {
+              title: "Indexes Explained",
+              code: `// Without index: checks 1,000,000 rows → Slow!
+// With index: finds row instantly → Fast!
+
+// Create index:
+CREATE INDEX idx_users_email ON users(email);
+
+// Now this query is lightning fast:
+SELECT * FROM users WHERE email = 'alice@example.com';
+
+// When NOT to index:
+// - Very small tables (< 100 rows)
+// - Columns that change often
+// - Columns rarely used in WHERE`,
+              explanation: "Indexes are the #1 way to speed up slow queries. Add them on columns used in WHERE, JOIN, and ORDER BY."
+            },
+            practice: "If a query is slow, what columns should you consider indexing first?"
+          }
+        },
+        {
+          id: "sd-sharding",
+          title: "Sharding: Splitting Data Across Databases",
+          type: "read",
+          duration: "14 min",
+          content: {
+            explanation: [
+              "Sharding splits your data across multiple databases. Each database (shard) holds a portion.",
+              "Think: Filing cabinet A has A-M, cabinet B has N-Z.",
+              "Challenge 1: Choosing the right SHARD KEY.",
+              "Challenge 2: Queries that need data from multiple shards become harder.",
+              "Only shard when you have millions of rows."
+            ],
+            example: {
+              title: "Sharding Example",
+              code: `// Sharding by user_id:
+// Shard 1: users 1-1000
+// Shard 2: users 1001-2000
+// Shard 3: users 2001-3000
+
+// To find a user:
+shard_id = (user_id % 3) + 1
+// user_id 500 → 500 % 3 = 2 → Shard 2
+
+// Complexity: Getting a user's posts
+// - User might be in Shard 2
+// - Their posts might be in Shard 1
+// - Need to query both shards!`,
+              explanation: "Sharding is powerful but complex. Start with read replicas first. Only shard when necessary."
+            },
+            practice: "If you were sharding a messaging app, would you shard by sender_id or receiver_id? What's the problem?"
+          }
+        },
+        {
+          id: "sd-cdn",
+          title: "CDN: Content Delivery Networks",
+          type: "read",
+          duration: "10 min",
+          content: {
+            explanation: [
+              "A CDN brings your content closer to users. It caches static assets worldwide.",
+              "Without CDN: User in Australia downloads from New York. Slow!",
+              "With CDN: Image stored in Australia. Lightning fast!",
+              "Always use a CDN for images, CSS, and JavaScript files."
+            ],
+            example: {
+              title: "CDN in Action",
+              code: `// Without CDN: 300ms latency
+// With CDN: 5ms latency (60x faster!)
+
+// Cache headers:
+Cache-Control: public, max-age=31536000  // Cache 1 year
+Cache-Control: public, max-age=60        // Cache 60 seconds
+Cache-Control: private                    // Don't cache`,
+              explanation: "CDNs make your site load faster everywhere. It's cheap and effective."
+            },
+            practice: "What types of content should NOT be cached on a CDN? Why?"
+          }
+        }
+      ]
+    },
+    // ==================== TOPIC 4: CACHING ====================
+    {
+      id: "sd-caching",
+      title: "Caching Strategies",
+      description: "Learn to make your system faster by remembering answers.",
+      duration: "50 min",
+      subtopics: [
+        {
+          id: "sd-cache-basics",
+          title: "What is Caching?",
+          type: "read",
+          duration: "12 min",
+          content: {
+            explanation: [
+              "A cache is temporary storage for frequently accessed data.",
+              "Database reads: milliseconds. Cache reads: microseconds. 1000x faster!",
+              "Perfect for: User profiles, product details, configuration.",
+              "Trade-off: Cached data can become stale (outdated)."
+            ],
+            example: {
+              title: "Cache-Aside Pattern",
+              code: `function getUser(userId) {
+    // 1. Check cache first
+    let user = redis.get("user:" + userId);
+    if (user) return JSON.parse(user); // Cache hit! Fast!
+    
+    // 2. Cache miss - get from database (slow)
+    user = db.query("SELECT * FROM users WHERE id = ?", userId);
+    
+    // 3. Store in cache for next time
+    redis.setex("user:" + userId, 3600, JSON.stringify(user));
+    return user;
+}`,
+              explanation: "Cache-aside is the most common pattern. Always check cache first, fall back to database."
+            },
+            practice: "What happens if the cache server crashes? Does the application still work?"
+          }
+        },
+        {
+          id: "sd-cache-invalidation",
+          title: "Cache Invalidation",
+          type: "read",
+          duration: "14 min",
+          content: {
+            explanation: [
+              "'There are only two hard things: cache invalidation and naming things.'",
+              "Three main strategies:",
+              "1. TIME-BASED (TTL): Cache expires after fixed time. Simplest.",
+              "2. WRITE-THROUGH: Update cache AND database together. Freshest.",
+              "3. WRITE-BEHIND: Update cache immediately, database later. Fastest."
+            ],
+            example: {
+              title: "Cache Invalidation Strategies",
+              code: `// Strategy 1: Time-based (Simplest)
+redis.setex("user:123", 300, JSON.stringify(user)); // 5 min TTL
+
+// Strategy 2: Write-through (Fresh)
+function updateUser(userId, newData) {
+    db.update("users", newData, "id = ?", userId);
+    redis.set("user:" + userId, JSON.stringify(newData));
+}
+
+// Strategy 3: Write-behind (Fast)
+function updateUser(userId, newData) {
+    redis.set("user:" + userId, JSON.stringify(newData));
+    queue.add("db-update", { userId, newData });
+}`,
+              explanation: "Choose strategy based on your needs. TTL for simple cases. Write-through for banking."
+            },
+            practice: "For a weather app, what's a good TTL? For a stock price app? For a user's profile picture?"
+          }
+        },
+        {
+          id: "sd-cache-types",
+          title: "Types of Caches",
+          type: "read",
+          duration: "12 min",
+          content: {
+            explanation: [
+              "1. **Application Memory Cache**: Fastest, lost on restart. Single server only.",
+              "2. **Distributed Cache** (Redis): Shared across servers, survives restarts.",
+              "3. **CDN Cache**: For static assets close to users.",
+              "4. **Database Query Cache**: Built-in, for repeated identical queries."
+            ],
+            example: {
+              title: "Choosing the Right Cache",
+              code: `// In-memory cache (single server):
+const cache = new Map();
+
+// Redis (multiple servers):
+const user = await redis.get("user:" + userId);
+
+// When to upgrade to Redis:
+// - You have multiple servers
+// - Data needs to be consistent across servers
+// - Cache needs to survive restarts`,
+              explanation: "Use in-memory for single-server. Use Redis for multiple servers. Use CDN for static files."
+            },
+            practice: "If you have 10 servers, why can't you use in-memory cache for user sessions?"
+          }
+        },
+        {
+          id: "sd-cache-patterns",
+          title: "Advanced Cache Patterns",
+          type: "read",
+          duration: "12 min",
+          content: {
+            explanation: [
+              "1. **Cache Warming**: Pre-fill cache before traffic hits.",
+              "2. **Cache Stampede Prevention**: Only one request fetches on cache miss.",
+              "3. **Hot Keys**: Popular data that gets hammered. Replicate across servers."
+            ],
+            example: {
+              title: "Cache Stampede Prevention",
+              code: `// Problem: Cache expires at 12:00
+// 1,000 requests hit database at once! Database crashes.
+
+// Solution: Use a lock
+if (!data) {
+    const acquired = await redis.setnx(lockKey, "locked");
+    if (acquired) {
+        // Only ONE request does the query
+        const freshData = await db.query(...);
+        await redis.setex(key, 300, JSON.stringify(freshData));
+        await redis.del(lockKey);
+        return freshData;
+    } else {
+        // Other requests wait and retry
+        await sleep(100);
+        return getCachedUser(id);
+    }
+}`,
+              explanation: "Cache stampede happens when popular cache expires and everyone hits the database. Use locks to prevent it."
+            },
+            practice: "How would you handle a 'hot key' - a single user profile that gets 1 million views per minute?"
+          }
+        }
+      ]
+    },
+    // ==================== TOPIC 5: API DESIGN ====================
+    {
+      id: "sd-api-design",
+      title: "API Design",
+      description: "Learn to design APIs that are easy to use and hard to misuse.",
+      duration: "55 min",
+      subtopics: [
+        {
+          id: "sd-api-basics",
+          title: "What is an API?",
+          type: "read",
+          duration: "10 min",
+          content: {
+            explanation: [
+              "API = Application Programming Interface. How software talks to each other.",
+              "Think of a restaurant menu. You (client) order. Kitchen (server) makes it.",
+              "APIs hide complexity. You don't need to know how the kitchen works.",
+              "When your phone shows weather, it calls a weather API."
+            ],
+            example: {
+              title: "API in Everyday Life",
+              code: `// You don't need to know how this works:
+// https://api.weather.com/v1/forecast?city=London
+
+// API Response:
+{
+    "city": "London",
+    "temperature": 18,
+    "condition": "Cloudy"
+}
+
+// The API hides all complexity behind the scenes.`,
+              explanation: "APIs are contracts. 'If you send me this, I'll send you that.'"
+            },
+            practice: "List 3 APIs you use every day without thinking about them."
+          }
+        },
+        {
+          id: "sd-rest-basics",
+          title: "REST API Principles",
+          type: "read",
+          duration: "14 min",
+          content: {
+            explanation: [
+              "REST is the most common API design. Uses HTTP methods and URLs.",
+              "Resources are NOUNS (users, orders). NOT verbs (getUser).",
+              "GET = read, POST = create, PUT = update, DELETE = remove.",
+              "Status codes tell what happened: 200 (OK), 404 (Not found), 500 (Error)."
+            ],
+            example: {
+              title: "Good REST API Design",
+              code: `// Good REST API (noun-based)
+GET    /api/users           // List users
+GET    /api/users/123       // Get user 123
+POST   /api/users           // Create user
+PUT    /api/users/123       // Update user
+DELETE /api/users/123       // Delete user
+
+// Bad REST API (verb-based - DON'T DO!)
+GET    /api/getUser?id=123
+POST   /api/createUser
+
+// Status codes:
+200 OK - Everything worked
+201 Created - New resource created
+400 Bad Request - Client sent bad data
+401 Unauthorized - Not logged in
+403 Forbidden - No permission
+404 Not Found - Doesn't exist
+500 Internal Error - Server broke`,
+              explanation: "Use nouns for resources. Use HTTP methods for actions. Use status codes for results."
+            },
+            practice: "Design a REST API for a library. What endpoints for books, authors, and borrowers?"
+          }
+        },
+        {
+          id: "sd-api-versioning",
+          title: "API Versioning",
+          type: "read",
+          duration: "12 min",
+          content: {
+            explanation: [
+              "APIs change over time. Versioning prevents breaking existing users.",
+              "Most common: URL path versioning (/v1/users, /v2/users).",
+              "Best practice: Version from day one. Even before you need it.",
+              "Deprecation: Announce new version, give 6-12 months to migrate, then turn off old."
+            ],
+            example: {
+              title: "API Versioning",
+              code: `// Both versions work simultaneously:
+// v1 returns: { "user_id": 123, "user_name": "Alice" }
+// v2 returns: { "id": 123, "name": "Alice", "created_at": "2024-01-01" }
+
+// Deprecation strategy:
+// 1. Announce v2 available
+// 2. Mark v1 as "deprecated"
+// 3. Give users 6 months to migrate
+// 4. Turn off v1
+
+// Never break existing users without warning!`,
+              explanation: "Version your API from the start. When you need breaking changes, create a new version."
+            },
+            practice: "You want to rename 'user_id' to 'id' in your API. How do you do this without breaking existing apps?"
+          }
+        },
+        {
+          id: "sd-api-query",
+          title: "Query Parameters",
+          type: "read",
+          duration: "12 min",
+          content: {
+            explanation: [
+              "Query parameters let clients filter, sort, and paginate results.",
+              "Pagination: ?page=2&limit=20",
+              "Filtering: ?status=active&category=electronics",
+              "Sorting: ?sort=price&order=desc",
+              "Always paginate lists. A million records will crash both client and server."
+            ],
+            example: {
+              title: "Using Query Parameters",
+              code: `// Pagination
+GET /api/users?page=2&limit=20
+
+// Filtering
+GET /api/products?category=electronics&min_price=10
+
+// Sorting
+GET /api/users?sort=created_at&order=desc
+
+// Combined
+GET /api/products?page=1&limit=10&category=electronics&sort=price&order=asc
+
+// Response includes metadata:
+{
+    "data": [...],
+    "meta": {
+        "page": 2,
+        "per_page": 20,
+        "total": 1543,
+        "total_pages": 78
+    }
+}`,
+              explanation: "Query parameters make APIs flexible. Always paginate lists. Use consistent naming."
+            },
+            practice: "Design query parameters for a search endpoint that searches products by name, category, and price range."
+          }
+        }
+      ]
+    },
+    // ==================== TOPIC 6: MESSAGE QUEUES ====================
+    {
+      id: "sd-message-queues",
+      title: "Message Queues",
+      description: "Learn to decouple services and handle background tasks.",
+      duration: "50 min",
+      subtopics: [
+        {
+          id: "sd-mq-basics",
+          title: "What is a Message Queue?",
+          type: "read",
+          duration: "12 min",
+          content: {
+            explanation: [
+              "A message queue is like a task list. One service adds tasks, another works on them.",
+              "Without queue: User uploads video → waits 45 seconds → response. Slow!",
+              "With queue: User uploads video → gets response in 100ms → background processes.",
+              "Benefits: Faster responses, handles traffic spikes, services can fail gracefully."
+            ],
+            example: {
+              title: "Message Queue in Action",
+              code: `// WITHOUT queue: User waits 45 seconds!
+app.post("/upload-video", async (req, res) => {
+    await convertVideo(video);      // 30 seconds
+    await generateThumbnail(video); // 5 seconds
+    await uploadToCDN(video);       // 10 seconds
+    res.json({ success: true });
+});
+
+// WITH queue: Response in 100ms!
+app.post("/upload-video", async (req, res) => {
+    queue.send("video-processing", { videoId: video.id });
+    res.json({ success: true, message: "Processing in background" });
+});`,
+              explanation: "Message queues make slow operations background tasks. User gets immediate response."
+            },
+            practice: "What operations in a food delivery app could be handled by message queues?"
+          }
+        },
+        {
+          id: "sd-mq-patterns",
+          title: "Work Queue vs Pub/Sub",
+          type: "read",
+          duration: "14 min",
+          content: {
+            explanation: [
+              "WORK QUEUE: One message, ONE worker. Perfect for background jobs.",
+              "PUB/SUB: One message, ALL subscribers. Perfect for events.",
+              "Work queues help with LOAD BALANCING. Pub/Sub helps with EVENT DRIVEN architecture."
+            ],
+            example: {
+              title: "Work Queue vs Pub/Sub",
+              code: `// WORK QUEUE: One message, ONE worker
+queue.send("image-resize", { imageId: 123 });
+// Only ONE worker resizes this image
+
+// PUB/SUB: One message, ALL subscribers
+publisher.publish("user.registered", { userId: 123 });
+// Email service gets it → sends welcome email
+// Analytics gets it → records registration
+// CRM gets it → adds to database
+
+// Real system combines both:
+publisher.publish("order.created", order);
+// Email: sends receipt
+// Inventory: updates stock
+// Payment: processes payment (work queue)`,
+              explanation: "Work queues distribute tasks. Pub/Sub broadcasts events to all subscribers."
+            },
+            practice: "For a ride-sharing app when a ride is requested: finding drivers, notifying driver app, logging analytics - which pattern for which?"
+          }
+        },
+        {
+          id: "sd-mq-examples",
+          title: "Real-World Queue Examples",
+          type: "read",
+          duration: "12 min",
+          content: {
+            explanation: [
+              "Example 1: Sending emails. Queue it, respond quickly, send later.",
+              "Example 2: Processing payments. Queue it, return 'processing', webhook when done.",
+              "Example 3: Black Friday traffic spike. Queue stores all orders, workers process at safe speed."
+            ],
+            example: {
+              title: "Black Friday Example",
+              code: `// Without queue: 10,000 requests/sec, server handles 1,000 → CRASH!
+
+// With queue: 
+app.post("/order", async (req, res) => {
+    queue.send("order-processing", order);
+    res.json({ success: true, status: "processing" });
+    // Response in 10ms!
+});
+// Queue stores all 10,000 orders
+// Workers process at 1,000 per second
+// After 10 seconds, all orders done
+// No crash! No lost orders!`,
+              explanation: "Queues act as shock absorbers. When traffic spikes, queue stores requests. Workers process at safe speed."
+            },
+            practice: "Your app needs to generate a PDF report for users. It takes 30 seconds. Should you do it synchronously or with a queue? Why?"
+          }
+        },
+        {
+          id: "sd-mq-failure",
+          title: "Handling Failures",
+          type: "read",
+          duration: "12 min",
+          content: {
+            explanation: [
+              "Queues make your system resilient. If a worker crashes, the message returns to queue.",
+              "'At-least-once' delivery: Task will be done at least once (maybe more).",
+              "Dead Letter Queue (DLQ): Failed messages go here after too many retries. Manual review needed."
+            ],
+            example: {
+              title: "Resilience Example",
+              code: `// With retries:
+queue.consume("payment", async (task) => {
+    try {
+        await processPayment(task);
+    } catch (error) {
+        if (task.retryCount < 3) {
+            // Retry: 1s, then 2s, then 4s
+            queue.retry(task, delay: 2 ** task.retryCount);
+        } else {
+            // Failed 3 times → Dead Letter Queue
+            queue.sendToDLQ(task, error);
+            // Alert team: Fix this order manually
+        }
+    }
+});
+
+// Key principle: Assume services will fail.
+// Design your system to handle failures gracefully.`,
+              explanation: "Queues add resilience. If something fails, retry. If it keeps failing, move to Dead Letter Queue for manual review."
+            },
+            practice: "Why is 'at-least-once' delivery acceptable for sending a welcome email but not for charging a credit card?"
+          }
+        }
+      ]
+    },
+    // ==================== TOPIC 7: HANDS-ON DESIGN EXERCISES ====================
+    {
+      id: "sd-design-exercises",
+      title: "Hands-On Design Exercises",
+      description: "Apply everything you've learned to design real systems step by step.",
+      duration: "90 min",
+      subtopics: [
+        {
+          id: "sd-design-url-shortener",
+          title: "Design a URL Shortener (like bit.ly)",
+          type: "interactive",
+          duration: "25 min",
+          content: {
+            explanation: [
+              "Let's design a URL shortener step by step. This is a classic system design interview question.",
+              "",
+              "**Step 1: Understand Requirements**",
+              "- Users enter a long URL → get a short code (e.g., bit.ly/abc123)",
+              "- When someone visits the short URL, they get redirected to the original",
+              "- Need analytics: count clicks, track referrers",
+              "",
+              "**Step 2: Estimate Traffic**",
+              "- Assume 100 million new URLs per month",
+              "- 1 billion clicks per month (10 clicks per URL average)",
+              "- 1 billion clicks = ~400 requests per second",
+              "",
+              "**Step 3: Data Storage**",
+              "- Store mapping: short_code → original_url",
+              "- Need 100 million rows. Each row ~200 bytes = 20GB total",
+              "- Use PostgreSQL (good for lookups, ACID)",
+              "",
+              "**Step 4: Generate Short Codes**",
+              "- Base62 encoding (a-z, A-Z, 0-9) = 62 characters",
+              "- 6 characters = 62^6 = 56 billion combinations",
+              "- Use counter + encode to base62",
+              "",
+              "**Step 5: API Design**",
+              "POST /v1/shorten → { original_url } → { short_code, short_url }",
+              "GET /{short_code} → 302 Redirect to original_url",
+              "",
+              "**Step 6: Scaling**",
+              "- Read-heavy (1B reads vs 100M writes = 10:1 ratio)",
+              "- Add read replicas for GET requests",
+              "- Cache popular short codes in Redis",
+              "- Use CDN for static assets"
+            ],
+            example: {
+              title: "URL Shortener Architecture",
+              code: `// API Design:
+POST /api/v1/shorten
+Request: { "url": "https://very-long-url.com/..." }
+Response: { "short_code": "abc123", "short_url": "https://short.com/abc123" }
+
+GET /abc123
+Response: 302 Redirect to "https://very-long-url.com/..."
+
+// Database Schema:
+CREATE TABLE urls (
+    id BIGSERIAL PRIMARY KEY,
+    short_code VARCHAR(10) UNIQUE NOT NULL,
+    original_url TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    click_count BIGINT DEFAULT 0
+);
+
+CREATE INDEX idx_short_code ON urls(short_code);
+
+// URL Encoding (Base62):
+function encode(num) {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
+    while (num > 0) {
+        result = chars[num % 62] + result;
+        num = Math.floor(num / 62);
+    }
+    return result.padStart(6, 'a');
+}
+
+// 6 chars = 56 billion unique combinations
+
+// Architecture Diagram:
+// [Client] → [Load Balancer] → [API Servers]
+//                                  ↓
+//                            [Redis Cache]
+//                                  ↓
+//                            [PostgreSQL]
+//                            (Primary + Replicas)`,
+              explanation: "URL shortener is read-heavy. Use caching for popular URLs. Base62 encoding creates compact short codes."
+            },
+            practice: "Design a URL shortener that tracks analytics per link (clicks by country, browser, referrer). How would you store this data?"
+          }
+        },
+        {
+          id: "sd-design-chat",
+          title: "Design a Chat System (like WhatsApp)",
+          type: "interactive",
+          duration: "25 min",
+          content: {
+            explanation: [
+              "Let's design a real-time chat system. This tests your knowledge of WebSockets, message queues, and databases.",
+              "",
+              "**Step 1: Requirements**",
+              "- One-on-one chat, group chat (max 100 people)",
+              "- Messages delivered instantly (real-time)",
+              "- Read receipts, typing indicators",
+              "- Message history stored forever",
+              "- Offline messages: deliver when user comes online",
+              "",
+              "**Step 2: Traffic Estimates**",
+              "- 1 billion users total",
+              "- 100 million daily active users",
+              "- Each user sends 10 messages/day = 1B messages/day",
+              "- 1B messages/day = ~12,000 messages/second",
+              "",
+              "**Step 3: Real-Time Communication**",
+              "- Use WebSockets (persistent connection, bi-directional)",
+              "- Each user maintains WebSocket connection to server",
+              "- When User A sends message to User B, server forwards through B's WebSocket",
+              "",
+              "**Step 4: Message Storage**",
+              "- Two databases: Messages (time-series) + User data",
+              "- Messages: Use Cassandra or TimeScaleDB (write-heavy, time-ordered)",
+              "- User data: PostgreSQL (relationships, profiles)",
+              "",
+              "**Step 5: Offline Messages**",
+              "- If recipient offline, store messages in Redis",
+              "- When user comes online, fetch from Redis and deliver",
+              "- After delivery, move to permanent storage",
+              "",
+              "**Step 6: Scaling**",
+              "- WebSocket connections stateful → use consistent hashing",
+              "- Partition users across servers by user_id",
+              "- Message queues for async processing (read receipts)"
+            ],
+            example: {
+              title: "Chat System Architecture",
+              code: `// WebSocket Flow:
+// User A → WebSocket → Chat Server → WebSocket → User B
+
+// Message IDs (monotonically increasing per user):
+message_id = timestamp_ms + user_id_counter
+
+// Database Schema (Cassandra):
+CREATE TABLE messages (
+    conversation_id UUID,
+    message_id BIGINT,
+    sender_id UUID,
+    content TEXT,
+    created_at TIMESTAMP,
+    PRIMARY KEY (conversation_id, message_id)
+) WITH CLUSTERING ORDER BY (message_id DESC);
+
+// Offline Messages (Redis):
+// Store: pending_messages:{user_id} = List of messages
+// When user connects: deliver all, then clear
+
+// Group Chat:
+// - Members list stored in Redis
+// - Message fan-out: send to all online members
+// - Offline members: queue messages
+
+// Architecture:
+// [User A] ↔ WebSocket ↔ [Chat Server] ↔ [Message Queue]
+//                              ↓
+//                       [Redis] [Cassandra]
+//                              ↓
+// [User B] ↔ WebSocket ↔ [Chat Server]`,
+              explanation: "Chat systems need real-time delivery (WebSockets), persistent storage (Cassandra), and offline queues (Redis)."
+            },
+            practice: "How would you design read receipts? What happens if User B reads the message but User A's app is closed?"
+          }
+        },
+        {
+          id: "sd-design-social-feed",
+          title: "Design a Social Media Feed (Twitter/X)",
+          type: "interactive",
+          duration: "25 min",
+          content: {
+            explanation: [
+              "Let's design a social media feed. This tests your knowledge of fan-out patterns, caching, and timeline generation.",
+              "",
+              "**Step 1: Requirements**",
+              "- Users follow others, see posts from followed users",
+              "- Home feed: chronological or algorithmic sorting",
+              "- Support likes, comments, reposts",
+              "- Handle celebrity accounts (millions of followers)",
+              "",
+              "**Step 2: Traffic Estimates**",
+              "- 500 million daily active users",
+              "- Each user follows 200 people on average",
+              "- 10,000 tweets per second peak",
+              "- 150,000 read requests per second (viewing feeds)",
+              "",
+              "**Step 3: Feed Generation Strategies**",
+              "- Push (write fan-out): When user tweets, push to all followers' feeds → Pre-computed",
+              "- Pull (read fan-out): When user views feed, query all followed users → Real-time",
+              "- Hybrid: Celebrities use pull, normal users use push",
+              "",
+              "**Step 4: Push Approach (Normal Users)**",
+              "- User A (1,000 followers) posts tweet",
+              "- Server writes tweet ID to each follower's timeline list",
+              "- Follower's feed is pre-computed, ready instantly",
+              "",
+              "**Step 5: Pull Approach (Celebrities)**",
+              "- Celebrity (50M followers) posts tweet",
+              "- Writing to 50M lists would take hours!",
+              "- Instead, followers query on-demand when viewing",
+              "",
+              "**Step 6: Caching**",
+              "- Cache timeline lists in Redis (sorted sets)",
+              "- Cache popular tweets in CDN-backed cache"
+            ],
+            example: {
+              title: "Social Feed Architecture",
+              code: `// Push (write fan-out) - for normal users:
+function postTweet(userId, tweet) {
+    // Store tweet
+    tweetId = db.insert("tweets", { userId, content, timestamp });
+    
+    // Get followers
+    followers = db.query("SELECT follower_id FROM follows WHERE followed_id = ?", userId);
+    
+    // Push tweet to each follower's timeline
+    for (const follower of followers) {
+        redis.zadd("timeline:" + follower, timestamp, tweetId);
+    }
+}
+
+// Pull (read fan-out) - for celebrities:
+function viewFeed(userId) {
+    // Get followed users (including celebrities)
+    followed = db.query("SELECT followed_id FROM follows WHERE follower_id = ?", userId);
+    
+    // Query recent tweets from each followed user
+    for (const followedId of followed) {
+        tweets += db.query("SELECT * FROM tweets WHERE user_id = ? ORDER BY created_at DESC LIMIT 100", followedId);
+    }
+    
+    // Merge and sort
+    return sortByTime(tweets).slice(0, 50);
+}
+
+// Hybrid:
+function postTweet(userId, tweet) {
+    // Store tweet
+    // Get follower count
+    followerCount = getFollowerCount(userId);
+    
+    if (followerCount < 10000) {
+        // Push to all followers
+        pushToAllFollowers(userId, tweetId);
+    } else {
+        // Mark as "celebrity tweet", pull on read
+        markAsCelebrityTweet(userId, tweetId);
+    }
+}
+
+// Database Schema:
+CREATE TABLE tweets (
+    tweet_id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    content TEXT,
+    created_at TIMESTAMP,
+    is_celebrity BOOLEAN DEFAULT FALSE
+);
+
+CREATE INDEX idx_tweets_user_created ON tweets(user_id, created_at DESC);
+
+// Redis timeline (sorted by timestamp):
+// timeline:{user_id} = sorted set of tweet_ids
+// Score = timestamp for sorting`,
+              explanation: "Social feeds use push for normal users (pre-computed), pull for celebrities (too many followers). Hybrid handles both."
+            },
+            practice: "How would you design the 'trending tweets' feature? What data structures would you use?"
+          }
+        },
+        {
+          id: "sd-design-ecommerce",
+          title: "Design an E-Commerce Checkout",
+          type: "interactive",
+          duration: "15 min",
+          content: {
+            explanation: [
+              "Let's design an e-commerce checkout that handles Black Friday traffic.",
+              "",
+              "**Step 1: The Problem**",
+              "- 10,000 orders per second during flash sales",
+              "- Inventory must not be oversold",
+              "- Payments must be reliable",
+              "- Users shouldn't see 'sold out' after clicking buy",
+              "",
+              "**Step 2: Inventory Management**",
+              "- Reserve inventory BEFORE payment",
+              "- Short reservation window (5-10 minutes)",
+              "- Release if payment fails",
+              "",
+              "**Step 3: Order Flow with Queues**",
+              "- Add to cart → Reserve inventory → Queue payment",
+              "- User gets 'processing' response",
+              "- Payment worker processes asynchronously",
+              "- Webhook notifies user when complete",
+              "",
+              "**Step 4: Handling Failures**",
+              "- Payment fails? Release inventory, notify user",
+              "- Inventory reservation expires? Release automatically",
+              "- Queue stores orders during traffic spikes"
+            ],
+            example: {
+              title: "E-Commerce Checkout Flow",
+              code: `// Step 1: Add to cart
+POST /api/cart/add { product_id, quantity }
+→ Check inventory, hold reservation (5 min TTL)
+
+// Step 2: Initiate checkout
+POST /api/checkout { cart_id, payment_info }
+→ Queue order for processing
+→ Response: { order_id, status: "processing" }
+
+// Step 3: Background processing
+queue.consume("order-processing", async (order) => {
+    try {
+        // Verify inventory still available (idempotent)
+        const reserved = await inventory.reserve(order.items, order.reservationId);
+        if (!reserved) throw new Error("Out of stock");
+        
+        // Process payment (idempotent - use idempotency key)
+        await payment.process(order.paymentInfo, order.idempotencyKey);
+        
+        // Confirm order
+        await db.update("orders", { status: "confirmed" }, order.id);
+        await inventory.commitReservation(order.reservationId);
+        
+        // Send confirmation
+        await email.send(order.userEmail, "Order confirmed!");
+    } catch (error) {
+        // Rollback
+        await inventory.releaseReservation(order.reservationId);
+        await db.update("orders", { status: "failed", error: error.message });
+        await email.send(order.userEmail, "Order failed");
+    }
+});
+
+// Idempotency key prevents double charges:
+POST /api/checkout { idempotency_key: "user_123_timestamp" }
+// Same key → same order won't be processed twice
+
+// Inventory reservation (Redis + TTL):
+await redis.setex("reservation:" + orderId, 300, JSON.stringify(items)); // 5 min
+await redis.decrby("inventory:" + productId, quantity); // Reserve
+
+// If time expires: background job releases inventory
+// If payment succeeds: remove reservation, commit inventory
+// If payment fails: release inventory`,
+              explanation: "E-commerce checkout needs inventory reservation, idempotent payments, and queues for reliability. Never hold inventory during payment processing!"
+            },
+            practice: "How would you handle a 'flash sale' where 1,000 units sell out in 1 second? How do you prevent overselling?"
           }
         }
       ]

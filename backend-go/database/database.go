@@ -21,6 +21,8 @@ var Client *mongo.Client
 var FeedbackCollection *mongo.Collection
 var UserCollection *mongo.Collection
 var LearningProgressCollection *mongo.Collection
+var NotificationsCollection *mongo.Collection
+var NotificationDismissalsCollection *mongo.Collection
 
 // ConnectDB initializes the connection to MongoDB
 func ConnectDB() {
@@ -51,6 +53,12 @@ func ConnectDB() {
 	FeedbackCollection = GetCollection("feedback")
 	UserCollection = GetCollection("users")
 	LearningProgressCollection = GetCollection("learning_progress")
+	NotificationsCollection = GetCollection("notifications")
+	NotificationDismissalsCollection = GetCollection("notification_dismissals")
+
+	// Create indexes
+	createNotificationsIndexes(ctx)
+	createNotificationDismissalIndexes(ctx)
 
 	fmt.Println(">>> DATABASE_CONNECTED_SUCCESSFULLY")
 
@@ -132,6 +140,58 @@ func seedChallengesFromJSON() error {
 		upsertCount++
 	}
 
-	fmt.Printf(">>> CHALLENGE_SYNC_SUCCESS: %d challenges upserted\n", upsertCount)
-	return nil
+ 	fmt.Printf(">>> CHALLENGE_SYNC_SUCCESS: %d challenges upserted\n", upsertCount)
+ 	return nil
+ }
+
+// createNotificationsIndexes ensures proper indexes exist on the notifications collection
+func createNotificationsIndexes(ctx context.Context) {
+	if NotificationsCollection == nil {
+		fmt.Println(">>> NOTIFICATIONS_COLLECTION_NOT_INITIALIZED")
+		return
+	}
+
+	// Index 1: user_id + created_at DESC — covers main fetch query: find by user, sorted by time
+	indexModel1 := mongo.IndexModel{
+		Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "created_at", Value: -1}},
+	}
+	// Index 2: user_id + read + created_at DESC — helps filter unread notifications efficiently
+	indexModel2 := mongo.IndexModel{
+		Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "read", Value: 1}, {Key: "created_at", Value: -1}},
+	}
+
+	// Create both indexes (MongoDB will skip if already exist)
+	_, err1 := NotificationsCollection.Indexes().CreateOne(ctx, indexModel1)
+	if err1 != nil {
+		fmt.Printf(">>> NOTIFICATIONS_INDEX1_ERROR: %v\n", err1)
+	} else {
+		fmt.Println(">>> NOTIFICATIONS_INDEX1_CREATED: user_id_1_created_at_-1")
+	}
+
+	_, err2 := NotificationsCollection.Indexes().CreateOne(ctx, indexModel2)
+	if err2 != nil {
+		fmt.Printf(">>> NOTIFICATIONS_INDEX2_ERROR: %v\n", err2)
+	} else {
+		fmt.Println(">>> NOTIFICATIONS_INDEX2_CREATED: user_id_1_read_1_created_at_-1")
+	}
+}
+
+// createNotificationDismissalIndexes ensures indexes on notification_dismissals collection
+func createNotificationDismissalIndexes(ctx context.Context) {
+	if NotificationDismissalsCollection == nil {
+		fmt.Println(">>> NOTIFICATION_DISMISSALS_COLLECTION_NOT_INITIALIZED")
+		return
+	}
+
+	// Unique compound index: each user can dismiss a notification only once
+	indexModel := mongo.IndexModel{
+		Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "notification_id", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err := NotificationDismissalsCollection.Indexes().CreateOne(ctx, indexModel)
+	if err != nil {
+		fmt.Printf(">>> NOTIFICATION_DISMISSALS_INDEX_ERROR: %v\n", err)
+	} else {
+		fmt.Println(">>> NOTIFICATION_DISMISSALS_INDEX_CREATED: user_id_1_notification_id_1")
+	}
 }

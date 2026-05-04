@@ -654,9 +654,9 @@ export default function LearningPathEngine() {
             )}
           </div>
 
-          <div className="xl:col-span-4 xl:self-start">
-            <div className="mt-20 p-2 pb-6 pr-8 pt-4 lg:fixed xl:top-24 xl:max-h-[calc(100vh-120px)] xl:overflow-y-auto no-scrollbar">
-              <LearningOutline
+           <div className="xl:col-span-4">
+             <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto p-2 pb-6 pt-4 pr-8">
+               <LearningOutline
                 path={{
                   completedSteps: enhancedPath.completedSteps,
                   totalSteps: enhancedPath.totalSteps,

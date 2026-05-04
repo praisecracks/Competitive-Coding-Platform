@@ -14,6 +14,598 @@ export const algorithmPatterns: LearningTrack = {
   category: "Algorithms",
   topics: [
     {
+      id: "algo-foundations",
+      title: "What Is an Algorithm?",
+      description: "Understand what algorithms are and why they matter",
+      duration: "30 min",
+      subtopics: [
+        {
+          id: "foundations-what",
+          title: "What Is an Algorithm?",
+          content: {
+            explanation: [
+              "An algorithm is simply a step-by-step procedure for solving a problem or accomplishing a task. Think of it like a cooking recipe: you follow specific steps in a specific order to get a predictable result.",
+              "",
+              "Every computer program is built from algorithms, from the simple (finding the largest number in a list) to the complex (recommending videos on YouTube).",
+              "",
+              "**Key properties of algorithms:**",
+              "1. **Input** — receives data to work with",
+              "2. **Output** — produces a result",
+              "3. **Definiteness** — each step is clear and unambiguous",
+              "4. **Finiteness** — completes in a reasonable number of steps",
+              "5. **Correctness** — produces the right answer",
+              "",
+              "Real-world examples you use daily:",
+              "- Following directions on Google Maps",
+              "- Sorting your email by date",
+              "- Searching for a contact in your phone"
+            ],
+            example: {
+              title: "A Simple Algorithm: Finding the Largest Number",
+              code: `// Algorithm: Find the maximum number in an array
+// Steps:
+// 1. Assume the first number is the largest
+// 2. Look at each remaining number
+// 3. If you find a larger number, update your assumption
+// 4. After checking all numbers, return the largest
+
+function findMax(numbers) {
+    // Step 1: Start with first number
+    let max = numbers[0];
+    
+    // Step 2: Check each number
+    for (let i = 1; i < numbers.length; i++) {
+        // Step 3: If we find a larger number, update max
+        if (numbers[i] > max) {
+            max = numbers[i];
+        }
+    }
+    
+    // Step 4: Return the result
+    return max;
+}
+
+console.log(findMax([3, 7, 2, 9, 1]));  // 9
+console.log(findMax([-5, -2, -8]));     // -2`,
+              explanation: "This algorithm follows a simple step-by-step process: assume the first element is max, then check each element, updating the max whenever a larger value is found."
+            },
+            practice: "Write an algorithm that finds the smallest (minimum) number in an array using the same step-by-step thinking."
+          }
+        },
+        {
+          id: "foundations-why",
+          title: "Why Learn Algorithms?",
+          content: {
+            explanation: [
+              "Learning algorithms transforms how you think about programming. Here's why it matters:",
+              "",
+              "**1. Write Faster Code**",
+              "A good algorithm can be thousands of times faster than a bad one. An algorithm that takes 1 second on 1000 items might take 1000 days on 1,000,000 items if designed poorly!",
+              "",
+              "**2. Solve Problems Others Can't**",
+              "Many real-world problems (scheduling flights, routing deliveries, compressing files) require algorithmic thinking. The difference between 'not possible' and 'solved' is often the right algorithm.",
+              "",
+              "**3. Pass Technical Interviews**",
+              "Almost every software engineering interview tests algorithmic thinking. Understanding patterns makes these interviews approachable.",
+              "",
+              "**4. Write More Reliable Code**",
+              "Algorithms give you predictable, testable approaches. You'll know your code works because you understand WHY it works.",
+              "",
+              "**5. Think Like a Computer Scientist**",
+              "You'll start breaking down problems methodically instead of just 'trying things until something works.'"
+            ],
+            example: {
+              title: "The Power of Good Algorithms",
+              code: `// Bad algorithm: Linear search (checks each item one by one)
+function linearSearch(arr, target) {
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] === target) return i;
+    }
+    return -1;
+}
+// For 1 million items, worst case: 1,000,000 checks
+
+// Good algorithm: Binary search (eliminates half each time)
+function binarySearch(arr, target) {
+    let left = 0;
+    let right = arr.length - 1;
+    
+    while (left <= right) {
+        let mid = Math.floor((left + right) / 2);
+        if (arr[mid] === target) return mid;
+        if (arr[mid] < target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1;
+}
+// For 1 million items, worst case: only ~20 checks!
+
+const sortedNumbers = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+console.log(binarySearch(sortedNumbers, 13));`,
+              explanation: "Binary search is exponentially faster for large datasets because it eliminates half the possibilities each step."
+            },
+            practice: "Think of a task you do often. How could you do it faster using a 'divide and conquer' approach?"
+          }
+        }
+      ]
+    },
+    {
+      id: "algo-thinking",
+      title: "How to Think Like an Algorithm",
+      description: "Develop problem-solving strategies for algorithmic challenges",
+      duration: "45 min",
+      subtopics: [
+        {
+          id: "thinking-process",
+          title: "The 4-Step Problem Solving Process",
+          content: {
+            explanation: [
+              "When facing any algorithmic problem, follow this proven process:",
+              "",
+              "**Step 1: Understand the Problem** (2-5 minutes)",
+              "- Read the problem twice",
+              "- Identify inputs and expected outputs",
+              "- Ask: What are the constraints? Edge cases?",
+              "",
+              "**Step 2: Plan Your Approach** (5-10 minutes)",
+              "- Brainstorm possible solutions",
+              "- Start with a brute force approach",
+              "- Look for patterns or simpler versions",
+              "",
+              "**Step 3: Implement the Solution** (10-20 minutes)",
+              "- Start with the simplest working version",
+              "- Test as you go",
+              "- Use meaningful variable names",
+              "",
+              "**Step 4: Review and Optimize** (5 minutes)",
+              "- Does it handle all edge cases?",
+              "- Can it be faster? Use less memory?",
+              "- Is the code readable?"
+            ],
+            example: {
+              title: "Applying the Process: Two Sum",
+              code: `// Problem: Given an array and a target sum, find two numbers that add to target
+// Return their indices (or null if none exist)
+
+// STEP 1: Understand - Input: [2, 7, 11, 15], target 9 -> Output: [0, 1]
+
+// STEP 2: Plan - Check every pair (slow but works first)
+
+// STEP 3: Implement
+function twoSumBruteForce(nums, target) {
+    for (let i = 0; i < nums.length; i++) {
+        for (let j = i + 1; j < nums.length; j++) {
+            if (nums[i] + nums[j] === target) {
+                return [i, j];
+            }
+        }
+    }
+    return null;
+}
+
+// STEP 4: Optimize - Use a hash map
+function twoSumOptimized(nums, target) {
+    const seen = {};
+    
+    for (let i = 0; i < nums.length; i++) {
+        const complement = target - nums[i];
+        
+        if (seen[complement] !== undefined) {
+            return [seen[complement], i];
+        }
+        
+        seen[nums[i]] = i;
+    }
+    return null;
+}
+
+console.log(twoSumBruteForce([2, 7, 11, 15], 9));
+console.log(twoSumOptimized([2, 7, 11, 15], 9));`,
+              explanation: "We transformed a brute force solution into an optimized one using a hash map. The first is simple, the second is faster."
+            },
+            practice: "Use the 4-step process to solve: Given a string, find if it contains the same number of vowels and consonants."
+          }
+        },
+        {
+          id: "thinking-debug",
+          title: "Debugging Algorithmic Thinking",
+          content: {
+            explanation: [
+              "Even experienced programmers get stuck. Here's how to debug your algorithmic thinking:",
+              "",
+              "**Trace Through with Small Examples**",
+              "Pick a tiny input and manually step through your code. Write down variable values at each step.",
+              "",
+              "**Use Console Logging Strategically**",
+              "Print key variables at important moments. Don't overdo it — log only what matters.",
+              "",
+              "**Test Edge Cases First**",
+              "Most bugs hide at the edges: empty arrays, single elements, duplicate values, negative numbers.",
+              "",
+              "**Explain It to Someone (or a Rubber Duck)**",
+              "Talking through your logic often reveals the flaw.",
+              "",
+              "**Try a Different Approach**",
+              "If stuck for 20+ minutes, step back. Could there be a simpler solution?"
+            ],
+            example: {
+              title: "Debugging Example: Off-by-One Errors",
+              code: `// BUGGY CODE: Trying to reverse an array in-place
+function reverseArrayBuggy(arr) {
+    for (let i = 0; i < arr.length; i++) {
+        let temp = arr[i];
+        arr[i] = arr[arr.length - 1 - i];
+        arr[arr.length - 1 - i] = temp;
+    }
+    return arr;
+}
+// With [1,2,3,4]: swaps twice, returns original!
+
+// FIXED CODE: Only go halfway
+function reverseArrayFixed(arr) {
+    for (let i = 0; i < Math.floor(arr.length / 2); i++) {
+        let temp = arr[i];
+        arr[i] = arr[arr.length - 1 - i];
+        arr[arr.length - 1 - i] = temp;
+    }
+    return arr;
+}
+
+console.log(reverseArrayFixed([1, 2, 3, 4]));  // [4, 3, 2, 1]
+console.log(reverseArrayFixed([1, 2, 3]));     // [3, 2, 1]`,
+              explanation: "Tracing with a small example revealed the bug: the loop swapped elements twice because it went all the way to the end. The fix is to only go halfway."
+            },
+            practice: "Find and fix the bug in code that's supposed to find the first non-repeating character in a string."
+          }
+        }
+      ]
+    },
+    {
+      id: "algo-complexity",
+      title: "Time and Space Complexity Basics",
+      description: "Understand how to measure algorithm efficiency",
+      duration: "50 min",
+      subtopics: [
+        {
+          id: "complexity-big-o",
+          title: "Introduction to Big O Notation",
+          content: {
+            explanation: [
+              "Big O notation describes how an algorithm's runtime grows as input size increases. It's our language for comparing algorithm efficiency.",
+              "",
+              "**The Most Common Complexities (from best to worst):**",
+              "",
+              "**O(1) - Constant Time** - Takes the same time regardless of input size. Example: accessing array[0]",
+              "",
+              "**O(log n) - Logarithmic Time** - Grows slowly as input grows. Example: Binary search",
+              "",
+              "**O(n) - Linear Time** - Time grows proportionally with input. Example: Finding max in array",
+              "",
+              "**O(n log n) - Linearithmic Time** - Slightly worse than linear. Example: Efficient sorting",
+              "",
+              "**O(n²) - Quadratic Time** - Time grows with the square of input. Example: Nested loops",
+              "",
+              "**O(2ⁿ) - Exponential Time** - Very fast growth. Usually too slow for large inputs."
+            ],
+            example: {
+              title: "Comparing Time Complexities Visually",
+              code: `// O(1) - Constant
+function getFirstElement(arr) {
+    return arr[0];
+}
+
+// O(n) - Linear
+function findMax(arr) {
+    let max = arr[0];
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] > max) max = arr[i];
+    }
+    return max;
+}
+
+// O(n²) - Quadratic
+function findAllPairs(arr) {
+    const pairs = [];
+    for (let i = 0; i < arr.length; i++) {
+        for (let j = i + 1; j < arr.length; j++) {
+            pairs.push([arr[i], arr[j]]);
+        }
+    }
+    return pairs;
+}
+
+function demonstrateComplexity() {
+    const sizes = [10, 100, 500];
+    console.log("n\\tO(n)\\tO(n²)\\tDifference");
+    for (let n of sizes) {
+        console.log(\`\${n}\\t\${n}\\t\${n*n}\\t\${(n*n)/n}x\`);
+    }
+}
+demonstrateComplexity();`,
+              explanation: "For 500 items, O(n²) does 250,000 operations while O(n) does only 500 — 500 times more work!"
+            },
+            practice: "What's the time complexity of finding the intersection of two arrays using nested loops? Can you think of a faster approach?"
+          }
+        },
+        {
+          id: "complexity-space",
+          title: "Space Complexity",
+          content: {
+            explanation: [
+              "Space complexity measures how much extra memory an algorithm needs. Sometimes faster algorithms use more memory — you trade space for time.",
+              "",
+              "**Common Space Complexities:**",
+              "",
+              "**O(1) - Constant Space** - Uses the same amount of memory regardless of input. Modifying the input array in-place is O(1).",
+              "",
+              "**O(n) - Linear Space** - Creates a copy or data structure that grows with input.",
+              "",
+              "**O(n²) - Quadratic Space** - Creates a 2D structure like an n×n matrix.",
+              "",
+              "**When to Care About Space:**",
+              "- Working with limited memory (mobile devices, embedded systems)",
+              "- Processing huge datasets that might not fit in memory",
+              "- When interviewers explicitly ask for in-place solutions"
+            ],
+            example: {
+              title: "Space vs Time Trade-off",
+              code: `// Time-efficient, but uses O(n) space
+function hasDuplicateTimeOptimized(arr) {
+    const seen = {};
+    for (let num of arr) {
+        if (seen[num]) return true;
+        seen[num] = true;
+    }
+    return false;
+}
+
+// Space-efficient, but slower
+function hasDuplicateSpaceOptimized(arr) {
+    arr.sort();
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] === arr[i - 1]) return true;
+    }
+    return false;
+}
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 5];
+console.log(hasDuplicateTimeOptimized(data));   // true (faster)
+console.log(hasDuplicateSpaceOptimized([...data])); // true (saves memory)`,
+              explanation: "The first solution is faster but uses more memory. The second uses less memory but is slower. The 'best' choice depends on your constraints."
+            },
+            practice: "Write a function that reverses an array in-place (O(1) extra space) instead of creating a new reversed array (O(n) space)."
+          }
+        }
+      ]
+    },
+    {
+      id: "algo-arrays-basics",
+      title: "Arrays and Step-by-Step Problem Solving",
+      description: "Master array manipulation and systematic problem solving",
+      duration: "55 min",
+      subtopics: [
+        {
+          id: "arrays-traversal",
+          title: "Array Traversal Patterns",
+          content: {
+            explanation: [
+              "Arrays are the foundation of most algorithm problems. Mastering array traversal is your first big step.",
+              "",
+              "**Basic Traversal Patterns:**",
+              "",
+              "**1. Forward Traversal** — Start to end. Use for: finding max, sum, average",
+              "",
+              "**2. Backward Traversal** — End to start. Use for: reverse operations",
+              "",
+              "**3. Skipping Elements** — Every k-th element. Use for: sampling",
+              "",
+              "**4. Alternating Directions** — Left, right, left, right. Use for: zigzag patterns",
+              "",
+              "**Pro tip:** Always consider if you can solve with ONE traversal before adding nested loops."
+            ],
+            example: {
+              title: "Different Array Traversal Ways",
+              code: `const fruits = ["apple", "banana", "cherry", "date", "elderberry"];
+
+// 1. Forward Traversal (most common)
+for (let i = 0; i < fruits.length; i++) {
+    console.log(fruits[i]);
+}
+
+// 2. Backward Traversal
+for (let i = fruits.length - 1; i >= 0; i--) {
+    console.log(fruits[i]);
+}
+
+// 3. Every 2nd element (skip one)
+for (let i = 0; i < fruits.length; i += 2) {
+    console.log(fruits[i]);
+}
+
+// 4. While loop traversal (more flexible)
+let i = 0;
+while (i < fruits.length && fruits[i] !== "cherry") {
+    console.log(fruits[i]);
+    i++;
+}
+
+// Real-world example: Finding running total
+function runningSum(arr) {
+    const result = [];
+    let sum = 0;
+    for (let i = 0; i < arr.length; i++) {
+        sum += arr[i];
+        result.push(sum);
+    }
+    return result;
+}
+
+console.log(runningSum([1, 2, 3, 4]));  // [1, 3, 6, 10]`,
+              explanation: "Different traversal patterns serve different purposes. Forward for accumulation, backward for reverse operations, while loops for early stopping."
+            },
+            practice: "Write a function that alternates between taking from the front and back of an array until it's empty. Input: [1,2,3,4,5] → Output: [1,5,2,4,3]"
+          }
+        },
+        {
+          id: "arrays-two-pointer",
+          title: "Two Pointers on Arrays",
+          content: {
+            explanation: [
+              "Two pointers is your first powerful pattern for array problems. It's like having two fingers pointing at different positions.",
+              "",
+              "**Why it's powerful:** Many nested loop solutions (O(n²)) become single-pass (O(n)) with two pointers.",
+              "",
+              "**Common Two Pointer Setups:**",
+              "",
+              "**1. Opposite Ends** — One at start, one at end, moving toward each other. Great for: palindrome checking, reversing",
+              "",
+              "**2. Same Direction (Slow & Fast)** — Both start at beginning, one moves faster. Great for: removing duplicates, finding middle",
+              "",
+              "**3. Window Pointers** — Left and right defining a subarray (preview of sliding window)"
+            ],
+            example: {
+              title: "Two Pointers: Opposite Ends",
+              code: `// Check if array is palindrome
+function isPalindromeArray(arr) {
+    let left = 0;
+    let right = arr.length - 1;
+    
+    while (left < right) {
+        if (arr[left] !== arr[right]) return false;
+        left++;
+        right--;
+    }
+    return true;
+}
+
+console.log(isPalindromeArray([1, 2, 3, 2, 1]));  // true
+
+// Reverse array in-place
+function reverseArray(arr) {
+    let left = 0;
+    let right = arr.length - 1;
+    
+    while (left < right) {
+        [arr[left], arr[right]] = [arr[right], arr[left]];
+        left++;
+        right--;
+    }
+    return arr;
+}
+
+// Find pair with target sum in sorted array
+function findPairWithSum(sortedArr, target) {
+    let left = 0;
+    let right = sortedArr.length - 1;
+    
+    while (left < right) {
+        const sum = sortedArr[left] + sortedArr[right];
+        if (sum === target) return [sortedArr[left], sortedArr[right]];
+        if (sum < target) left++;
+        else right--;
+    }
+    return null;
+}
+
+const numbers = [1, 3, 5, 7, 9, 11];
+console.log(findPairWithSum(numbers, 12));  // [5, 7]`,
+              explanation: "Two pointers from opposite ends solves problems that would otherwise require nested loops. Each element is processed at most once."
+            },
+            practice: "Use two pointers to move all zeros to the end of an array while preserving the order of non-zero elements. Input: [0,1,0,3,12] → Output: [1,3,12,0,0]"
+          }
+        }
+      ]
+    },
+    {
+      id: "algo-pattern-recognition",
+      title: "Pattern Recognition Basics",
+      description: "Learn to recognize which algorithmic pattern fits which problem",
+      duration: "40 min",
+      subtopics: [
+        {
+          id: "recognition-signals",
+          title: "Problem Signals for Common Patterns",
+          content: {
+            explanation: [
+              "The key skill for algorithmic problem solving is recognizing which pattern to apply. Here are the signals:",
+              "",
+              "**Two Pointers Signals:**",
+              "- Problems about pairs in sorted arrays",
+              "- Palindrome checking",
+              "",
+              "**Sliding Window Signals:**",
+              "- 'Contiguous subarray' or 'substring'",
+              "- 'Maximum/minimum sum of K elements'",
+              "",
+              "**Binary Search Signals:**",
+              "- Input is sorted (or you can sort it)",
+              "- 'Find if element exists'",
+              "",
+              "**Prefix Sum Signals:**",
+              "- 'Sum of subarray queries'",
+              "- 'Subarray sum equals K'",
+              "",
+              "**Recursion/Backtracking Signals:**",
+              "- 'All possible combinations/permutations'",
+              "- 'Find all paths'"
+            ],
+            example: {
+              title: "Pattern Recognition in Action",
+              code: `// Problem 1: "Find the longest subarray with sum <= K"
+// Signal: 'subarray' + 'maximum length' + 'condition'
+// Pattern: Sliding Window!
+function longestSubarrayWithSumLimit(arr, k) {
+    let left = 0, sum = 0, maxLen = 0;
+    for (let right = 0; right < arr.length; right++) {
+        sum += arr[right];
+        while (sum > k) sum -= arr[left++];
+        maxLen = Math.max(maxLen, right - left + 1);
+    }
+    return maxLen;
+}
+
+// Problem 2: "Check if a string is a palindrome after removing at most one character"
+// Signal: 'palindrome' + 'compare from ends'
+// Pattern: Two Pointers with a skip!
+function validPalindromeAfterRemoval(s) {
+    let left = 0, right = s.length - 1;
+    while (left < right) {
+        if (s[left] !== s[right]) {
+            return isPalindromeRange(s, left + 1, right) || 
+                   isPalindromeRange(s, left, right - 1);
+        }
+        left++; right--;
+    }
+    return true;
+}
+function isPalindromeRange(s, left, right) {
+    while (left < right) if (s[left++] !== s[right--]) return false;
+    return true;
+}
+
+// Problem 3: "Find number of contiguous subarrays with sum = K"
+// Signal: 'subarray sum' + 'equals K' + 'need count'
+// Pattern: Prefix Sum + Hash Map!
+function subarraySumEqualsK(nums, k) {
+    let count = 0, sum = 0;
+    const prefixCount = {0: 1};
+    for (let num of nums) {
+        sum += num;
+        if (prefixCount[sum - k]) count += prefixCount[sum - k];
+        prefixCount[sum] = (prefixCount[sum] || 0) + 1;
+    }
+    return count;
+}
+
+console.log(subarraySumEqualsK([1, 1, 1], 2));  // 2`,
+              explanation: "Each problem's description contains keywords that point to a specific pattern. Learning these signals helps you know which tool to use before writing code."
+            },
+            practice: "Given a problem, identify which pattern(s) might work: 'Find the smallest subarray that contains all elements from a target set.'"
+          }
+        }
+      ]
+    },
+    {
       id: "algo-two-pointers",
       title: "Two Pointers",
       description: "Optimize array traversal with two pointers",
@@ -36,26 +628,27 @@ export const algorithmPatterns: LearningTrack = {
             ],
             example: {
               title: "Two Pointers - Palindrome",
-              code: `func isPalindrome(s string) bool {
-    left, right := 0, len(s)-1
-    for left < right {
-        if s[left] != s[right] {
-            return false
+              code: `function isPalindrome(str) {
+    let left = 0;
+    let right = str.length - 1;
+    
+    while (left < right) {
+        if (str[left] !== str[right]) {
+            return false;
         }
-        left++
-        right--
+        left++;
+        right--;
     }
-    return true
+    return true;
 }
 
-// Test
-func main() {
-    fmt.Println(isPalindrome("racecar"))  // true
-    fmt.Println(isPalindrome("hello"))    // false
-}`,
-              explanation: "This Go function uses two pointers starting from opposite ends of the string to check if it's a palindrome in O(n) time and O(1) space."
+console.log(isPalindrome("racecar"));  // true
+console.log(isPalindrome("hello"));    // false
+console.log(isPalindrome("a"));        // true
+console.log(isPalindrome(""));         // true`,
+              explanation: "This JavaScript function uses two pointers starting from opposite ends of the string to check if it's a palindrome in O(n) time and O(1) space."
             },
-            practice: "Write a function to check if a sorted array has two elements that sum to target."
+            practice: "Write a function that finds two numbers in a sorted array that sum to a target using the two pointers approach."
           }
         },
         {
@@ -66,39 +659,35 @@ func main() {
               "Both pointers start from the beginning, but one moves faster. This is also called 'slow and fast pointers' or 'runner technique'.",
               "",
               "Use cases:",
-              "1. **Finding middle of linked list** — fast reaches end, slow is at middle",
-              "2. **Removing duplicates** — fast finds unique elements, slow builds result",
-              "3. **Finding cycle start** — in linked list cycle detection",
+              "1. **Removing duplicates** — fast finds unique elements, slow builds result",
+              "2. **Finding middle of array** — fast moves twice as fast to find middle",
+              "3. **Moving zeros** — slow tracks position for next non-zero",
               "",
-              "Why it works: The relative speed creates a predictable gap. Fast pointer moves twice as fast, so when fast reaches end, slow is exactly at the middle."
+              "Why it works: The relative speed creates a predictable gap."
             ],
             example: {
               title: "Remove Duplicates from Sorted Array",
-              code: `func removeDuplicates(nums []int) int {
-    if len(nums) == 0 {
-        return 0
-    }
-    slow := 0
-    // fast looks for new elements
-    for fast := 1; fast < len(nums); fast++ {
-        if nums[fast] != nums[slow] {
-            slow++
-            nums[slow] = nums[fast]
+              code: `function removeDuplicates(nums) {
+    if (nums.length === 0) return 0;
+    
+    let slow = 0;
+    
+    for (let fast = 1; fast < nums.length; fast++) {
+        if (nums[fast] !== nums[slow]) {
+            slow++;
+            nums[slow] = nums[fast];
         }
     }
-    return slow + 1
+    return slow + 1;
 }
 
-// Test
-func main() {
-    nums := []int{1, 1, 2, 2, 3, 3, 3, 4}
-    length := removeDuplicates(nums)
-    fmt.Println("Length:", length)  // 4
-    fmt.Println(nums[:length])      // [1, 2, 3, 4]
-}`,
-              explanation: "This Go function uses two pointers to remove duplicates from a sorted array in-place, maintaining O(n) time complexity and O(1) space complexity."
+let nums = [1, 1, 2, 2, 3, 3, 3, 4];
+let length = removeDuplicates(nums);
+console.log("Length:", length);
+console.log("First", length, "elements:", nums.slice(0, length));`,
+              explanation: "This function uses two pointers to remove duplicates from a sorted array in-place, maintaining O(n) time and O(1) space."
             },
-            practice: "Implement finding the middle node of a linked list using slow/fast pointers."
+            practice: "Implement finding the middle element of an array using slow/fast pointers."
           }
         },
         {
@@ -117,68 +706,23 @@ func main() {
             ],
             example: {
               title: "Partition Odd and Even",
-              code: `func exchange(nums []int) []int {
-    // Put all even numbers first, then odd
-    left := 0
-    for right := 0; right < len(nums); right++ {
-        if nums[right]%2 == 0 {
-            nums[left], nums[right] = nums[right], nums[left]
-            left++
+              code: `function partitionEvenOdd(nums) {
+    let left = 0;
+    
+    for (let right = 0; right < nums.length; right++) {
+        if (nums[right] % 2 === 0) {
+            [nums[left], nums[right]] = [nums[right], nums[left]];
+            left++;
         }
     }
-    return nums
+    return nums;
 }
 
-// Test
-func main() {
-    nums := []int{1, 2, 3, 4, 5, 6}
-    fmt.Println(exchange(nums))  // [2, 4, 6, 1, 3, 5]
-}`,
-              explanation: "This Go function uses two pointers to partition an array, placing all even numbers before odd numbers while maintaining relative order within each group."
+let nums = [1, 2, 3, 4, 5, 6];
+console.log(partitionEvenOdd(nums));`,
+              explanation: "This function uses two pointers to partition an array, placing all even numbers before odd numbers."
             },
             practice: "Partition an array so all negative numbers come before positive ones."
-          }
-        },
-        {
-          id: "tp-sentinel",
-          title: "Sentinel Value Pattern",
-          content: {
-            explanation: [
-              "Use a sentinel value to simplify boundary conditions. This avoids extra checks inside loops.",
-              "",
-              "Common use:",
-              "1. Finding the last occurrence — move sentinel to end",
-              "2. Two-pointer with special marker",
-              "3. Simplifying loop conditions",
-              "",
-              "The sentinel acts as a guaranteed condition you can always count on."
-            ],
-            example: {
-              title: "Find Last Occurrence",
-              code: `// Instead of checking bounds in loop, add sentinel
-func findLast(nums []int, target int) int {
-    // Add sentinel at end
-    nums = append(nums, -1)  
-    
-    i := 0
-    for nums[i] != target {
-        i++
-    }
-    // If not found (sentinel), return -1
-    if i == len(nums)-1 {
-        return -1
-    }
-    return i
-}
-
-// Test
-func main() {
-    nums := []int{1, 2, 3, 2, 1}
-    fmt.Println(findLast(nums, 2))  // 3
-}`,
-              explanation: "This Go function uses a sentinel value (-1) to eliminate bounds checking in the loop, making the code simpler and potentially more efficient."
-            },
-            practice: "Use a sentinel to simplify finding maximum in an array."
           }
         }
       ]
@@ -205,33 +749,25 @@ func main() {
             ],
             example: {
               title: "Maximum Sum Subarray of Size K",
-              code: `func maxSum(arr []int, k int) int {
-    if len(arr) < k {
-        return 0
-    }
-    // Calculate first window
-    window := 0
-    for i := 0; i < k; i++ {
-        window += arr[i]
-    }
-    maxSum := window
+              code: `function maxSumSubarray(arr, k) {
+    if (arr.length < k) return 0;
     
-    // Slide the window
-    for i := k; i < len(arr); i++ {
-        window += arr[i] - arr[i-k]  // add new, remove old
-        if window > maxSum {
-            maxSum = window
-        }
+    let windowSum = 0;
+    for (let i = 0; i < k; i++) {
+        windowSum += arr[i];
     }
-    return maxSum
+    let maxSum = windowSum;
+    
+    for (let i = k; i < arr.length; i++) {
+        windowSum += arr[i] - arr[i - k];
+        maxSum = Math.max(maxSum, windowSum);
+    }
+    return maxSum;
 }
 
-// Test
-func main() {
-    arr := []int{2, 1, 5, 1, 3, 2}
-    fmt.Println(maxSum(arr, 3))  // 9 (5+1+3)
-}`,
-              explanation: "This Go function uses a sliding window approach to find the maximum sum of any k consecutive elements in O(n) time complexity."
+const arr = [2, 1, 5, 1, 3, 2];
+console.log(maxSumSubarray(arr, 3));  // 9`,
+              explanation: "This function uses a sliding window to find the maximum sum of any k consecutive elements in O(n) time."
             },
             practice: "Find the maximum average of any k consecutive elements in an array."
           }
@@ -255,33 +791,27 @@ func main() {
             ],
             example: {
               title: "Minimum Size Subarray Sum",
-              code: `func minSubArrayLen(target int, nums []int) int {
-    left, sum := 0, 0
-    minLen := len(nums) + 1
+              code: `function minSubArrayLen(target, nums) {
+    let left = 0;
+    let sum = 0;
+    let minLen = Infinity;
     
-    for right := 0; right < len(nums); right++ {
-        sum += nums[right]
+    for (let right = 0; right < nums.length; right++) {
+        sum += nums[right];
         
-        // Try shrinking while sum >= target
-        for sum >= target && left <= right {
-            minLen = min(minLen, right-left+1)
-            sum -= nums[left]
-            left++
+        while (sum >= target && left <= right) {
+            minLen = Math.min(minLen, right - left + 1);
+            sum -= nums[left];
+            left++;
         }
     }
     
-    if minLen > len(nums) {
-        return 0
-    }
-    return minLen
+    return minLen === Infinity ? 0 : minLen;
 }
 
-// Test
-func main() {
-    nums := []int{2, 3, 1, 2, 4, 3}
-    fmt.Println(minSubArrayLen(7, nums))  // 2 (3+4)
-}`,
-              explanation: "This Go function uses a sliding window approach to find the minimum length subarray that sums to at least the target value."
+const nums = [2, 3, 1, 2, 4, 3];
+console.log(minSubArrayLen(7, nums));  // 2`,
+              explanation: "This function finds the minimum length subarray that sums to at least the target using a variable-size sliding window."
             },
             practice: "Find the length of the longest substring without repeating characters."
           }
@@ -297,91 +827,39 @@ func main() {
               "2. **Longest substring with k distinct**",
               "3. **String anagrams** — find all anagram groups",
               "",
-              "Use HashMap/HashSet to track characters in the window."
+              "Use a Map or object to track characters in the window."
             ],
             example: {
-              title: "Longest Substring with K Distinct",
-              code: `func lengthOfLongestSubstring(s string, k int) int {
-    count := make(map[rune]int)
-    left, maxLen := 0, 0
+              title: "Longest Substring with K Distinct Characters",
+              code: `function longestSubstringKDistinct(s, k) {
+    if (k === 0 || s.length === 0) return 0;
     
-    for right, ch := range s {
-        count[ch]++
+    const charCount = {};
+    let left = 0;
+    let maxLen = 0;
+    
+    for (let right = 0; right < s.length; right++) {
+        const rightChar = s[right];
+        charCount[rightChar] = (charCount[rightChar] || 0) + 1;
         
-        // Shrink if we have more than k distinct
-        for len(count) > k {
-            leftCh := rune(s[left])
-            count[leftCh]--
-            if count[leftCh] == 0 {
-                delete(count, leftCh)
+        while (Object.keys(charCount).length > k) {
+            const leftChar = s[left];
+            charCount[leftChar]--;
+            if (charCount[leftChar] === 0) {
+                delete charCount[leftChar];
             }
-            left++
+            left++;
         }
         
-        maxLen = max(maxLen, right-left+1)
+        maxLen = Math.max(maxLen, right - left + 1);
     }
-    return maxLen
+    return maxLen;
 }
 
-// Test
-func main() {
-    fmt.Println(lengthOfLongestSubstring("abcbdc", 2))  // 4 ("bcbd")
-}`,
-              explanation: "This Go function uses a sliding window with a hash map to find the longest substring containing at most k distinct characters."
+console.log(longestSubstringKDistinct("abcbdbdbb", 2));`,
+              explanation: "This uses a sliding window with a character frequency map to find the longest substring containing at most k distinct characters."
             },
             practice: "Find all anagram starting indices in a string."
-          }
-        },
-        {
-          id: "sw-circular",
-          title: "Circular Window",
-          content: {
-            explanation: [
-              "Some problems require wrapping around the end of the array to the beginning. This is common for:",
-              "",
-              "1. Maximum sum circular subarray",
-              "2. Rotated arrays",
-              "3. Circular string patterns",
-              "",
-              "For circular, either:",
-              "• Duplicate the array (allow window to cross boundary), or",
-              "• Use modulo arithmetic"
-            ],
-            example: {
-              title: "Maximum Sum Circular Subarray",
-              code: `func maxCircularSum(arr []int) int {
-    // Case 1: Standard max subarray
-    maxKadane := arr[0]
-    current, total := arr[0], arr[0]
-    
-    for i := 1; i < len(arr); i++ {
-        current = max(arr[i], current+arr[i])
-        maxKadane = max(maxKadane, current)
-        total += arr[i]
-    }
-    
-    // Case 2: All negative
-    if maxKadane < 0 {
-        return maxKadane
-    }
-    
-    // Case 3: Use circular (total - minKadane)
-    minKadane := arr[0]
-    for i := 1; i < len(arr); i++ {
-        current = min(arr[i], current+arr[i])
-        minKadane = min(minKadane, current)
-    }
-    
-    return max(maxKadane, total-minKadane)
-}
-
-// Test
-func main() {
-    fmt.Println(maxCircularSum([]int{5, -3, 2}))  // 7
-}`,
-              explanation: "This Go function finds the maximum sum of a subarray in a circular array by considering three cases: standard Kadane's algorithm, all negative numbers, and circular subarrays."
-            },
-            practice: "Find the maximum sum of k consecutive elements in a circular array."
           }
         }
       ]
@@ -405,34 +883,28 @@ func main() {
               "3. If target is larger, search right half",
               "4. Repeat until found or space is empty",
               "",
-              "Time: O(log n) — every iteration halves the search space. This is incredibly powerful: 1 million items takes only ~20 steps!"
+              "Time: O(log n) — every iteration halves the search space. 1 million items takes only ~20 steps!"
             ],
             example: {
               title: "Basic Binary Search",
-              code: `func binarySearch(nums []int, target int) int {
-    left, right := 0, len(nums)-1
+              code: `function binarySearch(nums, target) {
+    let left = 0;
+    let right = nums.length - 1;
     
-    for left <= right {
-        mid := left + (right-left)/2  // avoid overflow
+    while (left <= right) {
+        const mid = Math.floor(left + (right - left) / 2);
         
-        if nums[mid] == target {
-            return mid
-        } else if nums[mid] < target {
-            left = mid + 1
-        } else {
-            right = mid - 1
-        }
+        if (nums[mid] === target) return mid;
+        if (nums[mid] < target) left = mid + 1;
+        else right = mid - 1;
     }
-    return -1  // not found
+    return -1;
 }
 
-// Test
-func main() {
-    nums := []int{1, 3, 5, 7, 9}
-    fmt.Println(binarySearch(nums, 5))   // 2
-    fmt.Println(binarySearch(nums, 6))   // -1
-}`,
-              explanation: "This Go function implements the classic binary search algorithm to find a target value in a sorted array, returning the index or -1 if not found."
+const nums = [1, 3, 5, 7, 9];
+console.log(binarySearch(nums, 5));   // 2
+console.log(binarySearch(nums, 6));   // -1`,
+              explanation: "This classic binary search algorithm finds a target value in a sorted array, returning the index or -1 if not found."
             },
             practice: "Implement binary search that returns true/false instead of index."
           }
@@ -444,50 +916,39 @@ func main() {
             explanation: [
               "Many problems require finding boundaries, not exact matches. The key variation is deciding which half to discard:",
               "",
-              "**Find left boundary** (first occurrence):",
-              "- When nums[mid] == target, go LEFT (right = mid-1)",
+              "**Find left boundary** (first occurrence): When nums[mid] == target, go LEFT (right = mid - 1)",
               "",
-              "**Find right boundary** (last occurrence):",
-              "- When nums[mid] == target, go RIGHT (left = mid+1)",
+              "**Find right boundary** (last occurrence): When nums[mid] == target, go RIGHT (left = mid + 1)",
               "",
               "**Rotated array**: Determine which half is sorted, then decide based on where target falls."
             ],
             example: {
               title: "Find First and Last Position",
-              code: `func searchRange(nums []int, target int) []int {
-    start := findBound(nums, target, true)
-    end := findBound(nums, target, false)
-    return []int{start, end}
+              code: `function searchRange(nums, target) {
+    return [findBound(nums, target, true), findBound(nums, target, false)];
 }
 
-func findBound(nums []int, target int, isFirst bool) int {
-    left, right := 0, len(nums)-1
-    bound := -1
+function findBound(nums, target, isFirst) {
+    let left = 0, right = nums.length - 1, bound = -1;
     
-    for left <= right {
-        mid := left + (right-left)/2
+    while (left <= right) {
+        const mid = Math.floor(left + (right - left) / 2);
         
-        if nums[mid] == target {
-            bound = mid
-            if isFirst {
-                right = mid - 1  // keep searching left
-            } else {
-                left = mid + 1  // keep searching right
-            }
-        } else if nums[mid] < target {
-            left = mid + 1
+        if (nums[mid] === target) {
+            bound = mid;
+            if (isFirst) right = mid - 1;
+            else left = mid + 1;
+        } else if (nums[mid] < target) {
+            left = mid + 1;
         } else {
-            right = mid - 1
+            right = mid - 1;
         }
     }
-    return bound
+    return bound;
 }
 
-// Test
-func main() {
-    fmt.Println(searchRange([]int{5, 7, 7, 7, 7, 8}, 7))  // [1, 4]
-}`,
-              explanation: "This Go function uses modified binary search to find the first and last positions of a target value in a sorted array, returning the range of indices."
+console.log(searchRange([5, 7, 7, 7, 7, 8], 7));  // [1, 4]`,
+              explanation: "This uses modified binary search to find the first and last positions of a target value in a sorted array."
             },
             practice: "Search in a rotated sorted array."
           }
@@ -507,686 +968,36 @@ func main() {
               "The pattern: Use binary search whenever monotonic (sorted) relationships exist."
             ],
             example: {
-              title: "Lower Bound",
-              code: `func lowerBound(nums []int, target int) int {
-    left, right := 0, len(nums)
-    
-    for left < right {
-        mid := left + (right-left)/2
-        if nums[mid] < target {
-            left = mid + 1
-        } else {
-            right = mid
-        }
+              title: "Lower Bound and Square Root",
+              code: `function lowerBound(nums, target) {
+    let left = 0, right = nums.length;
+    while (left < right) {
+        const mid = Math.floor(left + (right - left) / 2);
+        if (nums[mid] < target) left = mid + 1;
+        else right = mid;
     }
-    return left
+    return left;
 }
 
-// Test
-func main() {
-    nums := []int{1, 2, 3, 4, 5, 6}
-    fmt.Println(lowerBound(nums, 3))  // 2
-    fmt.Println(lowerBound(nums, 7))  // 6 (past end)
-}`,
-              explanation: "This Go function implements lower bound binary search to find the first position where the target could be inserted to maintain sorted order."
+function sqrtFloor(n) {
+    if (n < 2) return n;
+    let left = 1, right = Math.floor(n / 2);
+    while (left <= right) {
+        const mid = Math.floor(left + (right - left) / 2);
+        const square = mid * mid;
+        if (square === n) return mid;
+        if (square < n) left = mid + 1;
+        else right = mid - 1;
+    }
+    return right;
+}
+
+console.log(lowerBound([1, 2, 3, 4, 5, 6], 3));  // 2
+console.log(sqrtFloor(25));   // 5
+console.log(sqrtFloor(26));   // 5`,
+              explanation: "Binary search can find insertion positions and compute mathematical functions like square roots."
             },
-            practice: "Find the floor of square root of n using binary search."
-          }
-        },
-        {
-          id: "bs-bisect",
-          title: "Binary Search on Answer",
-          content: {
-            explanation: [
-              "Sometimes the answer isn't in the array — we need to find it by binary searching on possible answers. This is very powerful:",
-              "",
-              "1. Transform problem into a predicate",
-              "2. Binary search on the valid range",
-              "3. Check if mid satisfies the predicate",
-              "",
-              "Use for:",
-              "- Finding optimal value (minimum, maximum)",
-              "- Scheduling problems",
-              "- Capacity problems"
-            ],
-            example: {
-              title: "Aggressive Cows",
-              code: `func minDistance(cows int, positions []int) int {
-    sort.Ints(positions)
-    
-    left, right := 0, positions[len(positions)-1]
-    
-    for left < right {
-        mid := left + (right-left)/2
-        
-        if canPlace(cows, positions, mid) {
-            right = mid  // try smaller distance
-        } else {
-            left = mid + 1  // need larger distance
-        }
-    }
-    return left
-}
-
-func canPlace(cows int, positions []int, dist int) bool {
-    count := 1  // place first cow
-    lastPos := positions[0]
-    
-    for i := 1; i < len(positions); i++ {
-        if positions[i]-lastPos >= dist {
-            count++
-            lastPos = positions[i]
-            if count >= cows {
-                return true
-            }
-        }
-    }
-    return false
-}
-
-// Test  
-func main() {
-    positions := []int{1, 2, 4, 8, 9}
-    fmt.Println(minDistance(3, positions))  // 3
-}`,
-              explanation: "This Go function uses binary search on the answer space to find the minimum distance required to place cows in stalls such that no two cows are closer than this distance."
-            },
-            practice: "Find the minimum time needed to paint n boards if painters work at different speeds."
-          }
-        }
-      ]
-    },
-    {
-      id: "algo-dynamic-programming",
-      title: "Dynamic Programming",
-      description: "Optimize recursive solutions with memoization",
-      duration: "90 min",
-      subtopics: [
-        {
-          id: "dp-intro",
-          title: "Introduction to DP",
-          content: {
-            explanation: [
-              "Dynamic Programming (DP) solves problems by breaking them into overlapping subproblems and storing results to avoid recomputation.",
-              "",
-              "Two approaches:",
-              "1. **Top-down** (Memoization): Recursion + cache. Start big, break into smaller. Natural but can hit stack limits.",
-              "2. **Bottom-up** (Tabulation): Iterative + table. Start small, build up. More efficient but less intuitive.",
-              "",
-              "When to use DP:",
-              "- Optimal substructure: solution can be built from sub-solutions",
-              "- Overlapping subproblems: same subproblems solved multiple times"
-            ],
-            example: {
-              title: "Fibonacci Comparison",
-              code: `// Naive: O(2^n) - exponential!
-// func fib(n int) int {
-//     if n <= 1 { return n }
-//     return fib(n-1) + fib(n-2)
-// }
-
-
-// Memoization: O(n) - top-down
-func fibMemo(n int, memo map[int]int) int {
-    if n <= 1 { return n }
-    if val, ok := memo[n]; ok {
-        return val
-    }
-    memo[n] = fibMemo(n-1, memo) + fibMemo(n-2, memo)
-    return memo[n]
-}
-
-// Bottom-up: O(n) - tabulation
-func fibDP(n int) int {
-    if n <= 1 { return n }
-    dp := make([]int, n+1)
-    dp[0], dp[1] = 0, 1
-    for i := 2; i <= n; i++ {
-        dp[i] = dp[i-1] + dp[i-2]
-    }
-    return dp[n]
-}
-
-// Space optimized: O(1)
-func fibOptimized(n int) int {
-    if n <= 1 { return n }
-    prev, curr := 0, 1
-    for i := 2; i <= n; i++ {
-        prev, curr = curr, prev+curr
-    }
-    return curr
-}`,
-              explanation: "This Go code demonstrates different approaches to calculating Fibonacci numbers: naive exponential recursion, memoization (top-down DP), tabulation (bottom-up DP), and space-optimized DP."
-            },
-            practice: "Solve climbing stairs using DP."
-          }
-        },
-        {
-          id: "dp-1d",
-          title: "1D DP Problems",
-          content: {
-            explanation: [
-              "Many DP problems use a 1D array. The key is identifying the state:",
-              "",
-              "Common patterns:",
-              "1. **Last position matters**: arr[i] depends on arr[i-1]",
-              "2. **Include/exclude**: Max of taking or not taking element",
-              "3. **Build up**: dp[i] is solution for first i elements",
-              "",
-              "Questions to ask:",
-              "- What's the state (what does dp[i] represent)?",
-              "- What's the base case (dp[0])?",
-              "- How do transitions work?"
-            ],
-            example: {
-              title: "House Robber",
-              code: `// Can't rob two adjacent houses
-func rob(nums []int) int {
-    if len(nums) == 0 { return 0 }
-    if len(nums) == 1 { return max(0, nums[0]) }
-    
-    n := len(nums)
-    dp := make([]int, n)
-    dp[0] = nums[0]
-    dp[1] = max(nums[0], nums[1])
-    
-    for i := 2; i < n; i++ {
-        // Don't rob (dp[i-1]) or rob (nums[i] + dp[i-2])
-        dp[i] = max(dp[i-1], nums[i]+dp[i-2])
-    }
-    return dp[n-1]
-}
-
-// Space optimized
-func robOptimized(nums []int) int {
-    if len(nums) == 0 { return 0 }
-    prev, curr := 0, 0
-    
-    for i := 0; i < len(nums); i++ {
-        prev, curr = curr, max(curr, prev+nums[i])
-        prev = nums[i]  // actually need nums[i-1]...
-    }
-    return curr
-}`,
-              explanation: "This Go function solves the house robber problem using dynamic programming, where dp[i] represents the maximum amount that can be robbed from the first i houses without robbing adjacent houses."
-            },
-            practice: "Solve the coin change problem: minimum coins to make amount."
-          }
-        },
-        {
-          id: "dp-2d",
-          title: "2D DP Problems",
-          content: {
-            explanation: [
-              "Some problems need two dimensions:",
-              "",
-              "1. **Two sequences**: dp[i][j] for first i of one, first j of other",
-              "2. **With change**: before/after decision",
-              "3. **Grid path**: unique paths in matrix",
-              "",
-              "Common questions:",
-              "- Two strings (LCS, edit distance)",
-              "- Matrix problems",
-              "- Multiple states"
-            ],
-            example: {
-              title: "Longest Common Subsequence",
-              code: `func longestCommonSubsequence(s1, s2 string) int {
-    m, n := len(s1), len(s2)
-    dp := make([][]int, m+1)
-    for i := range dp {
-        dp[i] = make([]int, n+1)
-    }
-    
-    for i := 1; i <= m; i++ {
-        for j := 1; j <= n; j++ {
-            if s1[i-1] == s2[j-1] {
-                dp[i][j] = dp[i-1][j-1] + 1
-            } else {
-                dp[i][j] = max(dp[i-1][j], dp[i][j-1])
-            }
-        }
-    }
-    return dp[m][n]
-}
-
-// Test
-func main() {
-    fmt.Println(longestCommonSubsequence("abcde", "ace"))  // 3
-}`,
-              explanation: "This example demonstrates longest common subsequence.",
-            },
-            practice: "Solve edit distance: minimum operations to convert one string to another."
-          }
-        },
-        {
-          id: "dp-knapsack",
-          title: "Knapsack Problems",
-          content: {
-            explanation: [
-              "The classic knapsack problem:",
-              "Given weights and values, maximize value with weight limit.",
-              "",
-              "Variations:",
-              "1. **0/1 knapsack**: Each item used once",
-              "2. **Unbounded**: Each item used multiple times",
-              "3. **Subset sum**: Can we achieve target?",
-              "",
-              "DP approach: dp[i][w] = max value using first i items with weight limit w"
-            ],
-            example: {
-              title: "0/1 Knapsack",
-              code: `func knapsack(weights, values []int, capacity int) int {
-    n := len(weights)
-    dp := make([][]int, n+1)
-    for i := range dp {
-        dp[i] = make([]int, capacity+1)
-    }
-    
-    for i := 1; i <= n; i++ {
-        w, v := weights[i-1], values[i-1]
-        for cap := 1; cap <= capacity; cap++ {
-            if w <= cap {
-                dp[i][cap] = max(dp[i-1][cap], dp[i-1][cap-w]+v)
-            } else {
-                dp[i][cap] = dp[i-1][cap]
-            }
-        }
-    }
-    return dp[n][capacity]
-}
-
-// Test
-func main() {
-    weights := []int{2, 3, 4, 5}
-    values := []int{3, 4, 5, 6}
-    fmt.Println(knapsack(weights, values, 5))  // 7 (2+3)
-}`,
-              explanation: "This example demonstrates 0 / 1 knapsack.",
-            },
-            practice: "Solve subset sum: can we achieve target sum using array elements?"
-          }
-        }
-      ]
-    },
-    {
-      id: "algo-bfs-dfs",
-      title: "Graph Traversal",
-      description: "BFS and DFS for tree/graph problems",
-      duration: "75 min",
-      subtopics: [
-        {
-          id: "dfs-recursive",
-          title: "Depth-First Search",
-          content: {
-            explanation: [
-              "DFS explores as deep as possible before backtracking. Uses recursion (stack) or explicit stack.",
-              "",
-              "Three traversal orders:",
-              "1. **Preorder**: root, left, right — copy tree",
-              "2. **Inorder**: left, root, right — sorted BST",
-              "3. **Postorder**: left, right, root — delete tree",
-              "",
-              "Why DFS: Lower memory than BFS, easier to find paths, natural for recursion."
-            ],
-            example: {
-              title: "All Three Traversals",
-              code: `type TreeNode struct {
-    Val int
-    Left *TreeNode
-    Right *TreeNode
-}
-
-func preorder(root *TreeNode) []int {
-    if root == nil { return nil }
-    result := []int{}
-    result = append(result, root.Val)
-    result = append(result, preorder(root.Left)...)
-    result = append(result, preorder(root.Right)...)
-    return result
-}
-
-func inorder(root *TreeNode) []int {
-    if root == nil { return nil }
-    result := inorder(root.Left)
-    result = append(result, root.Val)
-    result = append(result, inorder(root.Right)...)
-    return result
-}
-
-func postorder(root *TreeNode) []int {
-    if root == nil { return nil }
-    result := postorder(root.Left)
-    result = append(result, postorder(root.Right)...)
-    result = append(result, root.Val)
-    return result
-}`,
-              explanation: "This example demonstrates all three traversals.",
-            },
-            practice: "Implement preorder traversal iteratively using a stack."
-          }
-        },
-        {
-          id: "bfs-level-order",
-          title: "Breadth-First Search",
-          content: {
-            explanation: [
-              "BFS explores level by level using a queue. Great for:",
-              "",
-              "1. **Shortest path** in unweighted graphs",
-              "2. **Level-by-level** processing",
-              "3. **Finding minimum** steps to target",
-              "",
-              "Algorithm:",
-              "1. Add start to queue",
-              "2. Process node, add neighbors to queue",
-              "3. Continue until queue empty or target found"
-            ],
-            example: {
-              title: "Level Order Traversal",
-              code: `func levelOrder(root *TreeNode) [][]int {
-    if root == nil { return nil }
-    
-    result := [][]int{}
-    queue := []*TreeNode{root}
-    
-    for len(queue) > 0 {
-        level := []int{}
-        size := len(queue)
-        
-        for i := 0; i < size; i++ {
-            node := queue[0]
-            queue = queue[1:]
-            level = append(level, node.Val)
-            
-            if node.Left != nil {
-                queue = append(queue, node.Left)
-            }
-            if node.Right != nil {
-                queue = append(queue, node.Right)
-            }
-        }
-        result = append(result, level)
-    }
-    return result
-}
-
-// Test
-func main() {
-    //     1
-    //    / \\
-    //   2   3
-    root := &TreeNode{Val: 1, Left: &TreeNode{Val: 2}, Right: &TreeNode{Val: 3}}
-    fmt.Println(levelOrder(root))  // [[1], [2, 3]]
-}`,
-              explanation: "This example demonstrates level order traversal.",
-            },
-            practice: "Find the minimum depth of a binary tree (shortest path to leaf)."
-          }
-        },
-        {
-          id: "dfs-graph",
-          title: "Graph DFS",
-          content: {
-            explanation: [
-              "For graphs (not trees), we need visited set to avoid cycles. Two approaches:",
-              "",
-              "1. **Recursive DFS** with visited set",
-              "2. **Iterative** with explicit stack",
-              "",
-              "Common graph problems:",
-              "- Find connected components",
-              "- Detect cycles",
-              "- Topological sort (DAG)",
-              "- Path finding"
-            ],
-            example: {
-              title: "Find Connected Components",
-              code: `func findComponents(n int, edges [][]int) int {
-    // Build adjacency list
-    graph := make([][]int, n)
-    for _, e := range edges {
-        graph[e[0]] = append(graph[e[0]], e[1])
-        graph[e[1]] = append(graph[e[1]], e[0])
-    }
-    
-    visited := make([]bool, n)
-    count := 0
-    
-    for i := 0; i < n; i++ {
-        if !visited[i] {
-            dfs(graph, visited, i)
-            count++
-        }
-    }
-    return count
-}
-
-func dfs(graph [][]int, visited []bool, node int) {
-    visited[node] = true
-    for _, neighbor := range graph[node] {
-        if !visited[neighbor] {
-            dfs(graph, visited, neighbor)
-        }
-    }
-}
-
-// Test
-func main() {
-    edges := [][]int{{0, 1}, {1, 2}, {3, 4}}
-    fmt.Println(findComponents(5, edges))  // 2 components
-}`,
-              explanation: "This example demonstrates find connected components.",
-            },
-            practice: "Detect if a graph contains a cycle."
-          }
-        },
-        {
-          id: "bfs-shortest",
-          title: "Shortest Path with BFS",
-          content: {
-            explanation: [
-              "BFS guarantees shortest path in unweighted graphs because it explores level by level.",
-              "",
-              "Algorithm variations:",
-              "1. Track distance at each node",
-              "2. Keep parent to reconstruct path",
-              "3. Use with grid (4 directions)",
-              "",
-              "Key: Process all nodes at distance d before d+1."
-            ],
-            example: {
-              title: "Shortest Path in Grid",
-              code: `func shortestPath(grid [][]byte, start, end []int) int {
-    n, m := len(grid), len(grid[0])
-    visited := make([][]bool, n)
-    for i := range visited {
-        visited[i] = make([]bool, m)
-    }
-    
-    queue := [][]int{start}
-    visited[start[0]][start[1]] = true
-    steps := 0
-    
-    dirs := [][]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
-    
-    for len(queue) > 0 {
-        size := len(queue)
-        for i := 0; i < size; i++ {
-            cur := queue[0]
-            queue = queue[1:]
-            
-            if cur[0] == end[0] && cur[1] == end[1] {
-                return steps
-            }
-            
-            for _, d := range dirs {
-                r, c := cur[0]+d[0], cur[1]+d[1]
-                if r >= 0 && r < n && c >= 0 && c < m && 
-                   grid[r][c] != 'X' && !visited[r][c] {
-                    visited[r][c] = true
-                    queue = append(queue, []int{r, c})
-                }
-            }
-        }
-        steps++
-    }
-    return -1
-}`,
-              explanation: "This example demonstrates shortest path in grid.",
-            },
-            practice: "Find shortest path to all cells in a grid."
-          }
-        }
-      ]
-    },
-    {
-      id: "algo-greedy",
-      title: "Greedy Algorithms",
-      description: "Make locally optimal decisions",
-      duration: "60 min",
-      subtopics: [
-        {
-          id: "greedy-intro",
-          title: "When to Use Greedy",
-          content: {
-            explanation: [
-              "Greedy makes the locally optimal choice at each step, hoping for global optimum. It works when:",
-              "",
-              "1. **Greedy choice property**: local optimum leads to global optimum",
-              "2. **Optimal substructure**: solution can be built from subsolutions",
-              "",
-              "When NOT to use: When local optimum doesn't guarantee global (like knapsack).",
-              "",
-              "Problems greedy works for:",
-              "- Interval scheduling",
-              "- Huffman coding",
-              "- Fractional knapsack",
-              "- Dijkstra's algorithm"
-            ],
-            example: {
-              title: "Activity Selection",
-              code: `func maxActivities(intervals [][]int) int {
-    // Sort by end time
-    sort.Slice(intervals, func(i, j int) bool {
-        return intervals[i][1] < intervals[j][1]
-    })
-    
-    count := 1
-    end := intervals[0][1]
-    
-    for i := 1; i < len(intervals); i++ {
-        if intervals[i][0] >= end {
-            count++
-            end = intervals[i][1]
-        }
-    }
-    return count
-}
-
-// Test
-func main() {
-    intervals := [][]int{{1, 4}, {3, 5}, {0, 6}, {5, 7}, {3, 9}, {5, 9}, {6, 10}}
-    fmt.Println(maxActivities(intervals))  // 4
-}`,
-              explanation: "This example demonstrates activity selection.",
-            },
-            practice: "Given meeting rooms, find minimum needed to hold all meetings."
-          }
-        },
-        {
-          id: "greedy-interval",
-          title: "Interval Problems",
-          content: {
-            explanation: [
-              "Interval problems are very common. Key patterns:",
-              "",
-              "1. **Merge intervals**: sort by start, merge overlapping",
-              "2. **Non-overlapping**: greedy selection (activity selection)",
-              "3. **Meeting rooms**: min rooms needed",
-              "",
-              "Key insight: Sort by what matters — usually the end time."
-            ],
-            example: {
-              title: "Merge Intervals",
-              code: `func merge(intervals [][]int) [][]int {
-    if len(intervals) <= 1 {
-        return intervals
-    }
-    
-    // Sort by start
-    sort.Slice(intervals, func(i, j int) bool {
-        return intervals[i][0] < intervals[j][0]
-    })
-    
-    result := [][]int{intervals[0]}
-    
-    for i := 1; i < len(intervals); i++ {
-        last := result[len(result)-1]
-        if intervals[i][0] <= last[1] {
-            // Overlap — merge
-            last[1] = max(last[1], intervals[i][1])
-        } else {
-            result = append(result, intervals[i])
-        }
-    }
-    return result
-}
-
-// Test
-func main() {
-    intervals := [][]int{{1, 3}, {2, 6}, {8, 10}, {15, 18}}
-    fmt.Println(merge(intervals))  // [[1,6], [8,10], [15,18]]
-}`,
-              explanation: "This example demonstrates merge intervals.",
-            },
-            practice: "Find minimum meeting rooms needed."
-          }
-        },
-        {
-          id: "greedy-huffman",
-          title: "Huffman Coding",
-          content: {
-            explanation: [
-              "Huffman coding achieves optimal prefix-free encoding using:",
-              "",
-              "1. Count character frequencies",
-              "2. Build min-heap of frequencies",
-              "3. Combine two smallest until one remains",
-              "4. Assign 0 (left) and 1 (right) along paths",
-              "",
-              "The character with highest frequency gets shortest code."
-            ],
-            example: {
-              title: "Huffman Encoding",
-              code: `// Simplified: Priority queue approach
-func huffmanLength(freq map[rune]int) int {
-    // Use min-heap (priority queue)
-    pq := make(PriorityQueue, len(freq))
-    i := 0
-    for _, f := range freq {
-        pq[i] = &Item{frequency: f}
-        i++
-    }
-    heap.Init(&pq)
-    
-    total := 0
-    for pq.Len() > 1 {
-        // Take two smallest
-        a := heap.Pop(&pq).(*Item)
-        b := heap.Pop(&pq).(*Item)
-        
-        sum := a.frequency + b.frequency
-        total += sum
-        
-        // Push combined
-        heap.Push(&pq, &Item{frequency: sum})
-    }
-    return total
-}`,
-              explanation: "This example demonstrates huffman encoding.",
-            },
-            practice: "Given frequencies, compute total encoding length."
+            practice: "Find the peak element in an array where arr[i] > arr[i+1]."
           }
         }
       ]
@@ -1208,39 +1019,29 @@ func huffmanLength(freq map[rune]int) int {
               "",
               "Why it matters: Computing range sums naively is O(n), but with prefix sum it's O(1).",
               "",
-              "More variations:",
-              "- 2D prefix sum for matrices",
-              "- Hash prefix sum for modulo problems"
+              "More variations: 2D prefix sum for matrices, hash prefix sum for modulo problems"
             ],
             example: {
               title: "Range Sum Query",
-              code: `type NumArray struct {
-    prefix []int
-}
-
-func Constructor(nums []int) NumArray {
-    n := len(nums)
-    prefix := make([]int, n+1)
-    for i := 0; i < n; i++ {
-        prefix[i+1] = prefix[i] + nums[i]
+              code: `class NumArray {
+    constructor(nums) {
+        this.prefix = new Array(nums.length + 1).fill(0);
+        for (let i = 0; i < nums.length; i++) {
+            this.prefix[i + 1] = this.prefix[i] + nums[i];
+        }
     }
-    return NumArray{prefix}
+    
+    sumRange(left, right) {
+        return this.prefix[right + 1] - this.prefix[left];
+    }
 }
 
-func (na *NumArray) SumRange(left, right int) int {
-    return na.prefix[right+1] - na.prefix[left]
-}
-
-// Test
-func main() {
-    nums := []int{-2, 0, 3, -4, 2}
-    na := Constructor(nums)
-    fmt.Println(na.SumRange(0, 2))  // 1
-    fmt.Println(na.SumRange(2, 4)) // -2
-}`,
-              explanation: "This example demonstrates range sum query.",
+const na = new NumArray([-2, 0, 3, -4, 2]);
+console.log(na.sumRange(0, 2));  // 1
+console.log(na.sumRange(2, 4));  // 1`,
+              explanation: "This class precomputes prefix sums so any range sum query can be answered in O(1) time."
             },
-            practice: "Given array and queries, answer each range sum in O(1)."
+            practice: "Given array and many queries, answer each range sum in O(1)."
           }
         },
         {
@@ -1248,45 +1049,325 @@ func main() {
           title: "Subarray Sum with Modulo",
           content: {
             explanation: [
-              "For problems like 'subarray sum equals k with modulo', use hash maps with prefix sum:",
+              "For problems like 'subarray sum equals k' or 'subarray divisible by k', use hash maps with prefix sum:",
               "",
-              "Key insight: Two prefix sums are congruent (mod k) if their difference has sum that's divisible by k.",
+              "Key insight: prefix[j] - prefix[i] = k means prefix[j] = prefix[i] + k",
               "",
-              "Algorithm:",
-              "1. Track prefix sum modulo k",
-              "2. For each position, count previous same modulo",
-              "3. Add to result"
+              "For modulo: Two prefix sums are congruent (mod k) if their difference is divisible by k."
             ],
             example: {
-              title: "Subarray Divisible by K",
-              code: `func subarraysDivByK(nums []int, k int) int {
-    prefix := 0
-    count := make([]int, k)
-    count[0] = 1  // empty prefix
+              title: "Subarray Sum Equals K",
+              code: `function subarraySumEqualsK(nums, k) {
+    let count = 0, sum = 0;
+    const prefixCount = {0: 1};
     
-    for _, num := range nums {
-        prefix = (prefix + num) % k
-        // Python: negative fix for Python mod
-        if prefix < 0 {
-            prefix += k
-        }
-        count[prefix]++
+    for (let num of nums) {
+        sum += num;
+        if (prefixCount[sum - k]) count += prefixCount[sum - k];
+        prefixCount[sum] = (prefixCount[sum] || 0) + 1;
     }
-    
-    result := 0
-    for _, c := range count {
-        result += c * (c - 1) / 2
-    }
-    return result
+    return count;
 }
 
-// Test  
-func main() {
-    fmt.Println(subarraysDivByK([]int{4, 5, 0, -5}, 5))  // 4
-}`,
-              explanation: "This example demonstrates subarray divisible by k.",
+console.log(subarraySumEqualsK([1, 1, 1], 2));      // 2
+console.log(subarraySumEqualsK([1, 2, 3], 3));      // 2
+console.log(subarraySumEqualsK([1, -1, 0], 0));     // 3`,
+              explanation: "This uses a hash map tracking prefix sums to count subarrays that sum to a target value in O(n) time."
             },
-            practice: "Find subarrays that sum to a multiple of k."
+            practice: "Count the number of subarrays divisible by k."
+          }
+        }
+      ]
+    },
+    {
+      id: "algo-recursion",
+      title: "Recursion Basics",
+      description: "Solve problems by breaking them into smaller versions of themselves",
+      duration: "55 min",
+      subtopics: [
+        {
+          id: "recursion-intro",
+          title: "What Is Recursion?",
+          content: {
+            explanation: [
+              "Recursion is when a function calls itself to solve a smaller version of the same problem. It's like Russian nesting dolls.",
+              "",
+              "**Every recursive function needs:**",
+              "",
+              "1. **Base Case** — the stopping condition (when to stop calling itself)",
+              "2. **Recursive Case** — the function calling itself with modified parameters",
+              "",
+              "**Why learn recursion?**",
+              "- Many algorithms are naturally recursive (tree traversal, sorting, backtracking)",
+              "- It often leads to cleaner, more intuitive code",
+              "- It's essential for divide-and-conquer approaches"
+            ],
+            example: {
+              title: "Factorial: The Classic Recursion Example",
+              code: `// Factorial: n! = n × (n-1) × ... × 1
+function factorial(n) {
+    if (n <= 1) return 1;  // Base case
+    return n * factorial(n - 1);  // Recursive case
+}
+
+console.log(factorial(5));  // 120
+
+// Visualizing:
+// factorial(5) = 5 * factorial(4)
+// factorial(4) = 4 * factorial(3)
+// factorial(3) = 3 * factorial(2)
+// factorial(2) = 2 * factorial(1)
+// factorial(1) = 1  (base case)
+// Then unwinds: 2*1=2, 3*2=6, 4*6=24, 5*24=120
+
+// Sum of array using recursion
+function sumArray(arr, index = 0) {
+    if (index >= arr.length) return 0;
+    return arr[index] + sumArray(arr, index + 1);
+}
+
+console.log(sumArray([1, 2, 3, 4, 5]));  // 15`,
+              explanation: "Each recursive call solves a smaller instance (n-1) until reaching the base case (n<=1). Then the results bubble back up."
+            },
+            practice: "Write a recursive function that counts down from n to 1 and then prints 'Blast off!'"
+          }
+        },
+        {
+          id: "recursion-stack",
+          title: "The Call Stack and Recursion Depth",
+          content: {
+            explanation: [
+              "JavaScript uses a call stack to track function calls. Each recursive call adds a new frame to this stack.",
+              "",
+              "**⚠️ Important Limit:**",
+              "Too many recursive calls can cause a stack overflow. The maximum recursion depth is typically around 10,000.",
+              "",
+              "**When recursion can be dangerous:**",
+              "- Very deep recursion (e.g., 100,000 levels)",
+              "- Missing base case (infinite recursion)",
+              "- Not making progress toward base case",
+              "",
+              "**Solution:** Use iteration or convert recursion to iteration for deep recursion."
+            ],
+            example: {
+              title: "Understanding Recursion Depth",
+              code: `// Counting recursion depth
+let depthCount = 0;
+
+function recursiveDepth(n) {
+    depthCount++;
+    console.log("Depth:", depthCount);
+    
+    if (n <= 1) {
+        console.log("Base case reached!");
+        depthCount--;
+        return 1;
+    }
+    
+    const result = n * recursiveDepth(n - 1);
+    depthCount--;
+    return result;
+}
+
+recursiveDepth(5);
+
+// ✅ Better: Use iteration for very deep recursion
+function factorialIterative(n) {
+    let result = 1;
+    for (let i = 2; i <= n; i++) result *= i;
+    return result;
+}
+
+function sumArrayIterative(arr) {
+    let sum = 0;
+    for (let i = 0; i < arr.length; i++) sum += arr[i];
+    return sum;
+}
+
+console.log("Iterative factorial:", factorialIterative(10));
+console.log("Iterative sum:", sumArrayIterative([1, 2, 3, 4, 5]));`,
+              explanation: "Watch the call stack grow and shrink as recursion progresses. For deep recursion, consider iterative solutions."
+            },
+            practice: "Write both recursive and iterative versions of a function that calculates the nth Fibonacci number."
+          }
+        }
+      ]
+    },
+    {
+      id: "algo-dynamic-programming",
+      title: "Dynamic Programming",
+      description: "Optimize recursive solutions with memoization",
+      duration: "90 min",
+      subtopics: [
+        {
+          id: "dp-intro",
+          title: "Introduction to DP",
+          content: {
+            explanation: [
+              "Dynamic Programming (DP) solves problems by breaking them into overlapping subproblems and storing results to avoid recomputation.",
+              "",
+              "Two approaches:",
+              "1. **Top-down** (Memoization): Recursion + cache. Natural but can hit stack limits.",
+              "2. **Bottom-up** (Tabulation): Iterative + table. More efficient but less intuitive.",
+              "",
+              "When to use DP:",
+              "- Optimal substructure: solution can be built from sub-solutions",
+              "- Overlapping subproblems: same subproblems solved multiple times"
+            ],
+            example: {
+              title: "Fibonacci with and without DP",
+              code: `// Naive recursion: O(2^n) - exponential!
+function fibNaive(n) {
+    if (n <= 1) return n;
+    return fibNaive(n - 1) + fibNaive(n - 2);
+}
+
+// Top-down DP (Memoization): O(n) time, O(n) space
+function fibMemo(n, memo = {}) {
+    if (n <= 1) return n;
+    if (memo[n] !== undefined) return memo[n];
+    memo[n] = fibMemo(n - 1, memo) + fibMemo(n - 2, memo);
+    return memo[n];
+}
+
+// Bottom-up DP (Tabulation): O(n) time, O(n) space
+function fibTabulation(n) {
+    if (n <= 1) return n;
+    const dp = new Array(n + 1);
+    dp[0] = 0; dp[1] = 1;
+    for (let i = 2; i <= n; i++) dp[i] = dp[i - 1] + dp[i - 2];
+    return dp[n];
+}
+
+// Space-optimized DP: O(n) time, O(1) space
+function fibOptimized(n) {
+    if (n <= 1) return n;
+    let prev = 0, curr = 1;
+    for (let i = 2; i <= n; i++) [prev, curr] = [curr, prev + curr];
+    return curr;
+}
+
+console.log(fibMemo(40));     // 102334155
+console.log(fibOptimized(40)); // 102334155`,
+              explanation: "DP transforms exponential runtime into linear. For n=40, naive recursion takes ~2 billion operations while DP takes ~40!"
+            },
+            practice: "Solve the climbing stairs problem using DP (you can take 1 or 2 steps at a time, find number of ways to reach step n)."
+          }
+        },
+        {
+          id: "dp-1d",
+          title: "1D DP Problems",
+          content: {
+            explanation: [
+              "Many DP problems use a 1D array. The key is identifying the state:",
+              "",
+              "Common patterns:",
+              "1. **Last position matters**: dp[i] depends on dp[i-1]",
+              "2. **Include/exclude**: Max of taking or not taking element",
+              "3. **Build up**: dp[i] is solution for first i elements",
+              "",
+              "Questions to ask:",
+              "- What's the state (what does dp[i] represent)?",
+              "- What's the base case (dp[0])?",
+              "- How do transitions work?"
+            ],
+            example: {
+              title: "House Robber",
+              code: `// Can't rob two adjacent houses
+function rob(nums) {
+    if (nums.length === 0) return 0;
+    if (nums.length === 1) return nums[0];
+    
+    const dp = new Array(nums.length);
+    dp[0] = nums[0];
+    dp[1] = Math.max(nums[0], nums[1]);
+    
+    for (let i = 2; i < nums.length; i++) {
+        dp[i] = Math.max(dp[i - 1], nums[i] + dp[i - 2]);
+    }
+    return dp[nums.length - 1];
+}
+
+// Space optimized
+function robOptimized(nums) {
+    if (nums.length === 0) return 0;
+    if (nums.length === 1) return nums[0];
+    
+    let prevPrev = nums[0];
+    let prev = Math.max(nums[0], nums[1]);
+    
+    for (let i = 2; i < nums.length; i++) {
+        const current = Math.max(prev, nums[i] + prevPrev);
+        prevPrev = prev;
+        prev = current;
+    }
+    return prev;
+}
+
+console.log(rob([1, 2, 3, 1]));        // 4
+console.log(rob([2, 7, 9, 3, 1]));    // 12`,
+              explanation: "dp[i] represents the maximum amount robbable from first i+1 houses. Each step decides whether to rob the current house or skip it."
+            },
+            practice: "Solve the coin change problem: minimum number of coins to make a given amount."
+          }
+        },
+        {
+          id: "dp-2d",
+          title: "2D DP Problems",
+          content: {
+            explanation: [
+              "Some problems need two dimensions:",
+              "",
+              "1. **Two sequences**: dp[i][j] for first i of one, first j of another",
+              "2. **Grid path**: unique paths in matrix",
+              "",
+              "Common questions: Two strings (Longest Common Subsequence, Edit Distance), matrix problems"
+            ],
+            example: {
+              title: "Longest Common Subsequence",
+              code: `function longestCommonSubsequence(s1, s2) {
+    const m = s1.length, n = s2.length;
+    const dp = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
+    
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (s1[i - 1] === s2[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            } else {
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+            }
+        }
+    }
+    return dp[m][n];
+}
+
+function getLCS(s1, s2) {
+    const m = s1.length, n = s2.length;
+    const dp = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
+    
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (s1[i - 1] === s2[j - 1]) dp[i][j] = dp[i - 1][j - 1] + 1;
+            else dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+    }
+    
+    let lcs = "", i = m, j = n;
+    while (i > 0 && j > 0) {
+        if (s1[i - 1] === s2[j - 1]) {
+            lcs = s1[i - 1] + lcs;
+            i--; j--;
+        } else if (dp[i - 1][j] > dp[i][j - 1]) i--;
+        else j--;
+    }
+    return lcs;
+}
+
+console.log(longestCommonSubsequence("abcde", "ace"));  // 3
+console.log(getLCS("abcde", "ace"));  // "ace"`,
+              explanation: "2D DP handles problems comparing two sequences. dp[i][j] represents the LCS length using first i chars of s1 and first j chars of s2."
+            },
+            practice: "Solve the edit distance problem: minimum operations to convert one string to another."
           }
         }
       ]
@@ -1314,45 +1395,57 @@ func main() {
             ],
             example: {
               title: "Generate Permutations",
-              code: `func permute(nums []int) [][]int {
-    result := [][]int{}
-    path := []int{}
-    used := make([]bool, len(nums))
+              code: `function permute(nums) {
+    const result = [];
+    const used = new Array(nums.length).fill(false);
     
-    var backtrack func()
-    backtrack = func() {
-        if len(path) == len(nums) {
-            // Copy path
-            temp := make([]int, len(path))
-            copy(temp, path)
-            result = append(result, temp)
-            return
+    function backtrack(path) {
+        if (path.length === nums.length) {
+            result.push([...path]);
+            return;
         }
         
-        for i := range nums {
-            if used[i] {
-                continue
-            }
-            used[i] = true
-            path = append(path, nums[i])
-            backtrack()
-            path = path[:len(path)-1]
-            used[i] = false
+        for (let i = 0; i < nums.length; i++) {
+            if (used[i]) continue;
+            used[i] = true;
+            path.push(nums[i]);
+            backtrack(path);
+            path.pop();
+            used[i] = false;
         }
     }
     
-    backtrack()
-    return result
+    backtrack([]);
+    return result;
 }
 
-// Test
-func main() {
-    fmt.Println(permute([]int{1, 2, 3}))
-    // [[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]]
-}`,
-              explanation: "This example demonstrates generate permutations.",
+console.log(permute([1, 2, 3]));
+
+// Generate combinations (choose k elements)
+function combine(n, k) {
+    const result = [];
+    
+    function backtrack(start, path) {
+        if (path.length === k) {
+            result.push([...path]);
+            return;
+        }
+        
+        for (let i = start; i <= n; i++) {
+            path.push(i);
+            backtrack(i + 1, path);
+            path.pop();
+        }
+    }
+    
+    backtrack(1, []);
+    return result;
+}
+
+console.log(combine(4, 2));`,
+              explanation: "Backtracking builds solutions incrementally, trying each possibility and unmaking choices to explore all alternatives."
             },
-            practice: "Generate all combinations of size k from array."
+            practice: "Generate all letter combinations for a phone number."
           }
         },
         {
@@ -1369,105 +1462,436 @@ func main() {
               "Key: Process each element exactly once."
             ],
             example: {
-              title: "Subsets",
-              code: `func subsets(nums []int) [][]int {
-    result := [][]int{}
+              title: "All Subsets",
+              code: `function subsets(nums) {
+    const result = [];
     
-    var backtrack func(pos int, path []int)
-    backtrack = func(pos int, path []int) {
-        // Copy current path (it's a subset)
-        temp := make([]int, len(path))
-        copy(temp, path)
-        result = append(result, temp)
+    function backtrack(index, path) {
+        result.push([...path]);
         
-        for i := pos; i < len(nums); i++ {
-            path = append(path, nums[i])
-            backtrack(i+1, path)
-            path = path[:len(path)-1]
+        for (let i = index; i < nums.length; i++) {
+            path.push(nums[i]);
+            backtrack(i + 1, path);
+            path.pop();
         }
     }
     
-    backtrack(0, []int{})
-    return result
+    backtrack(0, []);
+    return result;
 }
 
-// Test
-func main() {
-    fmt.Println(subsets([]int{1, 2, 3}))
-    // [[], [1], [1,2], [1,2,3], [1,3], [2], [2,3], [3]]
-}`,
-              explanation: "This example demonstrates subsets.",
+console.log(subsets([1, 2, 3]));
+
+// Subsets that sum to a target
+function subsetsWithSum(nums, target) {
+    const result = [];
+    
+    function backtrack(index, currentSum, path) {
+        if (currentSum === target) {
+            result.push([...path]);
+            return;
+        }
+        
+        if (currentSum > target || index >= nums.length) return;
+        
+        path.push(nums[index]);
+        backtrack(index + 1, currentSum + nums[index], path);
+        path.pop();
+        
+        backtrack(index + 1, currentSum, path);
+    }
+    
+    backtrack(0, 0, []);
+    return result;
+}
+
+console.log(subsetsWithSum([2, 3, 5, 7, 8], 10));`,
+              explanation: "This generates all subsets by deciding for each element whether to include it. The target sum version adds pruning."
             },
-            practice: "Find all subsets with sum equal to target."
+            practice: "Find all subsets of a set that have no duplicate elements (handling duplicates in the input)."
           }
         },
         {
           id: "bt-nqueens",
-          title: "Classic Backtracking",
+          title: "Classic Backtracking: N-Queens",
           content: {
             explanation: [
               "N-Queens is the classic backtracking problem: place n queens on n×n board so none attack each other.",
               "",
               "This shows backtracking's power: try, check, recurse or backtrack.",
               "",
-              "Key optimizations:",
-              "- Use sets/arrays for O(1) column/diag checking",
-              "- Prune early if queen can't be placed"
+              "Key optimizations: Use sets/arrays for O(1) column/diag checking, prune early."
             ],
             example: {
               title: "N-Queens",
-              code: `func solveNQueens(n int) [][]string {
-    result := [][]string{}
-    cols := make([]bool, n)
-    diag1 := make([]bool, 2*n)  // row - col + n
-    diag2 := make([]bool, 2*n)  // row + col
+              code: `function solveNQueens(n) {
+    const result = [];
+    const board = Array(n).fill().map(() => Array(n).fill('.'));
+    const cols = new Array(n).fill(false);
+    const diag1 = new Array(2 * n - 1).fill(false);
+    const diag2 = new Array(2 * n - 1).fill(false);
     
-    board := make([]string, n)
-    for i := 0; i < n; i++ {
-        board[i] = strings.Repeat(".", n)
-    }
-    
-    var backtrack func(row int)
-    backtrack = func(row int) {
-        if row == n {
-            // Copy
-            copy := make([]string, n)
-            for i := range board {
-                copy[i] = board[i]
-            }
-            result = append(result, copy)
-            return
+    function backtrack(row) {
+        if (row === n) {
+            result.push(board.map(row => row.join('')));
+            return;
         }
         
-        for col := 0; col < n; col++ {
-            d1, d2 := row-col+n, row+col
-            if cols[col] || diag1[d1] || diag2[d2] {
-                continue
-            }
+        for (let col = 0; col < n; col++) {
+            const d1 = row - col + n - 1;
+            const d2 = row + col;
             
-            board[row] = board[row][:col] + "Q" + board[row][col+1:]
-            cols[col], diag1[d1], diag2[d2] = true, true, true
+            if (cols[col] || diag1[d1] || diag2[d2]) continue;
             
-            backtrack(row + 1)
+            board[row][col] = 'Q';
+            cols[col] = diag1[d1] = diag2[d2] = true;
             
-            board[row] = board[row][:col] + "." + board[row][col+1:]
-            cols[col], diag1[d1], diag2[d2] = false, false, false
+            backtrack(row + 1);
+            
+            board[row][col] = '.';
+            cols[col] = diag1[d1] = diag2[d2] = false;
         }
     }
     
-    backtrack(0)
-    return result
-}`,
-              explanation: "This example demonstrates n-queens.",
+    backtrack(0);
+    return result;
+}
+
+console.log(solveNQueens(4));`,
+              explanation: "This places queens row by row, using backtracking to undo placements that lead to dead ends."
             },
-            practice: "Solve the sudoku puzzle."
+            practice: "Solve the Sudoku puzzle using backtracking."
+          }
+        }
+      ]
+    },
+    {
+      id: "algo-graph-traversal",
+      title: "Graph Traversal",
+      description: "BFS and DFS for tree/graph problems",
+      duration: "75 min",
+      subtopics: [
+        {
+          id: "dfs-recursive",
+          title: "Depth-First Search (DFS)",
+          content: {
+            explanation: [
+              "DFS explores as deep as possible before backtracking. Uses recursion (stack) or explicit stack.",
+              "",
+              "Three traversal orders for trees:",
+              "1. **Preorder**: root, left, right — copy tree",
+              "2. **Inorder**: left, root, right — sorted BST",
+              "3. **Postorder**: left, right, root — delete tree",
+              "",
+              "Why DFS: Lower memory than BFS for deep trees, natural for recursion."
+            ],
+            example: {
+              title: "Tree Traversals",
+              code: `class TreeNode {
+    constructor(val, left = null, right = null) {
+        this.val = val;
+        this.left = left;
+        this.right = right;
+    }
+}
+
+const tree = new TreeNode(1,
+    new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+    new TreeNode(3)
+);
+
+function preorder(root, result = []) {
+    if (!root) return result;
+    result.push(root.val);
+    preorder(root.left, result);
+    preorder(root.right, result);
+    return result;
+}
+
+function inorder(root, result = []) {
+    if (!root) return result;
+    inorder(root.left, result);
+    result.push(root.val);
+    inorder(root.right, result);
+    return result;
+}
+
+function postorder(root, result = []) {
+    if (!root) return result;
+    postorder(root.left, result);
+    postorder(root.right, result);
+    result.push(root.val);
+    return result;
+}
+
+console.log("Preorder:", preorder(tree));
+console.log("Inorder:", inorder(tree));
+console.log("Postorder:", postorder(tree));`,
+              explanation: "The three DFS traversals differ only in when they visit the root node relative to the children."
+            },
+            practice: "Implement preorder traversal iteratively using an explicit stack."
+          }
+        },
+        {
+          id: "bfs-level-order",
+          title: "Breadth-First Search (BFS)",
+          content: {
+            explanation: [
+              "BFS explores level by level using a queue. Great for:",
+              "",
+              "1. **Shortest path** in unweighted graphs",
+              "2. **Level-by-level** processing",
+              "3. **Finding minimum** steps to target",
+              "",
+              "Algorithm: Add start to queue, process node, add neighbors, continue until queue empty."
+            ],
+            example: {
+              title: "Level Order Traversal",
+              code: `function levelOrder(root) {
+    if (!root) return [];
+    
+    const result = [];
+    const queue = [root];
+    
+    while (queue.length > 0) {
+        const levelSize = queue.length;
+        const currentLevel = [];
+        
+        for (let i = 0; i < levelSize; i++) {
+            const node = queue.shift();
+            currentLevel.push(node.val);
+            if (node.left) queue.push(node.left);
+            if (node.right) queue.push(node.right);
+        }
+        
+        result.push(currentLevel);
+    }
+    
+    return result;
+}
+
+function minDepth(root) {
+    if (!root) return 0;
+    const queue = [[root, 1]];
+    
+    while (queue.length > 0) {
+        const [node, depth] = queue.shift();
+        if (!node.left && !node.right) return depth;
+        if (node.left) queue.push([node.left, depth + 1]);
+        if (node.right) queue.push([node.right, depth + 1]);
+    }
+    return 0;
+}
+
+const tree = new TreeNode(1,
+    new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+    new TreeNode(3, null, new TreeNode(6))
+);
+
+console.log(levelOrder(tree));
+console.log("Min depth:", minDepth(tree));`,
+              explanation: "BFS processes nodes level by level using a queue. It's perfect for finding shortest paths."
+            },
+            practice: "Find the maximum width of a binary tree."
+          }
+        },
+        {
+          id: "graph-dfs-bfs",
+          title: "Graph DFS and BFS",
+          content: {
+            explanation: [
+              "For graphs (not trees), we need a visited set to avoid cycles.",
+              "",
+              "Common graph problems:",
+              "- Find connected components",
+              "- Detect cycles",
+              "- Topological sort (DAG)",
+              "- Path finding"
+            ],
+            example: {
+              title: "Graph Connected Components",
+              code: `function countComponents(n, edges) {
+    const graph = Array(n).fill().map(() => []);
+    for (const [u, v] of edges) {
+        graph[u].push(v);
+        graph[v].push(u);
+    }
+    
+    const visited = new Array(n).fill(false);
+    let components = 0;
+    
+    function dfs(node) {
+        visited[node] = true;
+        for (const neighbor of graph[node]) {
+            if (!visited[neighbor]) dfs(neighbor);
+        }
+    }
+    
+    for (let i = 0; i < n; i++) {
+        if (!visited[i]) {
+            dfs(i);
+            components++;
+        }
+    }
+    
+    return components;
+}
+
+function hasCycle(n, edges) {
+    const graph = Array(n).fill().map(() => []);
+    for (const [u, v] of edges) {
+        graph[u].push(v);
+        graph[v].push(u);
+    }
+    
+    const visited = new Array(n).fill(false);
+    
+    function dfs(node, parent) {
+        visited[node] = true;
+        for (const neighbor of graph[node]) {
+            if (!visited[neighbor]) {
+                if (dfs(neighbor, node)) return true;
+            } else if (neighbor !== parent) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    for (let i = 0; i < n; i++) {
+        if (!visited[i] && dfs(i, -1)) return true;
+    }
+    return false;
+}
+
+const edges = [[0, 1], [1, 2], [3, 4]];
+console.log(countComponents(5, edges));  // 2
+console.log(hasCycle(3, [[0, 1], [1, 2], [2, 0]]));  // true`,
+              explanation: "For graphs, we need to track visited nodes to avoid infinite loops. Both DFS and BFS work for finding connected components."
+            },
+            practice: "Determine if there's a path between two nodes in a graph using both DFS and BFS."
+          }
+        }
+      ]
+    },
+    {
+      id: "algo-greedy",
+      title: "Greedy Algorithms",
+      description: "Make locally optimal decisions",
+      duration: "60 min",
+      subtopics: [
+        {
+          id: "greedy-intro",
+          title: "When to Use Greedy",
+          content: {
+            explanation: [
+              "Greedy makes the locally optimal choice at each step, hoping for global optimum. It works when:",
+              "",
+              "1. **Greedy choice property**: local optimum leads to global optimum",
+              "2. **Optimal substructure**: solution can be built from subsolutions",
+              "",
+              "When NOT to use: When local optimum doesn't guarantee global (like knapsack).",
+              "",
+              "Problems greedy works for: Activity selection, coin change (standard denominations), Huffman coding, Dijkstra's algorithm"
+            ],
+            example: {
+              title: "Activity Selection",
+              code: `function maxActivities(intervals) {
+    intervals.sort((a, b) => a[1] - b[1]);
+    
+    let count = 1;
+    let lastEnd = intervals[0][1];
+    
+    for (let i = 1; i < intervals.length; i++) {
+        const [start, end] = intervals[i];
+        if (start >= lastEnd) {
+            count++;
+            lastEnd = end;
+        }
+    }
+    return count;
+}
+
+console.log(maxActivities([[1, 4], [3, 5], [0, 6], [5, 7], [3, 9], [5, 9], [6, 10]]));
+
+function coinChangeGreedy(amount) {
+    const denominations = [25, 10, 5, 1];
+    const coins = [];
+    
+    for (const coin of denominations) {
+        while (amount >= coin) {
+            coins.push(coin);
+            amount -= coin;
+        }
+    }
+    return coins;
+}
+
+console.log(coinChangeGreedy(87));`,
+              explanation: "Greedy algorithms make the best immediate choice. For activity selection, picking the earliest-ending activity leaves maximum room for others."
+            },
+            practice: "Given meeting room times, find the minimum number of rooms needed."
+          }
+        },
+        {
+          id: "greedy-interval",
+          title: "Interval Problems",
+          content: {
+            explanation: [
+              "Interval problems are very common. Key patterns:",
+              "",
+              "1. **Merge intervals**: sort by start, merge overlapping",
+              "2. **Non-overlapping intervals**: greedy selection (activity selection)",
+              "3. **Meeting rooms**: min rooms needed (sweep line)",
+              "",
+              "Key insight: Sort by what matters — usually the start or end time."
+            ],
+            example: {
+              title: "Merge Intervals",
+              code: `function mergeIntervals(intervals) {
+    if (intervals.length <= 1) return intervals;
+    
+    intervals.sort((a, b) => a[0] - b[0]);
+    const result = [intervals[0]];
+    
+    for (let i = 1; i < intervals.length; i++) {
+        const last = result[result.length - 1];
+        const current = intervals[i];
+        
+        if (current[0] <= last[1]) {
+            last[1] = Math.max(last[1], current[1]);
+        } else {
+            result.push(current);
+        }
+    }
+    return result;
+}
+
+function minMeetingRooms(intervals) {
+    const starts = intervals.map(i => i[0]).sort((a, b) => a - b);
+    const ends = intervals.map(i => i[1]).sort((a, b) => a - b);
+    
+    let rooms = 0, endIdx = 0;
+    
+    for (let start of starts) {
+        if (start < ends[endIdx]) rooms++;
+        else endIdx++;
+    }
+    return rooms;
+}
+
+console.log(mergeIntervals([[1, 3], [2, 6], [8, 10], [15, 18]]));
+console.log(minMeetingRooms([[0, 30], [5, 10], [15, 20]]));`,
+              explanation: "Interval merging uses sorting by start time to efficiently combine overlapping intervals in O(n log n) time."
+            },
+            practice: "Given intervals representing availability, find the longest time when at least one person is available."
           }
         }
       ]
     },
     {
       id: "algo-union-find",
-      title: "Union-Find",
+      title: "Union-Find (Disjoint Set Union)",
       description: "Track and merge disjoint sets efficiently",
       duration: "55 min",
       subtopics: [
@@ -1479,124 +1903,60 @@ func main() {
               "Union-Find (Disjoint Set Union) efficiently tracks which elements belong to the same group and merges groups.",
               "",
               "Two operations:",
-              "1. **Find**: Which group does element belong to? → find parent/representative",
+              "1. **Find**: Which group does element belong to?",
               "2. **Union**: Merge two groups into one",
               "",
-              "Without optimization: Both are O(n) — too slow.",
               "With path compression + union by rank: Almost O(1) per operation!",
               "",
               "Classic use: Detect cycles in undirected graphs."
             ],
             example: {
               title: "Basic Union-Find",
-              code: `type UnionFind struct {
-    parent []int
-    rank   []int
-}
-
-func NewUnionFind(n int) *UnionFind {
-    uf := &UnionFind{
-        parent: make([]int, n),
-        rank:   make([]int, n),
-    }
-    for i := 0; i < n; i++ {
-        uf.parent[i] = i
-        uf.rank[i] = 0
-    }
-    return uf
-}
-
-// Find with path compression
-func (uf *UnionFind) Find(x int) int {
-    if uf.parent[x] != x {
-        uf.parent[x] = uf.Find(uf.parent[x])  // path compression
-    }
-    return uf.parent[x]
-}
-
-// Union by rank
-func (uf *UnionFind) Union(x, y int) bool {
-    px, py := uf.Find(x), uf.Find(y)
-    if px == py {
-        return false  // already in same set
+              code: `class UnionFind {
+    constructor(n) {
+        this.parent = Array(n).fill().map((_, i) => i);
+        this.rank = Array(n).fill(0);
     }
     
-    // Attach smaller tree to larger
-    if uf.rank[px] < uf.rank[py] {
-        uf.parent[px] = py
-    } else if uf.rank[px] > uf.rank[py] {
-        uf.parent[py] = px
-    } else {
-        uf.parent[py] = px
-        uf.rank[px]++
-    }
-    return true
-}
-
-// Test
-func main() {
-    uf := NewUnionFind(5)
-    uf.Union(0, 1)
-    uf.Union(2, 3)
-    fmt.Println(uf.Find(0) == uf.Find(1))  // true
-    fmt.Println(uf.Find(0) == uf.Find(2))  // false
-}`,
-              explanation: "This Go implementation shows Union-Find with path compression (in Find) and union by rank optimizations for nearly O(1) operations."
-            },
-            practice: "Implement union-find without union by rank and compare performance."
-          }
-        },
-        {
-          id: "uf-path-compression",
-          title: "Path Compression & Optimizations",
-          content: {
-            explanation: [
-              "Path compression flattens the tree structure for faster lookups.",
-              "",
-              "**Without optimization**: Chain of parents a→b→c→d. Finding 'a' requires following 4 links.",
-              "**With path compression**: After one Find, 'a' directly points to 'd'. Next Find is O(1)!",
-              "",
-              "**Union by rank**: Always attach smaller tree to larger, preventing chains.",
-              "",
-              "Combined result: Inverse Ackermann function operations — effectively O(1) for all practical purposes."
-            ],
-            example: {
-              title: "Path Compression Visualization",
-              code: `// Before path compression:
-// 0 → 1 → 2 → 3 → 4
-// Each Find(0) takes 5 steps
-
-// After first Find(0) with path compression:
-// 0 → 4 ← 1, 2, 3
-// All elements point directly to root
-
-func (uf *UnionFind) FindWithCompression(x int) int {
-    if uf.parent[x] != x {
-        // Path compression: point directly to root
-        uf.parent[x] = uf.FindWithCompression(uf.parent[x])
-    }
-    return uf.parent[x]
-}
-
-// Iterative path compression (avoids recursion)
-func (uf *UnionFind) FindIterative(x int) int {
-    root := x
-    // Find root
-    for root != uf.parent[root] {
-        root = uf.parent[root]
+    find(x) {
+        if (this.parent[x] !== x) {
+            this.parent[x] = this.find(this.parent[x]);
+        }
+        return this.parent[x];
     }
     
-    // Compress path: make all nodes point to root
-    for x != uf.parent[x] {
-        next := uf.parent[x]
-        uf.parent[x] = root
-        x = next
+    union(x, y) {
+        const rootX = this.find(x);
+        const rootY = this.find(y);
+        
+        if (rootX === rootY) return false;
+        
+        if (this.rank[rootX] < this.rank[rootY]) {
+            this.parent[rootX] = rootY;
+        } else if (this.rank[rootX] > this.rank[rootY]) {
+            this.parent[rootY] = rootX;
+        } else {
+            this.parent[rootY] = rootX;
+            this.rank[rootX]++;
+        }
+        return true;
     }
-    return root
-}`,
-              explanation: "This example demonstrates path compression in both recursive and iterative forms."
+    
+    connected(x, y) {
+        return this.find(x) === this.find(y);
+    }
+}
+
+const uf = new UnionFind(5);
+uf.union(0, 1);
+uf.union(2, 3);
+console.log(uf.connected(0, 1));  // true
+console.log(uf.connected(0, 2));  // false
+uf.union(1, 2);
+console.log(uf.connected(0, 2));  // true`,
+              explanation: "Union-Find with path compression and union by rank achieves nearly O(1) operations. Each element initially points to itself as its own set."
             },
-            practice: "Implement find with path halving (set each node to point to grandparent)."
+            practice: "Implement Union-Find without union by rank and compare performance."
           }
         },
         {
@@ -1606,132 +1966,65 @@ func (uf *UnionFind) FindIterative(x int) int {
             explanation: [
               "Union-Find shines at:",
               "",
-              "1. **Cycle detection**: If Union returns false, adding that edge creates a cycle",
+              "1. **Cycle detection**: If union() returns false, adding that edge creates a cycle",
               "2. **Connected components**: Each root is a component",
-              "3. **Kruskal's algorithm**: Build MST by adding edges without cycles",
-              "",
-              "Why it's fast: No need to traverse whole tree to check connectivity."
+              "3. **Kruskal's algorithm**: Build MST by adding edges without cycles"
             ],
             example: {
-              title: "Detect Cycle in Graph",
-              code: `func hasCycle(n int, edges [][]int) bool {
-    uf := NewUnionFind(n)
+              title: "Detect Cycle and Count Components",
+              code: `class UnionFind {
+    constructor(n) {
+        this.parent = Array(n).fill().map((_, i) => i);
+        this.rank = Array(n).fill(0);
+    }
     
-    for _, edge := range edges {
-        u, v := edge[0], edge[1]
-        if !uf.Union(u, v) {
-            // Union returns false if u and v already connected
-            // This means adding edge creates cycle
-            return true
+    find(x) {
+        if (this.parent[x] !== x) {
+            this.parent[x] = this.find(this.parent[x]);
         }
-    }
-    return false
-}
-
-// Count connected components
-func countComponents(n int, edges [][]int) int {
-    uf := NewUnionFind(n)
-    
-    for _, edge := range edges {
-        uf.Union(edge[0], edge[1])
+        return this.parent[x];
     }
     
-    // Count unique roots
-    components := 0
-    for i := 0; i < n; i++ {
-        if uf.Find(i) == i {
-            components++
+    union(x, y) {
+        const rootX = this.find(x);
+        const rootY = this.find(y);
+        if (rootX === rootY) return false;
+        if (this.rank[rootX] < this.rank[rootY]) this.parent[rootX] = rootY;
+        else if (this.rank[rootX] > this.rank[rootY]) this.parent[rootY] = rootX;
+        else {
+            this.parent[rootY] = rootX;
+            this.rank[rootX]++;
         }
+        return true;
     }
-    return components
+    
+    countSets() {
+        const roots = new Set();
+        for (let i = 0; i < this.parent.length; i++) roots.add(this.find(i));
+        return roots.size;
+    }
 }
 
-// Test
-func main() {
-    edges1 := [][]int{{0, 1}, {1, 2}}
-    fmt.Println(hasCycle(3, edges1))  // false
-    
-    edges2 := [][]int{{0, 1}, {1, 2}, {2, 0}}
-    fmt.Println(hasCycle(3, edges2))  // true
-    
-    fmt.Println(countComponents(5, edges1))  // 3
-}`,
-              explanation: "This example demonstrates cycle detection and counting connected components using Union-Find."
+function hasCycle(n, edges) {
+    const uf = new UnionFind(n);
+    for (const [u, v] of edges) {
+        if (!uf.union(u, v)) return true;
+    }
+    return false;
+}
+
+function countComponents(n, edges) {
+    const uf = new UnionFind(n);
+    for (const [u, v] of edges) uf.union(u, v);
+    return uf.countSets();
+}
+
+console.log(hasCycle(3, [[0, 1], [1, 2]]));  // false
+console.log(hasCycle(3, [[0, 1], [1, 2], [2, 0]]));  // true
+console.log(countComponents(5, [[0, 1], [1, 2], [3, 4]]));  // 2`,
+              explanation: "Union-Find elegantly detects cycles: if two nodes are already in the same set, adding an edge between them creates a cycle."
             },
-            practice: "Find the number of islands (2D grid version of connected components)."
-          }
-        },
-        {
-          id: "uf-advanced",
-          title: "Weighted Union-Find",
-          content: {
-            explanation: [
-              "Sometimes you need to track relationships between elements, not just grouping.",
-              "",
-              "**Weighted Union-Find**: Store weight (distance, relationship) for each element relative to its parent.",
-              "",
-              "Applications:",
-              "1. **Potential problems** — elements with relative values",
-              "2. **Relative ordering** — constraints like a > b > c",
-              "3. **Graph distance queries** — distance between nodes without explicit edges"
-            ],
-            example: {
-              title: "Weighted Union-Find",
-              code: `type WeightedUnionFind struct {
-    parent []int
-    weight []int  // distance to parent
-}
-
-func NewWeightedUF(n int) *WeightedUnionFind {
-    uf := &WeightedUnionFind{
-        parent: make([]int, n),
-        weight: make([]int, n),
-    }
-    for i := 0; i < n; i++ {
-        uf.parent[i] = i
-        uf.weight[i] = 0
-    }
-    return uf
-}
-
-// Returns weight of x relative to root
-func (uf *WeightedUnionFind) Find(x int) (int, int) {
-    if uf.parent[x] == x {
-        return x, 0
-    }
-    
-    root, parentWeight := uf.Find(uf.parent[x])
-    uf.weight[x] += parentWeight  // path compression
-    uf.parent[x] = root
-    return root, uf.weight[x]
-}
-
-// Union with weight relationship: y = x + weight
-func (uf *WeightedUnionFind) Union(x, y int, weight int) {
-    rx, wx := uf.Find(x)
-    ry, wy := uf.Find(y)
-    
-    if rx == ry {
-        return  // already connected
-    }
-    
-    uf.parent[ry] = rx
-    uf.weight[ry] = weight + wx - wy
-}
-
-// Query: get relationship between x and y
-func (uf *WeightedUnionFind) Query(x, y int) (int, bool) {
-    rx, wx := uf.Find(x)
-    ry, wy := uf.Find(y)
-    
-    if rx != ry {
-        return 0, false  // not connected
-    }
-    return wx - wy, true
-}`,
-              explanation: "This example implements weighted union-find for tracking relationships between connected elements."
-            },
-            practice: "Solve the accounts merge problem using weighted union-find."
+            practice: "Use Union-Find to find the number of islands in a 2D grid."
           }
         }
       ]

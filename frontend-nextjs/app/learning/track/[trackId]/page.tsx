@@ -217,12 +217,12 @@ export default function PublicTrackPage() {
   };
 
   const handleStartTrack = () => {
-    router.push(`/login?next=/dashboard/learning/track/${trackId}`);
+    router.push(`/login?redirect=/dashboard/learning/track/${trackId}`);
   };
 
   const handleTrySample = (topicId: string, lessonId: string) => {
     router.push(
-      `/login?next=/dashboard/learning/track/${trackId}/topic/${topicId}/lesson/${lessonId}`
+      `/learning/track/${trackId}/topic/${topicId}/preview#curriculum`
     );
   };
 

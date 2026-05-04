@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import Editor from "@monaco-editor/react";
+import Editor, { OnMount } from "@monaco-editor/react";
 
 export type Language = "javascript" | "python" | "go";
 
@@ -78,6 +78,23 @@ export default function CodeEditor({
 
     return "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
   }, [isLocked, isSubmitting, isRunning]);
+
+  const handleEditorDidMount: OnMount = () => {
+    // Configure Monaco workers to use CDN URLs to prevent route-relative path errors
+    if (typeof window !== "undefined" && !(window as any).__monacoWorkersConfigured) {
+      const cdnUrl = "https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs";
+      (window as any).MonacoEnvironment = {
+        getWorkerUrl: (_moduleId: string, label: string) => {
+          if (label === "json") return `${cdnUrl}/assets/json.worker.js`;
+          if (label === "css" || label === "scss" || label === "less") return `${cdnUrl}/assets/css.worker.js`;
+          if (label === "html" || label === "handlebars" || label === "razor") return `${cdnUrl}/assets/html.worker.js`;
+          if (label === "typescript" || label === "javascript") return `${cdnUrl}/assets/ts.worker.js`;
+          return `${cdnUrl}/assets/editor.worker.js`;
+        },
+      };
+      (window as any).__monacoWorkersConfigured = true;
+    }
+  };
 
   return (
     <div className="flex h-full min-h-[280px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] lg:min-h-[300px]">
@@ -176,27 +193,28 @@ export default function CodeEditor({
           </div>
         )}
 
-        <Editor
-          height="100%"
-          language={language}
-          theme="vs-dark"
-          value={code}
-          onChange={(value) => onChange(value || "")}
-          options={{
-            fontSize: 13,
-            minimap: { enabled: false },
-            wordWrap: "on",
-            automaticLayout: true,
-            tabSize: language === "python" ? 4 : 2,
-            lineNumbers: "on",
-            smoothScrolling: true,
-            bracketPairColorization: { enabled: true },
-            padding: { top: 16, bottom: 16 },
-            scrollBeyondLastLine: false,
-            renderLineHighlight: "all",
-            readOnly: isLocked,
-          }}
-        />
+<Editor
+           height="100%"
+           language={language}
+           theme="vs-dark"
+           value={code}
+           onChange={(value) => onChange(value || "")}
+           onMount={handleEditorDidMount}
+           options={{
+             fontSize: 13,
+             minimap: { enabled: false },
+             wordWrap: "on",
+             automaticLayout: true,
+             tabSize: language === "python" ? 4 : 2,
+             lineNumbers: "on",
+             smoothScrolling: true,
+             bracketPairColorization: { enabled: true },
+             padding: { top: 16, bottom: 16 },
+             scrollBeyondLastLine: false,
+             renderLineHighlight: "all",
+             readOnly: isLocked,
+           }}
+         />
       </div>
 
       <div className="flex items-center justify-between border-t border-white/10 bg-[#08080c] px-3 py-2 text-xs text-gray-500 sm:px-4">

@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -188,6 +189,11 @@ func SubmitCode(c *gin.Context) {
 		return
 	}
 
+	// Update challenge streak for accepted submissions
+	if normalizedStatus == "accepted" {
+		updateChallengeStreakForSubmission(ctx, userID)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":        normalizedStatus,
 		"output":        result.Output,
@@ -284,4 +290,51 @@ func GetSubmissionsAudit(c *gin.Context) {
 		Submissions: enrichedSubmissions,
 		Metrics:     metrics,
 	})
+}
+
+func updateChallengeStreakForSubmission(ctx context.Context, userID string) {
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return
+	}
+
+	learningProgressCollection := database.GetCollection("learning_progress")
+	var progress models.LearningProgress
+	err = learningProgressCollection.FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&progress)
+	if err != nil {
+		return
+	}
+
+	now := time.Now().UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+
+	chStreak := progress.ChallengeStreak
+	if chStreak.CurrentStreak == 0 {
+		chStreak.CurrentStreak = 1
+		chStreak.LongestStreak = 1
+		chStreak.LastChallengeDate = today
+	} else {
+		lastDate := time.Date(chStreak.LastChallengeDate.Year(), chStreak.LastChallengeDate.Month(), chStreak.LastChallengeDate.Day(), 0, 0, 0, 0, time.UTC)
+		daysSince := int(today.Sub(lastDate).Hours() / 24)
+
+		if daysSince == 0 {
+		} else if daysSince == 1 {
+			chStreak.CurrentStreak++
+			if chStreak.CurrentStreak > chStreak.LongestStreak {
+				chStreak.LongestStreak = chStreak.CurrentStreak
+			}
+			chStreak.LastChallengeDate = today
+		} else {
+			chStreak.CurrentStreak = 1
+			chStreak.LastChallengeDate = today
+		}
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"challenge_streak": chStreak,
+			"updated_at":       time.Now().UTC(),
+		},
+	}
+	learningProgressCollection.UpdateOne(ctx, bson.M{"user_id": userObjID}, update)
 }

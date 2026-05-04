@@ -57,7 +57,9 @@ export interface Subtopic {
     explanation: string[];
     example?: {
       title: string;
-      code: string;
+      code?: string;
+      html?: string;
+      css?: string;
       explanation: string;
     };
     practice?: string;
@@ -84,8 +86,8 @@ export interface LearningTrack {
   color: string;
   coverImage?: string;
   totalHours: number;
-  language: "javascript" | "python" | "go" | "multi";
-  category: "JavaScript" | "Python" | "Go" | "Algorithms" | "Data Structures" | "SQL" | "System Design";
+  language: "javascript" | "python" | "go" | "multi" | "html" | "html-css";
+  category: "JavaScript" | "Python" | "Go" | "Algorithms" | "Data Structures" | "SQL" | "System Design" | "HTML" | "CSS";
   topics: TrackTopic[];
 }
 

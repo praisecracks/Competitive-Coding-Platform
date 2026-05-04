@@ -3,6 +3,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -37,6 +38,7 @@ func GetLearningProgress(c *gin.Context) {
 				TrackProgress:  make(map[string]models.TrackProgress),
 				LegacyProgress: make(map[string]models.LegacyPathProgress),
 				Streak:         models.StreakData{},
+				ChallengeStreak: models.ChallengeStreak{},
 				Journal:        []models.JournalEntry{},
 			})
 			return
@@ -95,8 +97,8 @@ func UpdateTrackProgress(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
-// UpdateStreak - POST /learning/streak
-func UpdateStreak(c *gin.Context) {
+// UpdateLearningStreak - POST /learning/streak
+func UpdateLearningStreak(c *gin.Context) {
 	userIDStr := c.GetString("user_id")
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
@@ -116,7 +118,6 @@ func UpdateStreak(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	// Get current progress
 	var progress models.LearningProgress
 	err = database.LearningProgressCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&progress)
 	if err != nil && err.Error() != "mongo: no documents in result" {
@@ -139,24 +140,22 @@ func UpdateStreak(c *gin.Context) {
 		if daysSinceLastLearning == 0 {
 			// Same day, don't update streak
 		} else if daysSinceLastLearning == 1 {
-			// Consecutive day
 			streak.CurrentStreak++
 			if streak.CurrentStreak > streak.LongestStreak {
 				streak.LongestStreak = streak.CurrentStreak
 			}
 			streak.LastLearningDate = today
 		} else {
-			// Streak broken, start new
 			streak.CurrentStreak = 1
 			streak.LastLearningDate = today
 		}
 	}
 
-	// Update streak in database
 	update := bson.M{
 		"$set": bson.M{
-			"streak":     streak,
-			"updated_at": time.Now().UTC(),
+			"streak":         streak,
+			"challenge_streak": progress.ChallengeStreak,
+			"updated_at":     time.Now().UTC(),
 		},
 		"$setOnInsert": bson.M{
 			"user_id":         userID,
@@ -174,7 +173,102 @@ func UpdateStreak(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, streak)
+	c.JSON(http.StatusOK, gin.H{
+		"streak":    streak,
+		"message":   getPositiveReinforcement(streak.CurrentStreak),
+	})
+}
+
+// UpdateChallengeStreak - POST /learning/challenge-streak
+func UpdateChallengeStreak(c *gin.Context) {
+	userIDStr := c.GetString("user_id")
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_USER_ID"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	var progress models.LearningProgress
+	err = database.LearningProgressCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&progress)
+	if err != nil && err.Error() != "mongo: no documents in result" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DATABASE_ERROR"})
+		return
+	}
+
+	now := time.Now().UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+
+	chStreak := progress.ChallengeStreak
+	if chStreak.CurrentStreak == 0 {
+		chStreak.CurrentStreak = 1
+		chStreak.LongestStreak = 1
+		chStreak.LastChallengeDate = today
+	} else {
+		lastDate := time.Date(chStreak.LastChallengeDate.Year(), chStreak.LastChallengeDate.Month(), chStreak.LastChallengeDate.Day(), 0, 0, 0, 0, time.UTC)
+		daysSince := int(today.Sub(lastDate).Hours() / 24)
+
+		if daysSince == 0 {
+			// Same day, don't update streak
+		} else if daysSince == 1 {
+			chStreak.CurrentStreak++
+			if chStreak.CurrentStreak > chStreak.LongestStreak {
+				chStreak.LongestStreak = chStreak.CurrentStreak
+			}
+			chStreak.LastChallengeDate = today
+		} else {
+			chStreak.CurrentStreak = 1
+			chStreak.LastChallengeDate = today
+		}
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"challenge_streak": chStreak,
+			"streak":           progress.Streak,
+			"updated_at":       time.Now().UTC(),
+		},
+		"$setOnInsert": bson.M{
+			"user_id":         userID,
+			"created_at":      time.Now().UTC(),
+			"track_progress":  map[string]models.TrackProgress{},
+			"journal":         []models.JournalEntry{},
+			"legacy_progress": map[string]models.LegacyPathProgress{},
+		},
+	}
+
+	opts := options.Update().SetUpsert(true)
+	_, err = database.LearningProgressCollection.UpdateOne(ctx, bson.M{"user_id": userID}, update, opts)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "UPDATE_FAILED"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"streak":    chStreak,
+		"message":   getPositiveReinforcement(chStreak.CurrentStreak),
+	})
+}
+
+func getPositiveReinforcement(streak int) string {
+	messages := map[int]string{
+		1:  "Great start! Keep going!",
+		3:  "3 days strong! You're building momentum!",
+		7:  "Amazing! One week streak! 🔥",
+		14: "Two weeks of consistency! 🌟",
+		30: "Incredible! 30-day streak! You're on fire! 🚀",
+		50: "Unstoppable! 50-day streak champion! 🏆",
+		100: "Legendary! 100-day streak! You're a coding master! 👑",
+	}
+	if msg, ok := messages[streak]; ok {
+		return msg
+	}
+	if streak > 1 {
+		return fmt.Sprintf("Day %d! Keep the streak alive! 💪", streak)
+	}
+	return "Starting your streak! 🌱"
 }
 
 // AddJournalEntry - POST /learning/journal

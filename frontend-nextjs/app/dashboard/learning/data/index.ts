@@ -2,6 +2,8 @@ import { LearningTrack } from "../data";
 import { masterJavascript } from "./master-javascript";
 import { masterPython } from "./master-python";
 import { masterGo } from "./master-go";
+import { masterHtml } from "./master-html";
+import { masterCss } from "./master-css";
 import { algorithmPatterns } from "./algorithm-patterns";
 import { dataStructures } from "./data-structures";
 import { systemDesign } from "./system-design";
@@ -11,6 +13,8 @@ export const LEARNING_TRACKS: LearningTrack[] = [
   masterJavascript,
   masterPython,
   masterGo,
+  masterHtml,
+  masterCss,
 ];
 
 export const ADDITIONAL_TRACKS: LearningTrack[] = [

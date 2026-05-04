@@ -254,7 +254,7 @@ export default function LearningPreview() {
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.6, delay: index * 0.15 }}
               className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${path.gradient} shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] cursor-pointer`}
-               onClick={() => path.previewTrack ? router.push(`/learning/track/${path.previewTrack}`) : router.push('/login?next=/dashboard/learning')}
+               onClick={() => path.previewTrack ? router.push(`/learning/track/${path.previewTrack}`) : router.push('/login?redirect=/dashboard/learning')}
             >
               {/* Decorative background elements */}
               <div className="absolute inset-0 opacity-20">
@@ -306,23 +306,23 @@ export default function LearningPreview() {
 
                     {/* CTA */}
                     <div className="flex items-center text-gray-800 gap-4 pt-3">
-                      <a
-                        href={path.viewAll ? "/login?next=/dashboard/learning" : `/learning/track/${path.previewTrack}`}
-                        onClick={(e) => path.viewAll && e.stopPropagation()}
+<a
+                           href="/login?redirect=/dashboard/learning"
+                           onClick={(e) => path.viewAll && e.stopPropagation()}
                         className="inline-flex items-center gap-2 rounded-xl bg-white  px-6 py-3 text-sm font-semibold text-gray-800 shadow-lg transition-all hover:from-pink-600 hover:to-purple-700 hover:gap-3"
                       >
                         {path.cta}
                         <ArrowRight className="h-4 w-4" />
                       </a>
-                      {!path.viewAll && (
-                        <a
-                          href="/login?next=/dashboard/learning"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-sm font-medium text-white/80 underline underline-offset-4 hover:text-white"
-                        >
-                          Browse all tracks
-                        </a>
-                      )}
+{!path.viewAll && (
+                         <a
+                           href={`/learning/track/${path.previewTrack}`}
+                           onClick={(e) => e.stopPropagation()}
+                           className="text-sm font-medium text-white/80 underline underline-offset-4 hover:text-white"
+                         >
+                           Browse all tracks
+                         </a>
+                       )}
                     </div>
                   </div>
 
@@ -344,9 +344,9 @@ export default function LearningPreview() {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="mt-10 text-center"
         >
-          <a
-            href="/login?next=/dashboard/learning"
-            className={`inline-flex items-center gap-2 rounded-2xl  px-8 py-4 text-base font-semibold transition-all ${
+<a
+              href="/learning/track/master-javascript"
+              className={`inline-flex items-center gap-2 rounded-2xl  px-8 py-4 text-base font-semibold transition-all ${
               isLight
                 ? "border-pink-300 bg-pink-50 text-pink-700 hover:bg-pink-100 hover:border-pink-400"
                 : "border-white/20 bg-white/5 text-white hover:bg-white/10 backdrop-blur-sm"

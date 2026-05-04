@@ -12,6 +12,8 @@ import {
   Languages,
   Copy,
   CheckCircle2,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
 
@@ -21,6 +23,8 @@ interface CodePlaygroundProps {
   initialCode?: string;
   language?: Language;
   lockedLanguage?: boolean;
+  onRun?: () => void;
+  runDisabled?: boolean;
 }
 
 interface PyodideInterface {
@@ -68,6 +72,8 @@ export default function CodePlayground({
   initialCode = "",
   language: initialLanguage = "javascript",
   lockedLanguage = false,
+  onRun,
+  runDisabled = false,
 }: CodePlaygroundProps) {
 
   const { theme } = useTheme();
@@ -82,6 +88,8 @@ export default function CodePlayground({
   const [pyodideReady, setPyodideReady] = useState(false);
   const [pyodideLoading, setPyodideLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isFullscreenModal, setIsFullscreenModal] = useState(false);
+  const [isOutputExpanded, setIsOutputExpanded] = useState(false);
 
   const pyodideRef = useRef<any>(null);
   const editorRef = useRef<any>(null);
@@ -206,6 +214,8 @@ sys.stderr = StringIO()
   }, []);
 
   const handleRun = useCallback(async () => {
+    if (runDisabled) return;
+    onRun?.();
     setIsRunning(true);
     setOutput("");
     setHasError(false);
@@ -297,7 +307,7 @@ sys.stderr = StringIO()
     } finally {
       setIsRunning(false);
     }
-  }, [code, language, pyodideReady, runPython, runGo]);
+   }, [code, language, pyodideReady, runPython, runGo, runDisabled, onRun]);
 
   const handleReset = () => {
     setCode(initialCode || DEFAULT_CODE[language]);
@@ -448,41 +458,50 @@ sys.stderr = StringIO()
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleCopyCode}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              isLight ? "text-gray-600 hover:bg-gray-100" : "text-gray-400 hover:bg-white/5"
-            }`}
-            title="Copy code"
-          >
-            {copied ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-            {copied ? "Copied!" : "Copy"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleCopyCode}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                isLight ? "text-gray-600 hover:bg-gray-100" : "text-gray-400 hover:bg-white/5"
+              }`}
+              title="Copy code"
+            >
+              {copied ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+              {copied ? "Copied!" : "Copy"}
+            </button>
 
-          <button
-            onClick={handleReset}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              isLight ? "text-gray-600 hover:bg-gray-100" : "text-gray-400 hover:bg-white/5"
-            }`}
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Reset
-          </button>
+            <button
+              onClick={() => setIsFullscreenModal(true)}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                isLight ? "text-gray-600 hover:bg-gray-100" : "text-gray-400 hover:bg-white/5"
+              }`}
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </button>
+
+            <button
+              onClick={handleReset}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                isLight ? "text-gray-600 hover:bg-gray-100" : "text-gray-400 hover:bg-white/5"
+              }`}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reset
+            </button>
 
           <button
             onClick={handleRun}
-            disabled={isRunning || (language === "python" && !pyodideReady)}
+            disabled={isRunning || (language === "python" && !pyodideReady) || runDisabled}
             className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition-all sm:px-5 ${
               isLight
                 ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
                 : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg hover:opacity-95"
             } ${
-              isRunning || (language === "python" && !pyodideReady)
+              isRunning || (language === "python" && !pyodideReady) || runDisabled
                 ? "cursor-not-allowed opacity-60"
                 : ""
             }`}
@@ -571,6 +590,19 @@ sys.stderr = StringIO()
             </div>
 
             <button
+              onClick={() => setIsOutputExpanded((prev) => !prev)}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                isLight ? "text-gray-600 hover:bg-gray-100" : "text-gray-400 hover:bg-white/10"
+              }`}
+            >
+              <Maximize2
+                className={`h-3.5 w-3.5 transition-transform duration-300 ${
+                  isOutputExpanded ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            <button
               onClick={() => setOutput("")}
               className={`w-fit text-xs font-medium ${
                 isLight ? "text-gray-500 hover:text-gray-700" : "text-gray-500 hover:text-gray-300"
@@ -580,12 +612,158 @@ sys.stderr = StringIO()
             </button>
           </div>
 
-          <div
-            className={`max-h-48 overflow-y-auto px-3 py-4 font-mono text-sm leading-relaxed sm:px-4 ${
+           <div
+            className={`max-h-48 overflow-y-auto px-3 py-4 font-mono text-sm leading-relaxed sm:px-4 transition-all duration-300 ${
               isLight ? "text-gray-800" : "text-gray-200"
-            }`}
+            } ${isOutputExpanded ? "max-h-[400px]" : ""}`}
           >
             <pre className="whitespace-pre-wrap break-words">{output}</pre>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Modal */}
+      {isFullscreenModal && (
+        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm">
+          <div className="flex h-full flex-col">
+            <div
+              className={`flex items-center justify-between border-b px-3 py-2 ${
+                isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-[#1a1a24]"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  <div className="h-3 w-3 rounded-full bg-red-500" />
+                  <div className="h-3 w-3 rounded-full bg-yellow-500" />
+                  <div className="h-3 w-3 rounded-full bg-emerald-500" />
+                </div>
+                <span
+                  className={`text-xs font-semibold uppercase tracking-[0.16em] ${
+                    isLight ? "text-gray-500" : "text-gray-400"
+                  }`}
+                >
+                  {language === "go" ? "Go" : language === "python" ? "Python" : "JavaScript"} — Fullscreen
+                </span>
+              </div>
+              <button
+                onClick={() => setIsFullscreenModal(false)}
+                className={`rounded-lg p-2 transition-colors ${
+                  isLight ? "text-gray-600 hover:bg-gray-100" : "text-gray-400 hover:bg-white/10"
+                }`}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="relative flex-1 overflow-hidden">
+              <div className="absolute inset-0 flex flex-col">
+                <div className="flex-1 overflow-hidden">
+                  <Editor
+                    path={`playground-${language}-full`}
+                    defaultLanguage={
+                      language === "go" ? "go" : language === "python" ? "python" : "javascript"
+                    }
+                    language={
+                      language === "go" ? "go" : language === "python" ? "python" : "javascript"
+                    }
+                    value={code}
+                    onChange={handleEditorChange}
+                    onMount={handleEditorDidMount}
+                    theme={isLight ? "vs" : "vs-dark"}
+                    options={{
+                      ...editorOptions,
+                      fontSize: 14,
+                    }}
+                  />
+                </div>
+
+                {output && (
+                  <div
+                    className={`flex h-48 flex-col border-t ${
+                      isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-[#0c0c12]"
+                    }`}
+                  >
+                    <div
+                      className={`flex items-center gap-2 border-b px-3 py-2 ${
+                        isLight ? "border-gray-200 bg-gray-100" : "border-white/10 bg-[#1a1a24]"
+                      }`}
+                    >
+                      <Terminal
+                        className={`h-3.5 w-3.5 ${
+                          isLight ? "text-gray-600" : "text-gray-400"
+                        }`}
+                      />
+                      <span
+                        className={`text-xs font-semibold ${
+                          isLight ? "text-gray-700" : "text-gray-300"
+                        }`}
+                      >
+                        Terminal —{" "}
+                        {language === "go"
+                          ? "Go (not supported)"
+                          : language === "python"
+                          ? pyodideReady
+                            ? "Python 3"
+                            : "Loading Pyodide..."
+                          : "JavaScript"}
+                      </span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto px-3 py-2 font-mono text-sm leading-relaxed">
+                      <pre className="whitespace-pre-wrap break-words">{output}</pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div
+              className={`flex items-center justify-between border-t px-3 py-2 ${
+                isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-[#0c0c12]"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleReset}
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    isLight ? "text-gray-600 hover:bg-gray-100" : "text-gray-400 hover:bg-white/5"
+                  }`}
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Reset
+                </button>
+
+                <button
+                  onClick={handleRun}
+                  disabled={isRunning || (language === "python" && !pyodideReady) || runDisabled}
+                  className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition-all ${
+                    isLight
+                      ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
+                      : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg hover:opacity-95"
+                  } ${
+                    isRunning || (language === "python" && !pyodideReady) || runDisabled
+                      ? "cursor-not-allowed opacity-60"
+                      : ""
+                  }`}
+                >
+                  {isRunning ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                  )}
+                  {isRunning ? "Running..." : "Run"}
+                </button>
+              </div>
+
+              <button
+                onClick={() => setIsFullscreenModal(false)}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  isLight ? "text-gray-600 hover:bg-gray-100" : "text-gray-400 hover:bg-white/10"
+                }`}
+              >
+                <Minimize2 className="h-3.5 w-3.5" />
+                Minimize
+              </button>
+            </div>
           </div>
         </div>
       )}

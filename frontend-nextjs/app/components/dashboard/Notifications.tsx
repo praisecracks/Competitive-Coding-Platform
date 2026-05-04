@@ -7,7 +7,14 @@ import { getUserStreakKey } from "@/lib/auth";
 
 interface Notification {
   id: string;
-  type: "success" | "info" | "warning" | "error" | "duel_invite";
+  type:
+    | "success"
+    | "info"
+    | "warning"
+    | "error"
+    | "duel_invite"
+    | "duel_result"
+    | "system";
   title: string;
   message: string;
   timestamp: Date;
@@ -20,14 +27,14 @@ interface Notification {
 export default function Notifications() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-  });
   const [countdown, setCountdown] = useState<Record<string, number>>({});
-  const [processingDuelIds, setProcessingDuelIds] = useState<Record<string, "accept" | "decline" | null>>({});
+  const [processingDuelIds, setProcessingDuelIds] = useState<
+    Record<string, "accept" | "decline" | null>
+  >({});
+
   const processedInviteIdsRef = useRef<Set<string>>(new Set());
 
   const getAuthToken = useCallback((): string | null => {
@@ -38,52 +45,6 @@ export default function Notifications() {
     return token;
   }, []);
 
-  useEffect(() => {
-    const fetchPrefs = async () => {
-      try {
-        const token = getAuthToken();
-        if (!token) return;
-
-        const res = await fetch("/api/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setPreferences({
-            emailNotifications: data.emailNotifications ?? true,
-          });
-        } else {
-          console.warn("Profile API returned non-OK status:", res.status);
-        }
-      } catch (e) {
-        console.error("Failed to fetch notification preferences:", e);
-      }
-    };
-
-    fetchPrefs();
-  }, [getAuthToken]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("dashboard_notifications");
-    if (!saved) return;
-
-    try {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        setNotifications(
-          parsed.map((n: any) => ({
-            ...n,
-            timestamp: new Date(n.timestamp),
-          }))
-        );
-      }
-    } catch (e) {
-      console.error("Failed to parse notifications");
-    }
-  }, []);
-
-  // Get dismissed notification IDs from localStorage
   const getDismissedIds = (): Set<string> => {
     try {
       const stored = localStorage.getItem("dismissed_notification_ids");
@@ -93,19 +54,30 @@ export default function Notifications() {
     }
   };
 
-  // Save dismissed notification ID to localStorage
   const saveDismissedId = (id: string) => {
     const dismissed = getDismissedIds();
     dismissed.add(id);
-    localStorage.setItem("dismissed_notification_ids", JSON.stringify([...dismissed]));
+    localStorage.setItem(
+      "dismissed_notification_ids",
+      JSON.stringify([...dismissed])
+    );
   };
 
-  useEffect(() => {
-    localStorage.setItem("dashboard_notifications", JSON.stringify(notifications));
-  }, [notifications]);
+  const removeNotification = async (id: string) => {
+    // Persist dismissal on server
+    try {
+      const token = getAuthToken();
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+      await fetch(`${API_BASE_URL}/notifications/dismiss/${id}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+    } catch (e) {
+      console.debug("Failed to dismiss notification on server:", e);
+    }
 
-  const removeNotification = (id: string) => {
-    saveDismissedId(id); // Save so it won't reappear
+    // Remove from UI
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
@@ -115,261 +87,303 @@ export default function Notifications() {
     removeNotification(notificationId);
   };
 
-useEffect(() => {
-      const fetchNotifications = async () => {
-        const token = getAuthToken();
-        if (!token) return;
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const token = getAuthToken();
+      if (!token) return;
 
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
-        console.debug("Fetching notifications from:", `${API_BASE_URL}/notifications`, `${API_BASE_URL}/duo/pending-invites`);
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
-        // Check user role for admin notifications (only super_admin sees feedback notifications)
-        let isSuperAdmin = false;
+      let isSuperAdmin = false;
+
+      try {
+        const userData = localStorage.getItem("user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          isSuperAdmin = user.role === "super_admin";
+        }
+       } catch {}
+
+       // Fetch dismissed notification IDs from server (replaces localStorage)
+       let dismissedIds = new Set<string>();
+       try {
+         const dismissRes = await fetch(`${API_BASE_URL}/notifications/dismissed`, {
+           headers: { Authorization: `Bearer ${token}` },
+           cache: "no-store",
+         });
+         if (dismissRes.ok) {
+           const idsArray: string[] = await dismissRes.json();
+           dismissedIds = new Set(idsArray);
+         }
+       } catch (e) {
+         console.debug("Failed to fetch dismissed IDs:", e);
+       }
+
+       try {
+        let fetchedNotifications: Notification[] = [];
+
         try {
-          const userData = localStorage.getItem("user");
-          if (userData) {
-            const user = JSON.parse(userData);
-            isSuperAdmin = user.role === "super_admin";
+          const notifRes = await fetch(`${API_BASE_URL}/notifications`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          });
+
+          if (notifRes.ok) {
+            const data = await notifRes.json();
+
+             if (Array.isArray(data)) {
+               fetchedNotifications = data
+                 .map((n: any) => ({
+                   id: n.id,
+                   type: n.type,
+                   title: n.title,
+                   message: n.message,
+                   timestamp: new Date(n.created_at),
+                   read: n.read,
+                 }))
+                 .filter((n: Notification) => !dismissedIds.has(n.id));
+             }
+          } else {
+            console.debug("Notifications API status:", notifRes.status);
           }
-        } catch {}
+        } catch (err) {
+          console.debug("Regular notifications fetch failed:", err);
+        }
 
-        try {
-          // Fetch regular notifications
-          let fetchedNotifications: Notification[] = [];
-          
+        if (isSuperAdmin) {
           try {
-            const notifRes = await fetch(`${API_BASE_URL}/notifications`, {
+            const sysRes = await fetch(`${API_BASE_URL}/notifications/system`, {
               headers: { Authorization: `Bearer ${token}` },
               cache: "no-store",
             });
 
-            if (notifRes.ok) {
-              try {
-                const data = await notifRes.json();
-                if (Array.isArray(data)) {
-                  fetchedNotifications = data.map((n: any) => ({
+            if (sysRes.ok) {
+              const sysData = await sysRes.json();
+
+              if (Array.isArray(sysData)) {
+
+
+                const systemNotifs = sysData
+                  .map((n: any) => ({
                     id: n.id,
                     type: n.type,
                     title: n.title,
                     message: n.message,
                     timestamp: new Date(n.created_at),
-                    read: n.read,
-                  }));
-                  console.debug("Fetched", fetchedNotifications.length, "regular notifications");
-                } else {
-                  console.debug("Notifications response not array, using empty");
-                }
-              } catch (parseErr) {
-                console.debug("Failed to parse notifications JSON, using empty");
-              }
-            } else {
-              // Silently ignore non-OK responses — common if endpoint doesn't exist
-              console.debug("Notifications API status:", notifRes.status, "- skipping");
-            }
-} catch (err) {
-              console.debug("Regular notifications fetch failed (expected if no endpoint):", err);
-            }
+                    read: n.read || false,
+                  }))
+                  .filter((n: Notification) => !dismissedIds.has(n.id));
 
-            // Fetch system notifications for super_admin only
-            if (isSuperAdmin) {
-              try {
-                const sysRes = await fetch(`${API_BASE_URL}/notifications/system`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                  cache: "no-store",
-                });
-
-                if (sysRes.ok) {
-                  const sysData = await sysRes.json();
-                  if (Array.isArray(sysData)) {
-                    // Get dismissed IDs to filter out
-                    const dismissedIds = getDismissedIds();
-                    const systemNotifs = sysData.map((n: any) => ({
-                      id: n.id,
-                      type: n.type,
-                      title: n.title,
-                      message: n.message,
-                      timestamp: new Date(n.created_at),
-                      read: n.read || false,
-                    })).filter((n: any) => !dismissedIds.has(n.id)); // Filter out dismissed
-                    fetchedNotifications = [...fetchedNotifications, ...systemNotifs];
-                    console.debug("Fetched", systemNotifs.length, "system notifications for admin");
-                  }
-                }
-              } catch (sysErr) {
-                console.debug("System notifications fetch failed:", sysErr);
+                fetchedNotifications = [
+                  ...fetchedNotifications,
+                  ...systemNotifs,
+                ];
               }
             }
+          } catch (sysErr) {
+            console.debug("System notifications fetch failed:", sysErr);
+          }
+        }
 
-            // Fetch duel invites (may fail if endpoint doesn't exist - that's ok)
-           try {
-            const res = await fetch(`${API_BASE_URL}/duo/pending-invites`, {
-              headers: { Authorization: `Bearer ${token}` },
-              cache: "no-store",
-            });
+        try {
+          const res = await fetch(`${API_BASE_URL}/duo/pending-invites`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          });
 
-            if (!res.ok) {
-              // Silently ignore — endpoint may not exist or user not authenticated
-              console.debug("Duel invites API status:", res.status, "- skipping");
-              setNotifications(fetchedNotifications.slice(0, 20));
-              return;
-            }
+          if (!res.ok) {
+            setNotifications(fetchedNotifications.slice(0, 50));
+            return;
+          }
 
-            let invites: any[];
-            try {
-              invites = await res.json();
-            } catch (parseErr) {
-              console.debug("Failed to parse duel invites JSON, using empty");
-              setNotifications(fetchedNotifications.slice(0, 20));
-              return;
-            }
+          const invites = await res.json();
 
-            if (!Array.isArray(invites)) {
-              console.debug("Duel invites not array, using empty");
-              setNotifications(fetchedNotifications.slice(0, 20));
-              return;
-            }
+          if (!Array.isArray(invites)) {
+            setNotifications(fetchedNotifications.slice(0, 50));
+            return;
+          }
 
-           console.debug("Fetched", invites.length, "duel invites");
+          const duelInvites: Notification[] = invites
+            .filter((invite: any) => {
+              const duelId = String(invite.id || "");
+              if (!duelId) return false;
 
-           const duelInvites: Notification[] = invites
-             .filter((invite: any) => {
-               const duelId = String(invite.id || "");
-               if (!duelId) return false;
-               const notificationId = `invite-${duelId}`;
-               if (processedInviteIdsRef.current.has(notificationId)) return false;
-               if (processingDuelIds[duelId]) return false;
-               return true;
-             })
-             .map((invite: any) => ({
-               id: `invite-${invite.id}`,
-               type: "duel_invite",
-               title: "Duel Invitation",
-               message: `${invite.challenger_name} challenged you to ${invite.challenge_title}`,
-               timestamp: new Date(invite.created_at),
-               read: false,
-               duelId: invite.id,
-               challengeTitle: invite.challenge_title,
-               challengerName: invite.challenger_name,
-             }));
+              const notificationId = `invite-${duelId}`;
 
-           setNotifications((prev) => {
-             const nonInviteNotifications = fetchedNotifications;
-             const preservedCountdownInvites = prev.filter(
-               (n) =>
-                 n.type === "duel_invite" &&
-                 n.duelId &&
-                 (countdown[n.duelId] !== undefined || processingDuelIds[n.duelId])
-             );
+              if (processedInviteIdsRef.current.has(notificationId)) {
+                return false;
+              }
 
-             const merged = [
-               ...preservedCountdownInvites,
-               ...duelInvites,
-               ...nonInviteNotifications,
-             ];
+              if (processingDuelIds[duelId]) {
+                return false;
+              }
 
-             const seen = new Set<string>();
-             return merged.filter((n) => {
-               if (seen.has(n.id)) return false;
-               seen.add(n.id);
-               return true;
-             }).slice(0, 20);
-           });
-         } catch (err) {
-           console.error("Failed to fetch duel invites:", err);
-           // Fallback to regular notifications only
-           setNotifications(fetchedNotifications.slice(0, 20));
-         }
-       } catch (error) {
-         console.error("Unexpected error in fetchNotifications:", error);
-         // Last resort: don't crash, just keep existing notifications
-       }
-     };
+              return true;
+            })
+            .map((invite: any) => ({
+              id: `invite-${invite.id}`,
+              type: "duel_invite",
+              title: "Duel Invitation",
+              message: `${invite.challenger_name} challenged you to ${invite.challenge_title}`,
+              timestamp: new Date(invite.created_at),
+              read: false,
+              duelId: invite.id,
+              challengeTitle: invite.challenge_title,
+              challengerName: invite.challenger_name,
+            }));
 
-     fetchNotifications();
-     const interval = setInterval(fetchNotifications, 2000);
+          setNotifications((prev) => {
+            const preservedCountdownInvites = prev.filter(
+              (n) =>
+                n.type === "duel_invite" &&
+                n.duelId &&
+                (countdown[n.duelId] !== undefined ||
+                  processingDuelIds[n.duelId])
+            );
 
-     return () => clearInterval(interval);
-   }, [countdown, processingDuelIds, getAuthToken]);
+            const merged = [
+              ...preservedCountdownInvites,
+              ...duelInvites,
+              ...fetchedNotifications,
+            ];
 
-  // Streak reminder system
+            const seen = new Set<string>();
+
+            return merged
+              .filter((n) => {
+                if (seen.has(n.id)) return false;
+                seen.add(n.id);
+                return true;
+                })
+                .slice(0, 50);
+          });
+        } catch (err) {
+          console.error("Failed to fetch duel invites:", err);
+          setNotifications(fetchedNotifications.slice(0, 50));
+        }
+      } catch (error) {
+        console.error("Unexpected error in fetchNotifications:", error);
+      }
+    };
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [countdown, processingDuelIds, getAuthToken]);
+
   useEffect(() => {
     const checkStreaks = () => {
       const now = new Date();
       const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const timeUntilMidnight = (24 - currentHour) * 60 - currentMinute;
 
-      // Check learning streak
       const streakData = localStorage.getItem(getUserStreakKey());
-      if (streakData) {
-        const streak = JSON.parse(streakData);
-        if (streak.currentStreak > 0) {
-          const lastDate = new Date(streak.lastLearningDate);
-          const lastDateStr = lastDate.toDateString();
-          const todayStr = now.toDateString();
-          const yesterday = new Date(now);
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toDateString();
 
-          // Show reminder in the evening (after 6 PM)
-          if (currentHour >= 18 && lastDateStr !== todayStr && lastDateStr !== yesterdayStr) {
-            const streakNotifId = "streak-learning-reminder";
-            const existingNotif = notifications.find(n => n.id === streakNotifId);
-            if (!existingNotif) {
-              const newNotif: Notification = {
-                id: streakNotifId,
-                type: "warning",
-                title: "🔥 Learning Streak at Risk!",
-                message: `Your ${streak.currentStreak}-day learning streak will reset tonight. Complete a lesson to keep it alive!`,
-                timestamp: now,
-                read: false,
-              };
-              setNotifications(prev => [newNotif, ...prev]);
+      if (streakData) {
+        try {
+          const streak = JSON.parse(streakData);
+
+          if (streak.currentStreak > 0) {
+            const lastDate = new Date(streak.lastLearningDate);
+            const lastDateStr = lastDate.toDateString();
+            const todayStr = now.toDateString();
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toDateString();
+
+            if (
+              currentHour >= 18 &&
+              lastDateStr !== todayStr &&
+              lastDateStr !== yesterdayStr
+            ) {
+              const streakNotifId = "streak-learning-reminder";
+
+              setNotifications((prev) => {
+                const existingNotif = prev.find(
+                  (n) => n.id === streakNotifId
+                );
+
+                if (existingNotif) return prev;
+
+                return [
+                  {
+                    id: streakNotifId,
+                    type: "warning",
+                    title: "🔥 Learning Streak at Risk!",
+                    message: `Your ${streak.currentStreak}-day learning streak will reset tonight. Complete a lesson to keep it alive!`,
+                    timestamp: now,
+                    read: false,
+                  },
+                  ...prev,
+                ];
+              });
             }
           }
+        } catch {
+          console.debug("Failed to parse learning streak data");
         }
       }
 
-      // Check challenge streak (from dashboard stats)
       const userData = localStorage.getItem("user");
-      if (userData) {
-        const user = JSON.parse(userData);
-        if (user.currentStreak && user.currentStreak > 0 && user.lastActive) {
-          const lastActiveDate = new Date(user.lastActive);
-          const lastActiveStr = lastActiveDate.toDateString();
-          const todayStr = now.toDateString();
-          const yesterday = new Date(now);
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toDateString();
 
-          if (currentHour >= 18 && lastActiveStr !== todayStr && lastActiveStr !== yesterdayStr) {
-            const challengeNotifId = "streak-challenge-reminder";
-            const existingNotif = notifications.find(n => n.id === challengeNotifId);
-            if (!existingNotif) {
-              const newNotif: Notification = {
-                id: challengeNotifId,
-                type: "warning",
-                title: "⚡ Challenge Streak at Risk!",
-                message: `Your ${user.currentStreak}-day challenge streak will reset tonight. Complete a challenge to keep it alive!`,
-                timestamp: now,
-                read: false,
-              };
-              setNotifications(prev => [newNotif, ...prev]);
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+
+          if (user.currentStreak && user.currentStreak > 0 && user.lastActive) {
+            const lastActiveDate = new Date(user.lastActive);
+            const lastActiveStr = lastActiveDate.toDateString();
+            const todayStr = now.toDateString();
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toDateString();
+
+            if (
+              currentHour >= 18 &&
+              lastActiveStr !== todayStr &&
+              lastActiveStr !== yesterdayStr
+            ) {
+              const challengeNotifId = "streak-challenge-reminder";
+
+              setNotifications((prev) => {
+                const existingNotif = prev.find(
+                  (n) => n.id === challengeNotifId
+                );
+
+                if (existingNotif) return prev;
+
+                return [
+                  {
+                    id: challengeNotifId,
+                    type: "warning",
+                    title: "⚡ Challenge Streak at Risk!",
+                    message: `Your ${user.currentStreak}-day challenge streak will reset tonight. Complete a challenge to keep it alive!`,
+                    timestamp: now,
+                    read: false,
+                  },
+                  ...prev,
+                ];
+              });
             }
           }
+        } catch {
+          console.debug("Failed to parse user streak data");
         }
       }
     };
 
-    // Check on mount and every hour
     checkStreaks();
     const hourInterval = setInterval(checkStreaks, 60 * 60 * 1000);
 
     return () => clearInterval(hourInterval);
   }, []);
 
-  const handleDuelAction = async (duelId: string, action: "accept" | "decline") => {
+  const handleDuelAction = async (
+    duelId: string,
+    action: "accept" | "decline"
+  ) => {
     const token = getAuthToken();
+
     if (!token) {
       console.warn("Cannot handle duel action: no auth token");
       return;
@@ -379,12 +393,11 @@ useEffect(() => {
 
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+
       const endpoint =
         action === "accept"
           ? `${API_BASE_URL}/duo/accept/${duelId}`
           : `${API_BASE_URL}/duo/decline/${duelId}`;
-
-      console.debug(`Duel action: ${action} for duel ${duelId} at ${endpoint}`);
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -392,16 +405,18 @@ useEffect(() => {
       });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+        const errorData = await res
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
+
         console.error(`Failed to ${action} duel:`, res.status, errorData);
         return;
       }
 
+      markInviteProcessed(duelId);
+
       if (action === "accept") {
-        markInviteProcessed(duelId);
         setCountdown((prev) => ({ ...prev, [duelId]: 5 }));
-      } else {
-        markInviteProcessed(duelId);
       }
     } catch (e) {
       console.error(`Failed to ${action} duel:`, e);
@@ -432,20 +447,63 @@ useEffect(() => {
     });
 
     return () => {
-      timers.forEach((t) => {
-        if (t) clearTimeout(t);
+      timers.forEach((timer) => {
+        if (timer) clearTimeout(timer);
       });
     };
   }, [countdown]);
 
-  const markAsRead = (id: string) => {
+  const markAsRead = async (id: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+
+    if (id.startsWith("invite-") || id.startsWith("streak-")) return;
+
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+
+      await fetch(`${API_BASE_URL}/notifications/mark-read/${id}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (err) {
+      console.debug("Failed to sync notification read state:", err);
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    const unreadServerNotifications = notifications.filter(
+      (n) =>
+        !n.read && !n.id.startsWith("invite-") && !n.id.startsWith("streak-")
+    );
+
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+
+      await Promise.allSettled(
+        unreadServerNotifications.map((n) =>
+          fetch(`${API_BASE_URL}/notifications/mark-read/${n.id}`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+        )
+      );
+    } catch (err) {
+      console.debug("Failed to sync all notifications read state:", err);
+    }
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -458,6 +516,12 @@ useEffect(() => {
         return "🏆";
       case "system":
         return "⚙️";
+      case "warning":
+        return "⚠️";
+      case "success":
+        return "✅";
+      case "error":
+        return "⛔";
       default:
         return "🔔";
     }
@@ -466,13 +530,31 @@ useEffect(() => {
   const getTypeStyles = (type: string) => {
     switch (type) {
       case "duel_invite":
-        return "bg-purple-500/20 text-purple-400";
+        return isLight
+          ? "bg-purple-100 text-purple-700"
+          : "bg-purple-500/20 text-purple-400";
       case "duel_result":
-        return "bg-emerald-500/20 text-emerald-400";
+      case "success":
+        return isLight
+          ? "bg-emerald-100 text-emerald-700"
+          : "bg-emerald-500/20 text-emerald-400";
       case "system":
-        return "bg-blue-500/20 text-blue-400";
+      case "info":
+        return isLight
+          ? "bg-blue-100 text-blue-700"
+          : "bg-blue-500/20 text-blue-400";
+      case "warning":
+        return isLight
+          ? "bg-amber-100 text-amber-700"
+          : "bg-amber-500/20 text-amber-400";
+      case "error":
+        return isLight
+          ? "bg-red-100 text-red-700"
+          : "bg-red-500/20 text-red-400";
       default:
-        return "bg-gray-500/20 text-gray-400";
+        return isLight
+          ? "bg-gray-100 text-gray-700"
+          : "bg-gray-500/20 text-gray-400";
     }
   };
 
@@ -487,7 +569,12 @@ useEffect(() => {
         }`}
         aria-label="Notifications"
       >
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -497,7 +584,7 @@ useEffect(() => {
         </svg>
 
         {unreadCount > 0 && (
-          <span className="absolute right-0 top-0 h-2 w-2 rounded-full bg-pink-500 animate-pulse" />
+          <span className="absolute right-0 top-0 h-2 w-2 animate-pulse rounded-full bg-pink-500" />
         )}
       </button>
 
@@ -508,24 +595,30 @@ useEffect(() => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className={`fixed right-2 z-50 mt-2 w-80 overflow-hidden rounded-xl border shadow-2xl ${
-                  isLight
-                    ? "border-gray-200 bg-white"
-                    : "border-white/10 bg-[#0a0a0a]"
-                } sm:absolute sm:right-0 sm:mt-2 sm:w-96`}
+            className={`fixed right-2 z-50 mt-2 w-80 overflow-hidden rounded-xl border shadow-2xl sm:absolute sm:right-0 sm:mt-2 sm:w-96 ${
+              isLight
+                ? "border-gray-200 bg-white"
+                : "border-white/10 bg-[#0a0a0a]"
+            }`}
           >
-            <div className={`flex items-center justify-between border-b p-4 ${
-              isLight ? "border-gray-200" : "border-white/10"
-            }`}>
-              <h3 className={`text-sm font-semibold ${
-                isLight ? "text-gray-900" : "text-white"
-              }`}>Notifications</h3>
+            <div
+              className={`flex items-center justify-between border-b p-4 ${
+                isLight ? "border-gray-200" : "border-white/10"
+              }`}
+            >
+              <h3
+                className={`text-sm font-semibold ${
+                  isLight ? "text-gray-900" : "text-white"
+                }`}
+              >
+                Notifications
+              </h3>
 
               <div className="flex gap-2">
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="text-xs text-pink-400 transition-colors hover:text-pink-300"
+                    className="text-xs text-pink-500 transition-colors hover:text-pink-400"
                   >
                     Mark all read
                   </button>
@@ -538,6 +631,7 @@ useEffect(() => {
                       ? "text-gray-500 hover:text-gray-900"
                       : "text-gray-500 hover:text-white"
                   }`}
+                  aria-label="Close notifications"
                 >
                   ✕
                 </button>
@@ -548,100 +642,157 @@ useEffect(() => {
               {notifications.length === 0 ? (
                 <div className="p-8 text-center">
                   <div className="mb-2 text-4xl">🔔</div>
-                  <p className="text-sm text-gray-500">No notifications yet</p>
-                  <p className="mt-1 text-xs text-gray-600">
+                  <p
+                    className={`text-sm ${
+                      isLight ? "text-gray-600" : "text-gray-500"
+                    }`}
+                  >
+                    No notifications yet
+                  </p>
+                  <p
+                    className={`mt-1 text-xs ${
+                      isLight ? "text-gray-500" : "text-gray-600"
+                    }`}
+                  >
                     We&apos;ll notify you when something important happens
                   </p>
                 </div>
               ) : (
                 notifications.map((notification) => {
                   const duelActionLoading =
-                    notification.duelId && processingDuelIds[notification.duelId];
+                    notification.duelId &&
+                    processingDuelIds[notification.duelId];
 
                   return (
                     <motion.div
                       key={notification.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className={`border-b border-white/5 p-4 transition-colors ${
-                        !notification.read ? "bg-white/5" : "hover:bg-white/5"
+                      className={`border-b p-4 transition-colors ${
+                        isLight
+                          ? `border-gray-100 ${
+                              !notification.read
+                                ? "bg-pink-50/60"
+                                : "hover:bg-gray-50"
+                            }`
+                          : `border-white/5 ${
+                              !notification.read
+                                ? "bg-white/5"
+                                : "hover:bg-white/5"
+                            }`
                       }`}
                       onClick={() => markAsRead(notification.id)}
                     >
                       <div className="flex gap-3">
                         <div
-                          className={`flex h-8 w-8 items-center justify-center rounded-full ${getTypeStyles(
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${getTypeStyles(
                             notification.type
                           )}`}
                         >
-                          <span className="text-sm">{getTypeIcon(notification.type)}</span>
+                          <span className="text-sm">
+                            {getTypeIcon(notification.type)}
+                          </span>
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between">
-                            <p className="truncate text-sm font-medium text-white">
+                          <div className="flex items-start justify-between gap-2">
+                            <p
+                              className={`truncate text-sm font-medium ${
+                                isLight ? "text-gray-900" : "text-white"
+                              }`}
+                            >
                               {notification.title}
                             </p>
 
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+
                                 if (notification.duelId) {
                                   markInviteProcessed(notification.duelId);
                                 } else {
                                   removeNotification(notification.id);
                                 }
                               }}
-                              className="ml-2 text-xs text-gray-500 hover:text-gray-400"
+                              className={`ml-2 text-xs transition-colors ${
+                                isLight
+                                  ? "text-gray-400 hover:text-gray-700"
+                                  : "text-gray-500 hover:text-gray-300"
+                              }`}
+                              aria-label="Dismiss notification"
                             >
                               ✕
                             </button>
                           </div>
 
-                          <p className="mt-1 text-xs text-gray-400">
+                          <p
+                            className={`mt-1 text-xs ${
+                              isLight ? "text-gray-600" : "text-gray-400"
+                            }`}
+                          >
                             {notification.message}
                           </p>
 
-                          {notification.type === "duel_invite" && notification.duelId && (
-                            <div className="mt-3">
-                              {countdown[notification.duelId] !== undefined ? (
-                                <div className="flex flex-col items-center rounded-xl border border-pink-500/20 bg-pink-500/10 p-3">
-                                  <span className="mb-1 text-2xl font-black text-pink-500">
-                                    {countdown[notification.duelId]}
-                                  </span>
-                                  <span className="text-[8px] font-black uppercase tracking-widest text-pink-400">
-                                    Match Starting...
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDuelAction(notification.duelId!, "accept");
-                                    }}
-                                    disabled={!!duelActionLoading}
-                                    className="flex-1 rounded-lg bg-emerald-500 py-1.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:opacity-90 disabled:opacity-50"
-                                  >
-                                    {duelActionLoading === "accept" ? "..." : "Accept"}
-                                  </button>
+                          {notification.type === "duel_invite" &&
+                            notification.duelId && (
+                              <div className="mt-3">
+                                {countdown[notification.duelId] !==
+                                undefined ? (
+                                  <div className="flex flex-col items-center rounded-xl border border-pink-500/20 bg-pink-500/10 p-3">
+                                    <span className="mb-1 text-2xl font-black text-pink-500">
+                                      {countdown[notification.duelId]}
+                                    </span>
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-pink-400">
+                                      Match Starting...
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDuelAction(
+                                          notification.duelId!,
+                                          "accept"
+                                        );
+                                      }}
+                                      disabled={!!duelActionLoading}
+                                      className="flex-1 rounded-lg bg-emerald-500 py-1.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:opacity-90 disabled:opacity-50"
+                                    >
+                                      {duelActionLoading === "accept"
+                                        ? "..."
+                                        : "Accept"}
+                                    </button>
 
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDuelAction(notification.duelId!, "decline");
-                                    }}
-                                    disabled={!!duelActionLoading}
-                                    className="flex-1 rounded-lg border border-white/10 bg-white/5 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all hover:text-white disabled:opacity-50"
-                                  >
-                                    {duelActionLoading === "decline" ? "..." : "Decline"}
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDuelAction(
+                                          notification.duelId!,
+                                          "decline"
+                                        );
+                                      }}
+                                      disabled={!!duelActionLoading}
+                                      className={`flex-1 rounded-lg border py-1.5 text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 ${
+                                        isLight
+                                          ? "border-gray-200 bg-gray-50 text-gray-600 hover:text-gray-900"
+                                          : "border-white/10 bg-white/5 text-gray-400 hover:text-white"
+                                      }`}
+                                    >
+                                      {duelActionLoading === "decline"
+                                        ? "..."
+                                        : "Decline"}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
-                          <p className="mt-2 text-[10px] text-gray-500">
+                          <p
+                            className={`mt-2 text-[10px] ${
+                              isLight ? "text-gray-500" : "text-gray-500"
+                            }`}
+                          >
                             {notification.timestamp.toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
@@ -658,19 +809,37 @@ useEffect(() => {
             </div>
 
             {notifications.length > 0 && (
-              <div className="border-t border-white/10 p-3 text-center">
-                <button
-                  onClick={() => {
-                    notifications.forEach((n) => {
-                      if (n.duelId) {
-                        processedInviteIdsRef.current.add(`invite-${n.duelId}`);
-                      }
-                    });
-                    setNotifications([]);
-                    setIsOpen(false);
-                  }}
-                  className="text-xs text-gray-500 transition-colors hover:text-gray-400"
-                >
+              <div
+                className={`border-t p-3 text-center ${
+                  isLight ? "border-gray-200" : "border-white/10"
+                }`}
+              >
+                  <button
+                    onClick={() => {
+                      const token = getAuthToken();
+                      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+                      // Dismiss all on server (fire-and-forget)
+                      notifications.forEach(async (n) => {
+                        try {
+                          await fetch(`${API_BASE_URL}/notifications/dismiss/${n.id}`, {
+                            method: "POST",
+                            headers: { Authorization: `Bearer ${token}` },
+                            cache: "no-store",
+                          });
+                        } catch (e) {
+                          console.debug("Dismiss failed for", n.id, e);
+                        }
+                      });
+                      // Clear UI
+                      setNotifications([]);
+                      setIsOpen(false);
+                    }}
+                    className={`text-xs transition-colors ${
+                      isLight
+                        ? "text-gray-500 hover:text-gray-900"
+                        : "text-gray-500 hover:text-gray-300"
+                    }`}
+                  >
                   Clear all
                 </button>
               </div>

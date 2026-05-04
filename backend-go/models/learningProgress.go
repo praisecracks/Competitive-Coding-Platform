@@ -25,14 +25,15 @@ type LessonProgress struct {
 
 // LearningProgress - main document for user learning progress
 type LearningProgress struct {
-	ID             primitive.ObjectID            `bson:"_id,omitempty" json:"id"`
-	UserID         primitive.ObjectID            `bson:"user_id" json:"userId"`
-	TrackProgress  map[string]TrackProgress      `bson:"track_progress" json:"trackProgress"`
-	LegacyProgress map[string]LegacyPathProgress `bson:"legacy_progress" json:"legacyProgress"`
-	Streak         StreakData                    `bson:"streak" json:"streak"`
-	Journal        []JournalEntry                `bson:"journal" json:"journal"`
-	CreatedAt      time.Time                     `bson:"created_at" json:"createdAt"`
-	UpdatedAt      time.Time                     `bson:"updated_at" json:"updatedAt"`
+	ID              primitive.ObjectID            `bson:"_id,omitempty" json:"id"`
+	UserID          primitive.ObjectID            `bson:"user_id" json:"userId"`
+	TrackProgress   map[string]TrackProgress      `bson:"track_progress" json:"trackProgress"`
+	LegacyProgress  map[string]LegacyPathProgress `bson:"legacy_progress" json:"legacyProgress"`
+	Streak          StreakData                    `bson:"streak" json:"streak"`
+	ChallengeStreak ChallengeStreak               `bson:"challenge_streak" json:"challengeStreak"`
+	Journal         []JournalEntry                `bson:"journal" json:"journal"`
+	CreatedAt       time.Time                     `bson:"created_at" json:"createdAt"`
+	UpdatedAt       time.Time                     `bson:"updated_at" json:"updatedAt"`
 }
 
 // LegacyPathProgress - for old path-based progress
@@ -42,11 +43,18 @@ type LegacyPathProgress struct {
 	Rating           int      `bson:"rating" json:"rating"`
 }
 
-// StreakData - learning streak
+// StreakData - learning streak (global, not per track)
 type StreakData struct {
 	CurrentStreak    int       `bson:"current_streak" json:"currentStreak"`
 	LongestStreak    int       `bson:"longest_streak" json:"longestStreak"`
 	LastLearningDate time.Time `bson:"last_learning_date" json:"lastLearningDate"`
+}
+
+// ChallengeStreak tracks consecutive days with challenge completions
+type ChallengeStreak struct {
+	CurrentStreak    int       `bson:"current_streak" json:"currentStreak"`
+	LongestStreak    int       `bson:"longest_streak" json:"longestStreak"`
+	LastChallengeDate time.Time `bson:"last_challenge_date" json:"lastChallengeDate"`
 }
 
 // JournalEntry - learning journal entry

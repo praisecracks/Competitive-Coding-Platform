@@ -22,23 +22,24 @@ type leaderboardSubmission struct {
 }
 
 type LeaderboardEntry struct {
-	Rank           int       `json:"rank"`
-	UserID         string    `json:"userId"`
-	Username       string    `json:"username"`
-	ProfilePic     string    `json:"profilePic"`
-	Country        string    `json:"country"`
-	TotalPoints    int       `json:"totalPoints"`
-	TotalSolved    int       `json:"totalSolved"`
-	CurrentStreak  int       `json:"currentStreak"`
-	EasySolved     int       `json:"easySolved"`
-	MediumSolved   int       `json:"mediumSolved"`
-	HardSolved     int       `json:"hardSolved"`
-	LastAcceptedAt time.Time `json:"lastAcceptedAt"`
-	Bio            string    `json:"bio,omitempty"`
-	GithubUrl      string    `json:"githubUrl,omitempty"`
-	LinkedinUrl    string    `json:"linkedinUrl,omitempty"`
-	PublicProfile  bool      `json:"publicProfile,omitempty"`
-	UserRank       string    `json:"userRank,omitempty"`
+	Rank            int       `json:"rank"`
+	UserID          string    `json:"userId"`
+	Username        string    `json:"username"`
+	ProfilePic      string    `json:"profilePic"`
+	Country         string    `json:"country"`
+	TotalPoints     int       `json:"totalPoints"`
+	TotalSolved     int       `json:"totalSolved"`
+	LearningStreak  int       `json:"learningStreak"`
+	ChallengeStreak int       `json:"challengeStreak"`
+	EasySolved      int       `json:"easySolved"`
+	MediumSolved    int       `json:"mediumSolved"`
+	HardSolved      int       `json:"hardSolved"`
+	LastAcceptedAt  time.Time `json:"lastAcceptedAt"`
+	Bio             string    `json:"bio,omitempty"`
+	GithubUrl       string    `json:"githubUrl,omitempty"`
+	LinkedinUrl     string    `json:"linkedinUrl,omitempty"`
+	PublicProfile   bool      `json:"publicProfile,omitempty"`
+	UserRank        string    `json:"userRank,omitempty"`
 }
 
 func getPointsForDifficulty(difficulty string) int {
@@ -73,6 +74,7 @@ func BuildLeaderboard(
 	usersCollection *mongo.Collection,
 	submissionsCollection *mongo.Collection,
 	challengesCollection *mongo.Collection,
+	learningProgressCollection *mongo.Collection,
 ) ([]LeaderboardEntry, error) {
 	var users []models.User
 	userCursor, err := usersCollection.Find(ctx, bson.M{})
@@ -94,6 +96,21 @@ func BuildLeaderboard(
 	userMap := make(map[string]models.User)
 	for _, user := range users {
 		userMap[user.ID.Hex()] = user
+	}
+
+	// Fetch learning progress for streaks
+	var learningProgressList []models.LearningProgress
+	lpCursor, err := learningProgressCollection.Find(ctx, bson.M{})
+	if err == nil {
+		defer lpCursor.Close(ctx)
+		_ = lpCursor.All(ctx, &learningProgressList)
+	}
+
+	userLearningStreak := make(map[string]int)
+	userChallengeStreak := make(map[string]int)
+	for _, lp := range learningProgressList {
+		userLearningStreak[lp.UserID.Hex()] = lp.Streak.CurrentStreak
+		userChallengeStreak[lp.UserID.Hex()] = lp.ChallengeStreak.CurrentStreak
 	}
 
 	var submissions []leaderboardSubmission
@@ -209,8 +226,6 @@ func BuildLeaderboard(
 			continue
 		}
 
-		currentStreak := calculateAcceptedStreak(userPassedDays[userID])
-
 		entries = append(entries, LeaderboardEntry{
 			UserID:         userID,
 			Username:       user.Username,
@@ -218,7 +233,8 @@ func BuildLeaderboard(
 			Country:        user.Country,
 			TotalPoints:    totalPoints,
 			TotalSolved:    totalSolved,
-			CurrentStreak:  currentStreak,
+			LearningStreak:  userLearningStreak[userID],
+			ChallengeStreak: userChallengeStreak[userID],
 			EasySolved:     easySolved,
 			MediumSolved:   mediumSolved,
 			HardSolved:     hardSolved,
@@ -233,6 +249,12 @@ func BuildLeaderboard(
 
 	fmt.Printf(">>> LEADERBOARD: Sorting %d entries\n", len(entries))
 
+	// Calculate challenge streak from submissions for sorting
+	userChallengeDayStreak := make(map[string]int)
+	for userID := range userSolvedChallenges {
+		userChallengeDayStreak[userID] = calculateAcceptedStreak(userPassedDays[userID])
+	}
+
 	sort.Slice(entries, func(i, j int) bool {
 		if entries[i].TotalPoints != entries[j].TotalPoints {
 			return entries[i].TotalPoints > entries[j].TotalPoints
@@ -240,8 +262,10 @@ func BuildLeaderboard(
 		if entries[i].TotalSolved != entries[j].TotalSolved {
 			return entries[i].TotalSolved > entries[j].TotalSolved
 		}
-		if entries[i].CurrentStreak != entries[j].CurrentStreak {
-			return entries[i].CurrentStreak > entries[j].CurrentStreak
+		totalStreakI := entries[i].LearningStreak + entries[i].ChallengeStreak
+		totalStreakJ := entries[j].LearningStreak + entries[j].ChallengeStreak
+		if totalStreakI != totalStreakJ {
+			return totalStreakI > totalStreakJ
 		}
 		if !entries[i].LastAcceptedAt.Equal(entries[j].LastAcceptedAt) {
 			return entries[i].LastAcceptedAt.After(entries[j].LastAcceptedAt)

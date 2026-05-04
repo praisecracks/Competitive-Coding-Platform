@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Sparkles, ArrowLeft, PlayCircle, GraduationCap, Languages } from "lucide-react";
+import { Sparkles, ArrowLeft, PlayCircle, GraduationCap, Languages, AlertTriangle, LogIn, UserPlus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import LearningContent from "@/app/dashboard/learning/LearningContent";
 import CodePlayground from "@/app/dashboard/learning/CodePlayground";
+import { useTheme } from "@/app/context/ThemeContext";
 import {
   getTrackById,
   LearningTrack,
@@ -13,6 +15,8 @@ import {
 } from "@/app/dashboard/learning/data";
 
 export default function PublicLessonPreviewPage() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const router = useRouter();
   const params = useParams();
   const trackId = params.trackId as string;
@@ -27,7 +31,42 @@ export default function PublicLessonPreviewPage() {
   );
   const [loading, setLoading] = useState(true);
 
-  const authRedirect = `/dashboard/learning/track/${trackId}/topic/${topicId}`;
+  // Run limiter state
+  const [runCount, setRunCount] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem(`preview-run-count-${trackId}-${topicId}`);
+      return saved ? parseInt(saved, 10) : 0;
+    }
+    return 0;
+  });
+
+  const [isRunDisabled, setIsRunDisabled] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem(`preview-run-disabled-${trackId}-${topicId}`);
+      return saved === "true";
+    }
+    return false;
+  });
+
+   const [showWarningModal, setShowWarningModal] = useState(false);
+   const [showAuthModal, setShowAuthModal] = useState(false);
+
+   // Scroll to curriculum on mount if hash is present
+   useEffect(() => {
+     if (typeof window !== "undefined") {
+       const hash = window.location.hash;
+       if (hash) {
+         const element = document.querySelector(hash);
+         if (element) {
+           setTimeout(() => {
+             element.scrollIntoView({ behavior: "smooth", block: "start" });
+           }, 100);
+         }
+       }
+     }
+   }, []);
+
+   const authRedirect = `/dashboard/learning/track/${trackId}/topic/${topicId}`;
   const signupHref = `/signup?redirect=${encodeURIComponent(authRedirect)}`;
   const loginHref = `/login?redirect=${encodeURIComponent(authRedirect)}`;
 
@@ -38,33 +77,73 @@ export default function PublicLessonPreviewPage() {
     setLoading(false);
   }, [topic]);
 
-  if (loading || !track || !topic || !activeLesson) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#050505]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
-      </div>
-    );
-   }
+  // Persist run count to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(`preview-run-count-${trackId}-${topicId}`, runCount.toString());
+  }, [runCount, trackId, topicId]);
 
-   // Determine display language name
+   // Persist disabled state to sessionStorage
+   useEffect(() => {
+     sessionStorage.setItem(`preview-run-disabled-${trackId}-${topicId}`, isRunDisabled.toString());
+   }, [isRunDisabled, trackId, topicId]);
+
+   // Handlers must be defined BEFORE any early returns
+   const handleRun = useCallback(() => {
+     if (isRunDisabled) return;
+
+     const newCount = runCount + 1;
+     setRunCount(newCount);
+
+     if (newCount === 4) {
+       setShowWarningModal(true);
+     } else if (newCount >= 5) {
+       setShowAuthModal(true);
+     }
+   }, [runCount, isRunDisabled]);
+
+   const handleSkip = () => {
+     setIsRunDisabled(true);
+     setShowAuthModal(false);
+   };
+
+   const handleSignUp = () => {
+     router.push(signupHref);
+   };
+
+   const handleLogin = () => {
+     router.push(loginHref);
+   };
+
+   const handleCloseWarning = () => {
+     setShowWarningModal(false);
+   };
+
    const getLanguageDisplayName = (lang: string) => {
      if (lang === 'python') return 'Python';
      if (lang === 'go') return 'Go';
      return 'JavaScript';
    };
 
-    // Determine playground language based on track type and language
-    const getPlaygroundLanguage = (): "javascript" | "python" | "go" => {
-      if (track?.language !== "multi" && track?.language) {
-        return track.language as "javascript" | "python" | "go";
-      }
-      // For multi-language tracks in preview, default to javascript
-      return "javascript"; 
-    };
+   // Determine playground language based on track type and language
+   const getPlaygroundLanguage = (): "javascript" | "python" | "go" => {
+     if (track?.language !== "multi" && track?.language) {
+       return track.language as "javascript" | "python" | "go";
+     }
+     // For multi-language tracks in preview, default to javascript
+     return "javascript"; 
+   };
 
-    const playgroundLanguage = getPlaygroundLanguage();
-    const isMultiLanguage = track?.language === "multi";
-    const isSingleLanguage = track?.language !== "multi";
+   const playgroundLanguage = getPlaygroundLanguage();
+   const isMultiLanguage = track?.language === "multi";
+   const isSingleLanguage = track?.language !== "multi";
+
+   if (loading || !track || !topic || !activeLesson) {
+     return (
+       <div className="flex min-h-screen items-center justify-center bg-[#050505]">
+         <div className="h-8 w-8 animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
+       </div>
+     );
+    }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-fuchsia-500/20 selection:text-white">
@@ -201,6 +280,8 @@ export default function PublicLessonPreviewPage() {
                      initialCode={activeLesson.content.example.code}
                      language={playgroundLanguage}
                      lockedLanguage={true}
+                     onRun={handleRun}
+                     runDisabled={isRunDisabled}
                    />
                  </div>
                )}
@@ -236,9 +317,9 @@ export default function PublicLessonPreviewPage() {
             </div>
           </section>
 
-          {/* Sticky Sidebar */}
-          <aside className="lg:col-span-4 lg:self-start">
-            <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
+           {/* Sticky Sidebar */}
+           <aside className="lg:col-span-4">
+             <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
               <div className="space-y-6">
                 {/* Course outline */}
                 <div className="rounded-2xl border border-white/10 bg-[#0a0a0f] p-5 sm:p-6">
@@ -346,10 +427,156 @@ export default function PublicLessonPreviewPage() {
         </div>
       </main>
 
-      {/* Simple footer */}
-      <footer className="border-t border-white/10 py-6 text-center text-sm text-white/30">
-        <p>© 2026 CodeMaster. Learning preview. Sign up to continue.</p>
-      </footer>
-    </div>
-  );
-}
+       {/* Simple footer */}
+       <footer className="border-t border-white/10 py-6 text-center text-sm text-white/30">
+         <p>© 2026 CodeMaster. Learning preview. Sign up to continue.</p>
+       </footer>
+
+       {/* Warning Modal: Shows on 4th run */}
+       <AnimatePresence>
+         {showWarningModal && (
+           <motion.div
+             key="run-limit-warning"
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+           >
+             <motion.div
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={handleCloseWarning}
+               className={`absolute inset-0 ${isLight ? "bg-black/40" : "bg-black/60"} backdrop-blur-sm`}
+             />
+             <motion.div
+               initial={{ opacity: 0, scale: 0.95, y: 10 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.95, y: 10 }}
+               transition={{ type: "spring", damping: 25, stiffness: 300 }}
+               className={`relative w-full max-w-md rounded-2xl border p-6 shadow-2xl ${
+                 isLight
+                   ? "bg-white border-gray-200"
+                   : "bg-[#0c0c12] border-white/10"
+               }`}
+             >
+               <div className="flex items-start gap-4">
+                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                   isLight ? "bg-amber-100 text-amber-700" : "bg-amber-500/15 text-amber-400"
+                 }`}>
+                   <AlertTriangle className="h-5 w-5" />
+                 </div>
+                 <div className="flex-1">
+                   <h3 className={`text-lg font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+                     Last free attempt
+                   </h3>
+                   <p className={`mt-1.5 text-sm ${isLight ? "text-gray-600" : "text-gray-400"}`}>
+                     You have 1 more try to run code. To continue practicing, please sign up or log in.
+                   </p>
+                 </div>
+               </div>
+               <div className="mt-6 flex items-center justify-end gap-3">
+                 <button
+                   onClick={handleCloseWarning}
+                   className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                     isLight
+                       ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                       : "bg-white/5 text-white hover:bg-white/10"
+                   }`}
+                 >
+                   Continue
+                 </button>
+               </div>
+             </motion.div>
+           </motion.div>
+         )}
+       </AnimatePresence>
+
+       {/* Auth Required Modal: Shows on 5th+ run */}
+       <AnimatePresence>
+         {showAuthModal && (
+           <motion.div
+             key="auth-required"
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+           >
+             <motion.div
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={handleSkip}
+               className={`absolute inset-0 ${isLight ? "bg-black/40" : "bg-black/60"} backdrop-blur-sm`}
+             />
+             <motion.div
+               initial={{ opacity: 0, scale: 0.95, y: 10 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.95, y: 10 }}
+               transition={{ type: "spring", damping: 25, stiffness: 300 }}
+               className={`relative w-full max-w-md rounded-2xl border p-6 shadow-2xl ${
+                 isLight
+                   ? "bg-white border-gray-200"
+                   : "bg-[#0c0c12] border-white/10"
+               }`}
+             >
+               <div className="flex items-start gap-4">
+                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                   isLight ? "bg-red-100 text-red-600" : "bg-red-500/15 text-red-400"
+                 }`}>
+                   <AlertTriangle className="h-5 w-5" />
+                 </div>
+                 <div className="flex-1">
+                   <h3 className={`text-lg font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+                     Sign up required
+                   </h3>
+                   <p className={`mt-1.5 text-sm ${isLight ? "text-gray-600" : "text-gray-400"}`}>
+                     You've used all your free attempts. Sign up for a free account to continue running code, or skip to continue browsing.
+                   </p>
+                 </div>
+               </div>
+               <div className="mt-6 flex flex-col gap-2">
+                 <button
+                   onClick={handleSignUp}
+                   className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors ${
+                     isLight
+                       ? "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700"
+                       : "bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:opacity-95"
+                   }`}
+                 >
+                   <span className="flex items-center justify-center gap-2">
+                     <UserPlus className="h-4 w-4" />
+                     Create Free Account
+                   </span>
+                 </button>
+                 <button
+                   onClick={handleLogin}
+                   className={`w-full rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                     isLight
+                       ? "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                       : "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                   }`}
+                 >
+                   <span className="flex items-center justify-center gap-2">
+                     <LogIn className="h-4 w-4" />
+                     Log In
+                   </span>
+                 </button>
+                 <button
+                   onClick={handleSkip}
+                   className={`w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                     isLight
+                       ? "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                       : "text-gray-400 hover:text-white hover:bg-white/5"
+                   }`}
+                 >
+                   Skip, continue without signing up
+                 </button>
+               </div>
+             </motion.div>
+           </motion.div>
+         )}
+       </AnimatePresence>
+     </div>
+   );
+ }

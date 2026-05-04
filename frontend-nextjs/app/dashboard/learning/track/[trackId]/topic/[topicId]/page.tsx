@@ -40,6 +40,7 @@ import {
   updateStreak,
   TrackProgress,
 } from "@/lib/learning-api";
+import BrowserPlayground from "../../../../BrowserPlayground";
 
 export default function TopicPage() {
   const router = useRouter();
@@ -288,6 +289,37 @@ export default function TopicPage() {
     if (index <= 0) return false;
     const previousSubtopic = topic.subtopics[index - 1];
     return !progress.completedLessonIds.includes(previousSubtopic.id);
+  };
+
+  // Helper: determine what language the current lesson's code is actually written in
+  const resolveExecutionLanguage = (
+    track: LearningTrack | undefined,
+    category?: string
+  ): 'javascript' | 'python' | 'go' | 'sql' | 'system' | null => {
+    if (!track) return null;
+
+    // HTML/CSS are handled separately with BrowserPlayground
+    if (category === 'HTML' || category === 'CSS') return null;
+
+    // Master tracks: language matches track category
+    if (track.id === 'master-javascript' || category === 'JavaScript') return 'javascript';
+    if (track.id === 'master-python' || category === 'Python') return 'python';
+    if (track.id === 'master-go' || category === 'Go') return 'go';
+
+    // Multi-category tracks: infer from track identity
+    if (category === 'Data Structures') return 'python';
+    if (category === 'Algorithms') return 'go';
+    if (track.id === 'sql-databases' || category === 'SQL') return 'sql';
+    if (track.id === 'system-design') return 'system';
+
+    return null;
+  };
+
+  const executionLanguage = resolveExecutionLanguage(track, track?.category);
+
+  const [previewClickCount, setPreviewClickCount] = useState(0);
+  const handlePreviewRunClick = () => {
+    setPreviewClickCount((c) => c + 1);
   };
 
   const handleStartOrContinue = () => {
@@ -541,36 +573,121 @@ export default function TopicPage() {
                      />
                    </div>
 
-                   {activeLesson?.content?.example && (
-                    <div
-                      className={`border-t px-6 pb-6 pt-6 sm:px-8 ${
-                        isLight ? "border-gray-200" : "border-white/5"
-                      }`}
-                    >
-                      <div className="mb-4 flex items-center justify-between">
-                        <h3
-                          className={`text-lg font-semibold ${
-                            isLight ? "text-gray-900" : "text-white"
-                          }`}
-                        >
-                          Try It Yourself
-                        </h3>
-                        <span
-                          className={`text-xs ${
-                            isLight ? "text-gray-500" : "text-gray-500"
-                          }`}
-                        >
-                          {track?.language === 'python' ? 'Python' : track?.language === 'go' ? 'Go' : 'JavaScript'}
-                        </span>
-                      </div>
+                    {activeLesson?.content?.example && (
+                      <div
+                        className={`border-t px-6 pb-6 pt-6 sm:px-8 ${
+                          isLight ? "border-gray-200" : "border-white/5"
+                        }`}
+                      >
+                        <div className="mb-4 flex items-center justify-between">
+                          <h3
+                            className={`text-lg font-semibold ${
+                              isLight ? "text-gray-900" : "text-white"
+                            }`}
+                          >
+                            Try It Yourself
+                          </h3>
+                        </div>
 
-<CodePlayground
-                          initialCode={activeLesson.content.example.code}
-                          language={(track?.language === 'multi' ? 'javascript' : track?.language) as 'javascript' | 'python' | 'go' || 'javascript'}
-                          lockedLanguage={true}
-                        />
-                    </div>
-                  )}
+                        {/* Conditional playground: HTML/CSS tracks use BrowserPlayground, others use CodePlayground or preview-only */}
+                        {(track?.category === "HTML" || track?.category === "CSS") ? (
+                          <BrowserPlayground
+                            initialHtml={activeLesson.content.example.html || ""}
+                            initialCss={activeLesson.content.example.css || ""}
+                            title="Live Preview"
+                            isLight={isLight}
+                          />
+                        ) : executionLanguage === 'javascript' || executionLanguage === 'python' ? (
+                          <CodePlayground
+                            initialCode={activeLesson.content.example.code || ""}
+                            language={executionLanguage}
+                            lockedLanguage={true}
+                          />
+                        ) : (
+                          // Preview-only for Go, SQL, System Design, and other unsupported languages
+                          <div
+                            className={`rounded-2xl border p-0 overflow-hidden ${
+                              isLight
+                                ? "border-gray-200 bg-white"
+                                : "border-white/10 bg-[#0c0c12]"
+                            }`}
+                          >
+                            {/* Code display area */}
+                            <div
+                              className={`relative overflow-x-auto px-5 py-5 ${
+                                isLight
+                                  ? "bg-gray-50"
+                                  : "bg-[#050507]"
+                              }`}
+                            >
+                              <div
+                                className={`absolute top-3 right-3 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                                  isLight ? "text-gray-500" : "text-gray-500"
+                                }`}
+                              >
+                                {executionLanguage === 'go'
+                                  ? 'Go'
+                                  : executionLanguage === 'sql'
+                                  ? 'SQL'
+                                  : executionLanguage === 'system'
+                                  ? 'System Design'
+                                  : executionLanguage?.toUpperCase() || 'Code'}
+                              </div>
+                              <pre
+                                className={`whitespace-pre-wrap break-words font-mono text-[13px] leading-7 sm:text-sm ${
+                                  isLight ? "text-gray-800" : "text-pink-300"
+                                }`}
+                              >
+                                <code>{activeLesson.content.example.code || ""}</code>
+                              </pre>
+                            </div>
+
+                            {/* Friendly message */}
+                            <div
+                              className={`px-5 py-4 sm:px-6 sm:py-5 ${
+                                isLight
+                                  ? "bg-amber-50 border-t border-amber-100"
+                                  : "bg-amber-500/10 border-t border-amber-500/20"
+                              }`}
+                            >
+                              <p
+                                className={`text-sm leading-6 ${
+                                  isLight ? "text-amber-800" : "text-amber-200"
+                                }`}
+                              >
+                                {executionLanguage === 'go' ? (
+                                  <>
+                                    Go execution is not available in the CodeMaster playground yet.
+                                    You can copy this code into VS Code or try it in the{' '}
+                                    <button
+                                      type="button"
+                                      onClick={handlePreviewRunClick}
+                                      className="font-semibold underline hover:no-underline inline"
+                                    >
+                                      official Go Playground
+                                    </button>
+                                    .
+                                    {previewClickCount >= 3 && (
+                                      <span className="ml-1">
+                                        You're really trying to run this one — Go support is coming, but for now try VS Code or the official Go Playground. 🚀
+                                      </span>
+                                    )}
+                                  </>
+                                ) : executionLanguage === 'sql' ? (
+                                  <>
+                                    SQL is preview-only here. Use a database workbench or future CodeMaster SQL workspace to run it.
+                                  </>
+                                ) : (
+                                  <>
+                                    This lesson is concept-based. Focus on the explanation and code structure; execution is not available in the playground.
+                                  </>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                   <div
                     className={`sticky bottom-0 flex flex-col gap-3 border-t px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8 ${
@@ -654,14 +771,14 @@ export default function TopicPage() {
             </div>
           </section>
 
-          <aside className="space-y-6 xl:col-span-4">
-            <div
-              className={`sticky top-6 space-y-6 rounded-[28px] border p-5 sm:p-6 ${
-                isLight
-                  ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
-                  : "border-white/10 bg-[#09090c] shadow-2xl"
-              }`}
-            >
+           <aside className="space-y-6 xl:col-span-4">
+             <div
+               className={`lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1 space-y-6 rounded-[28px] border p-5 sm:p-6 ${
+                 isLight
+                   ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
+                   : "border-white/10 bg-[#09090c] shadow-2xl"
+               }`}
+             >
               <div>
                 <p
                   className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${

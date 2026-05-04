@@ -20,12 +20,14 @@ func GetLeaderboard(c *gin.Context) {
 	usersCollection := database.GetCollection("users")
 	submissionsCollection := database.GetCollection("submissions")
 	challengesCollection := database.GetCollection("challenges")
+	learningProgressCollection := database.GetCollection("learning_progress")
 
 	entries, err := services.BuildLeaderboard(
 		ctx,
 		usersCollection,
 		submissionsCollection,
 		challengesCollection,
+		learningProgressCollection,
 	)
 	if err != nil {
 		fmt.Printf(">>> ERROR: Leaderboard build failed: %v\n", err)

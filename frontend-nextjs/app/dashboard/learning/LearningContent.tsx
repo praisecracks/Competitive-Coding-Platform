@@ -116,7 +116,8 @@ export default function LearningContent({
                 </h4>
               </div>
 
-          {path.example && path.example.code && (
+              {/* Code block — only render if example.code exists (JS/Python/Go tracks) */}
+              {path.example.code && (
                 <div
                   className={`relative overflow-x-auto rounded-xl border px-4 py-4 sm:px-5 sm:py-5 ${
                     isLight

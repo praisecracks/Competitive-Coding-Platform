@@ -568,7 +568,8 @@ func GetDashboardStats(c *gin.Context) {
 
 	totalPoints := 0
 	rank := 0
-	leaderboard, err := services.BuildLeaderboard(ctx, usersCollection, submissionsCollection, challengesCollection)
+	learningProgressCollection := database.GetCollection("learning_progress")
+	leaderboard, err := services.BuildLeaderboard(ctx, usersCollection, submissionsCollection, challengesCollection, learningProgressCollection)
 	if err == nil {
 		for i, entry := range leaderboard {
 			if entry.UserID == userID {
@@ -798,7 +799,8 @@ func GetAnalytics(c *gin.Context) {
 
 	rank := 0
 	totalPoints := 0
-	leaderboard, err := services.BuildLeaderboard(ctx, usersCollection, submissionsCollection, challengesCollection)
+	learningProgressCollection := database.GetCollection("learning_progress")
+	leaderboard, err := services.BuildLeaderboard(ctx, usersCollection, submissionsCollection, challengesCollection, learningProgressCollection)
 	if err == nil {
 		for i, entry := range leaderboard {
 			if entry.UserID == userID {
