@@ -138,19 +138,20 @@ func Register(c *gin.Context) {
 	now := time.Now().UTC()
 
 	user := models.User{
-		Email:         input.Email,
-		Username:      input.Username,
-		Password:      string(hashedPassword),
-		ProfilePic:    "",
-		Source:        "local",
-		Country:       input.Country,
-		Rank:          "Beginner",
-		Bio:           "",
-		Role:          "user",
-		TotalSolved:   0,
-		CurrentStreak: 0,
-		CreatedAt:     now,
-		UpdatedAt:     now,
+		Email:              input.Email,
+		Username:           input.Username,
+		Password:           string(hashedPassword),
+		ProfilePic:         "",
+		Source:             "local",
+		Country:            input.Country,
+		Rank:               "Beginner",
+		Bio:                "",
+		Role:               "user",
+		TotalSolved:        0,
+		CurrentStreak:      0,
+		EmailNotifications: true,
+		CreatedAt:          now,
+		UpdatedAt:          now,
 	}
 
 	if input.ReferralCode != "" {
@@ -571,14 +572,15 @@ func GitHubCallback(c *gin.Context) {
 
 		now := time.Now().UTC()
 		user = models.User{
-			Email:      githubEmail,
-			Username:   githubUsername,
-			ProfilePic: githubProfilePic,
-			Source:     "github",
-			Role:       "user",
-			CreatedAt:  now,
-			UpdatedAt:  now,
-			LastActive: now,
+			Email:              githubEmail,
+			Username:           githubUsername,
+			ProfilePic:         githubProfilePic,
+			Source:             "github",
+			Role:               "user",
+			CreatedAt:          now,
+			UpdatedAt:          now,
+			LastActive:         now,
+			EmailNotifications: true,
 		}
 
 		result, insertErr := usersCollection.InsertOne(ctx, user)

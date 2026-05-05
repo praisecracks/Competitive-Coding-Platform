@@ -110,6 +110,7 @@ func RegisterRoutes(r *gin.Engine) {
 				super.POST("/suspend", controllers.SuspendUser)
 				super.POST("/create-admin", controllers.CreateAdmin)
 				super.DELETE("/users/:id", controllers.DeleteUser)
+				super.POST("/broadcast", controllers.SendBroadcastNotification)
 			}
 		}
 

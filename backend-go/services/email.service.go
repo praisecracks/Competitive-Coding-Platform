@@ -2,6 +2,7 @@ package services
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,11 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"codingplatform/database"
+	"codingplatform/models"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // EmailConfig holds email configuration
@@ -252,7 +258,45 @@ The CODEMASTER Team`, resetLink)
 		return nil
 	}
 
-	return fmt.Errorf("no email service (SMTP or Resend) is configured")
+return fmt.Errorf("no email service (SMTP or Resend) is configured")
+}
+
+// createNotificationsOnly creates in-app notifications without sending emails
+func createNotificationsOnly(subject, message, actionUrl string, sendToAll bool) error {
+	usersCollection := database.GetCollection("users")
+	ctx := context.Background()
+
+	filter := bson.M{}
+	if !sendToAll {
+		filter = bson.M{"email_notifications": true}
+	}
+
+	cursor, err := usersCollection.Find(ctx, filter)
+	if err != nil {
+		return fmt.Errorf("failed to fetch users: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var users []models.User
+	if err := cursor.All(ctx, &users); err != nil {
+		return fmt.Errorf("failed to decode users: %w", err)
+	}
+
+	notificationsCollection := database.GetCollection("notifications")
+	for _, user := range users {
+		notification := models.Notification{
+			UserID:    user.ID.Hex(),
+			Type:      models.NotificationSystem,
+			Title:     subject,
+			Message:   message,
+			Read:      false,
+			CreatedAt: time.Now().UTC(),
+		}
+		notificationsCollection.InsertOne(ctx, notification)
+	}
+
+	fmt.Printf(">>> TEST MODE: Created %d in-app notifications\n", len(users))
+	return nil
 }
 
 // isValidSender checks if the sender email is valid for Resend.
@@ -269,4 +313,174 @@ func isValidSender(email string) bool {
 	}
 
 	return true
+}
+
+// SendBroadcastEmail sends an email to all users with email notifications enabled
+// It also needs to save in-app notifications for all users
+func SendBroadcastEmail(subject, message, htmlContent, actionUrl string, sendToAll bool) error {
+	config := GetEmailConfig()
+
+	fmt.Printf(">>> EMAIL SERVICE: Attempting to send broadcast email\n")
+
+	// Check for test mode - logs only, no real emails
+	isTestMode := strings.ToLower(strings.TrimSpace(os.Getenv("BROADCAST_TEST_MODE"))) == "true"
+
+	if isTestMode {
+		fmt.Printf(">>> BROADCAST TEST MODE - Logging emails only (no actual sends)\n")
+	}
+
+	if !IsEmailConfigured() || isTestMode {
+		fmt.Printf(">>> MOCK BROADCAST EMAIL:\nSubject: %s\nBody: %s\nTo: %s users\n\n", 
+			subject, message, map[bool]string{true: "all", false: "opted-in"}[sendToAll])
+		// Still create in-app notifications even in mock mode
+		return createNotificationsOnly(subject, message, actionUrl, sendToAll)
+	}
+
+	fromName := strings.TrimSpace(config.FromName)
+	if fromName == "" {
+		fromName = "CODEMASTER"
+	}
+
+	fromEmail := strings.TrimSpace(config.FromEmail)
+	if fromEmail == "" || !isValidSender(fromEmail) {
+		return fmt.Errorf("invalid FROM_EMAIL configuration")
+	}
+
+	from := fmt.Sprintf("%s <%s>", fromName, fromEmail)
+
+	// Get all users who have email notifications enabled (or all users if sendToAll is true)
+	usersCollection := database.GetCollection("users")
+	ctx := context.Background()
+
+	filter := bson.M{}
+	if !sendToAll {
+		filter = bson.M{"email_notifications": true}
+	}
+
+	cursor, err := usersCollection.Find(ctx, filter)
+	if err != nil {
+		return fmt.Errorf("failed to fetch users: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var users []models.User
+	if err := cursor.All(ctx, &users); err != nil {
+		return fmt.Errorf("failed to decode users: %w", err)
+	}
+
+	// Use a background context for the inserts since we already have the users
+	insertCtx := context.Background()
+
+	// Send emails and create in-app notifications for each user
+	for _, user := range users {
+		// Send email
+		if err := sendSingleEmail(user.Email, from, subject, message, htmlContent); err != nil {
+			fmt.Printf(">>> FAILED to send email to %s: %v\n", user.Email, err)
+			continue
+		}
+
+		// Create in-app notification (no CTA button per user request)
+		notification := models.Notification{
+			UserID:    user.ID.Hex(),
+			Type:      models.NotificationSystem,
+			Title:     subject,
+			Message:   message,
+			Read:      false,
+			CreatedAt: time.Now().UTC(),
+		}
+
+		notificationsCollection := database.GetCollection("notifications")
+		if _, err := notificationsCollection.InsertOne(insertCtx, notification); err != nil {
+			fmt.Printf(">>> FAILED to create notification for user %s: %v\n", user.ID.Hex(), err)
+		}
+	}
+
+	fmt.Printf(">>> BROADCAST COMPLETE: Sent to %d users\n", len(users))
+	return nil
+}
+
+// sendSingleEmail sends a single email via SMTP or Resend
+func sendSingleEmail(toEmail, from, subject, textBody, htmlBody string) error {
+	config := GetEmailConfig()
+
+	// OPTION 1: SMTP
+	if config.SMTPHost != "" && config.SMTPUser != "" && config.SMTPPass != "" {
+		fmt.Printf(">>> EMAIL SERVICE: Using SMTP (%s)\n", config.SMTPHost)
+
+		port := strings.TrimSpace(config.SMTPPort)
+		if port == "" {
+			port = "587"
+		}
+
+		header := map[string]string{
+			"From":         from,
+			"To":           toEmail,
+			"Subject":      subject,
+			"MIME-Version": "1.0",
+			"Content-Type": `text/html; charset="utf-8"`,
+		}
+
+		message := ""
+		for k, v := range header {
+			message += fmt.Sprintf("%s: %s\r\n", k, v)
+		}
+		message += "\r\n" + htmlBody
+
+		auth := smtp.PlainAuth("", config.SMTPUser, config.SMTPPass, config.SMTPHost)
+		err := smtp.SendMail(config.SMTPHost+":"+port, auth, config.SMTPUser, []string{toEmail}, []byte(message))
+		if err != nil {
+			return fmt.Errorf("failed to send email via SMTP: %w", err)
+		}
+
+		return nil
+	}
+
+	// OPTION 2: Resend API
+	if config.ResendAPIKey != "" {
+		fmt.Printf(">>> EMAIL SERVICE: Using Resend API\n")
+
+		reqBody := ResendEmailRequest{
+			From:    from,
+			To:      []string{toEmail},
+			Subject: subject,
+			Text:    textBody,
+			Html:    htmlBody,
+		}
+
+		jsonData, err := json.Marshal(reqBody)
+		if err != nil {
+			return fmt.Errorf("failed to prepare email request: %w", err)
+		}
+
+		req, err := http.NewRequest("POST", "https://api.resend.com/emails", bytes.NewBuffer(jsonData))
+		if err != nil {
+			return fmt.Errorf("failed to create email request: %w", err)
+		}
+
+		req.Header.Set("Authorization", "Bearer "+config.ResendAPIKey)
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{
+			Timeout: 15 * time.Second,
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return fmt.Errorf("failed to send email via Resend: %w", err)
+		}
+		defer resp.Body.Close()
+
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read email response: %w", err)
+		}
+
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return fmt.Errorf("email API returned status %d: %s", resp.StatusCode, string(respBody))
+		}
+
+		return nil
+	}
+
+	return fmt.Errorf("no email service (SMTP or Resend) is configured")
 }

@@ -20,6 +20,7 @@ import {
   ArrowUpRight,
   ArrowRight,
   X,
+  Send,
 } from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
 
@@ -480,26 +481,34 @@ export default function AdminOverview() {
                 color="orange"
                 isLight={isLight}
               />
-              {userRole === "super_admin" && (
-                <>
-                  <ActionCard
-                    href="/dashboard/admin/users"
-                    title="User Directory"
-                    description="Manage user profiles and permissions."
-                    icon={<Users />}
-                    color="emerald"
-                    isLight={isLight}
-                  />
-                  <ActionCard
-                    href="/dashboard/admin/subadmins/create"
-                    title="Staff Management"
-                    description="Invite and authorize new administrators."
-                    icon={<UserPlus />}
-                    color="indigo"
-                    isLight={isLight}
-                  />
-                </>
-              )}
+{userRole === "super_admin" && (
+                 <>
+                   <ActionCard
+                     href="/dashboard/admin/users"
+                     title="User Directory"
+                     description="Manage user profiles and permissions."
+                     icon={<Users />}
+                     color="emerald"
+                     isLight={isLight}
+                   />
+                   <ActionCard
+                     href="/dashboard/admin/broadcast"
+                     title="Broadcast Message"
+                     description="Send notifications to all users."
+                     icon={<Send />}
+                     color="pink"
+                     isLight={isLight}
+                   />
+                   <ActionCard
+                     href="/dashboard/admin/subadmins/create"
+                     title="Staff Management"
+                     description="Invite and authorize new administrators."
+                     icon={<UserPlus />}
+                     color="indigo"
+                     isLight={isLight}
+                   />
+                 </>
+               )}
             </div>
           </section>
 
@@ -952,3 +961,5 @@ function formatDateTime(value: string) {
     minute: "2-digit",
   });
 }
+
+ 

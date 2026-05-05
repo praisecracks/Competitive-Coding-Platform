@@ -9,9 +9,10 @@ import (
 type NotificationType string
 
 const (
-	NotificationDuelInvite NotificationType = "duel_invite"
-	NotificationDuelResult NotificationType = "duel_result"
-	NotificationSystem     NotificationType = "system"
+	NotificationDuelInvite  NotificationType = "duel_invite"
+	NotificationDuelResult  NotificationType = "duel_result"
+	NotificationSystem      NotificationType = "system"
+	NotificationBroadcast   NotificationType = "broadcast"
 )
 
 type Notification struct {

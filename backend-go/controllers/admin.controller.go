@@ -2,11 +2,14 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"codingplatform/database"
 	"codingplatform/models"
+	"codingplatform/services"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -178,14 +181,15 @@ func CreateAdmin(c *gin.Context) {
 	now := time.Now().UTC()
 
 	user := models.User{
-		Email:     input.Email,
-		Username:  input.Username,
-		Password:  string(hashedPassword),
-		Role:      input.Role,
-		CreatedAt: now,
-		UpdatedAt: now,
-		Rank:      "Admin",
-		Source:    "admin_creation",
+		Email:              input.Email,
+		Username:           input.Username,
+		Password:           string(hashedPassword),
+		Role:               input.Role,
+		CreatedAt:          now,
+		UpdatedAt:          now,
+		Rank:               "Admin",
+		Source:             "admin_creation",
+		EmailNotifications: true,
 	}
 
 	usersCollection := database.GetCollection("users")
@@ -230,4 +234,99 @@ func DeleteUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "USER_DELETED"})
+}
+
+// BroadcastNotificationRequest represents the request to send a broadcast notification
+type BroadcastNotificationRequest struct {
+	Title     string `json:"title" binding:"required"`
+	Message   string `json:"message" binding:"required"`
+	ActionURL string `json:"actionUrl"`
+	SendToAll bool   `json:"sendToAll"`
+}
+
+// SendBroadcastNotification sends a notification to all users (email + in-app)
+func SendBroadcastNotification(c *gin.Context) {
+	var input BroadcastNotificationRequest
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_INPUT"})
+		return
+	}
+
+	input.Title = strings.TrimSpace(input.Title)
+	input.Message = strings.TrimSpace(input.Message)
+
+	if input.Title == "" || input.Message == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "TITLE_AND_MESSAGE_REQUIRED"})
+		return
+	}
+
+	// Build HTML email content
+	config := services.GetEmailConfig()
+	fromName := strings.TrimSpace(config.FromName)
+	if fromName == "" {
+		fromName = "CODEMASTER"
+	}
+
+	logoHTML := fromName
+	if strings.TrimSpace(config.AppLogoURL) != "" {
+		logoHTML = fmt.Sprintf(`<img src="%s" alt="%s" style="display:block;margin:0 auto;max-width:140px;height:auto;">`,
+			config.AppLogoURL, fromName)
+	}
+
+	actionButton := ""
+	if input.ActionURL != "" {
+		actionButton = fmt.Sprintf(`
+		<div style="text-align: center; margin: 24px 0;">
+			<a href="%s" style="display: inline-block; background-color: #d946ef; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Announcement</a>
+		</div>`, input.ActionURL)
+	}
+
+	htmlBody := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>%s</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9f9f9; }
+        .container { max-width: 600px; margin: 40px auto; padding: 40px; background: #ffffff; border-radius: 12px; border: 1px solid #e1e4e8; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .header { margin-bottom: 32px; text-align: center; }
+        .content { margin-bottom: 32px; }
+        h1 { font-size: 22px; font-weight: 700; color: #111; margin-bottom: 16px; }
+        p { margin-bottom: 16px; color: #4b5563; }
+        .footer { font-size: 13px; color: #9ca3af; text-align: center; border-top: 1px solid #f1f1f1; padding-top: 24px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            %s
+        </div>
+        <div class="content">
+            <h1>%s</h1>
+            <p>%s</p>
+            %s
+        </div>
+        <div class="footer">
+            &copy; 2026 CODEMASTER. All rights reserved.<br>
+            Level up your coding skills.
+        </div>
+    </div>
+</body>
+</html>
+`, input.Title, logoHTML, input.Title, input.Message, actionButton)
+
+	// Send broadcast emails
+	if err := services.SendBroadcastEmail(input.Title, input.Message, htmlBody, input.ActionURL, input.SendToAll); err != nil {
+		fmt.Printf(">>> BROADCAST FAILED: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "BROADCAST_FAILED"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Broadcast sent successfully",
+		"title":   input.Title,
+		"recipients": "all_users_with_email_notifications",
+	})
 }
