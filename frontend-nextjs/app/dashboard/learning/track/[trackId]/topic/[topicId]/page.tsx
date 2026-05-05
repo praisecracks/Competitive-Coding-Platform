@@ -625,13 +625,13 @@ export default function TopicPage() {
                                   isLight ? "text-gray-500" : "text-gray-500"
                                 }`}
                               >
-                                {executionLanguage === 'go'
-                                  ? 'Go'
-                                  : executionLanguage === 'sql'
-                                  ? 'SQL'
-                                  : executionLanguage === 'system'
-                                  ? 'System Design'
-                                  : executionLanguage?.toUpperCase() || 'Code'}
+{executionLanguage === 'go'
+                                   ? 'Go'
+                                   : executionLanguage === 'sql'
+                                   ? 'SQL'
+                                   : executionLanguage === 'system'
+                                   ? 'System Design'
+                                   : 'Code'}
                               </div>
                               <pre
                                 className={`whitespace-pre-wrap break-words font-mono text-[13px] leading-7 sm:text-sm ${
