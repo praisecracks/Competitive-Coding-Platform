@@ -25,14 +25,11 @@ import LearningContent from "../../../../LearningContent";
 import CodePlayground from "../../../../CodePlayground";
 import CompletionModal from "../../../../CompletionModal";
 import LessonConfirmationModal from "../../../../LessonConfirmationModal";
-import {
-  getTrackById,
-  LearningTrack,
-  TrackTopic,
-  Subtopic,
-} from "../../../../data";
-import { useTheme } from "@/app/context/ThemeContext";
+import BrowserPlayground from "../../../../BrowserPlayground";
 import PageFooter from "@/app/components/PageFooter";
+import { getTrackById, LearningTrack, TrackTopic, Subtopic } from "../../../../data";
+import CourseOutline from "@/app/dashboard/learning/CourseOutline";
+import { useTheme } from "@/app/context/ThemeContext";
 import {
   getLearningProgress,
   migrateLegacyProgress,
@@ -40,7 +37,7 @@ import {
   updateStreak,
   TrackProgress,
 } from "@/lib/learning-api";
-import BrowserPlayground from "../../../../BrowserPlayground";
+import { LessonLink } from "@/app/dashboard/learning/LessonLink";
 
 export default function TopicPage() {
   const router = useRouter();
@@ -202,50 +199,62 @@ export default function TopicPage() {
   const handleCompleteLesson = useCallback(() => {
     if (allSubtopicsComplete) {
       setShowTopicCompleted(true);
-    } else {
+    } else if (activeLessonId && !progress.completedLessonIds.includes(activeLessonId)) {
+      // Only show confirmation if there's an active lesson that's not yet completed
       setPendingAction("complete");
       setShowConfirmationModal(true);
     }
-  }, [allSubtopicsComplete]);
+  }, [allSubtopicsComplete, activeLessonId, progress.completedLessonIds]);
 
-  const confirmCompleteLesson = useCallback(() => {
-    if (!activeLessonId || !topic) return;
+   const confirmCompleteLesson = useCallback(() => {
+     if (!activeLessonId || !topic) return;
 
-    const alreadyCompleted = progress.completedLessonIds.includes(activeLessonId);
-    const newCompletedLessonIds = alreadyCompleted
-      ? progress.completedLessonIds
-      : [...progress.completedLessonIds, activeLessonId];
+     const alreadyCompleted = progress.completedLessonIds.includes(activeLessonId);
+     
+     // Only proceed if lesson not already completed
+     if (alreadyCompleted) {
+       setShowConfirmationModal(false);
+       setPendingAction(null);
+       return;
+     }
 
-    const nextProgress: TrackProgress = {
-      ...progress,
-      completedLessonIds: newCompletedLessonIds,
-      lessonProgress: {
-        ...progress.lessonProgress,
-        [activeLessonId]: {
-          completed: true,
-          timeSpentSeconds:
-            progress.lessonProgress?.[activeLessonId]?.timeSpentSeconds || 0,
-        },
-      },
-    };
+     const newCompletedLessonIds = [...progress.completedLessonIds, activeLessonId];
 
-    const allLessonsComplete = topic.subtopics.every((subtopic) =>
-      newCompletedLessonIds.includes(subtopic.id)
-    );
+     const nextProgress: TrackProgress = {
+       ...progress,
+       completedLessonIds: newCompletedLessonIds,
+       lessonProgress: {
+         ...progress.lessonProgress,
+         [activeLessonId]: {
+           completed: true,
+           timeSpentSeconds:
+             progress.lessonProgress?.[activeLessonId]?.timeSpentSeconds || 0,
+         },
+       },
+     };
 
-    if (allLessonsComplete && !progress.completedTopicIds.includes(topicId)) {
-      nextProgress.completedTopicIds = [...progress.completedTopicIds, topicId];
-      setShowTopicCompleted(true);
-    }
+     const allLessonsComplete = topic.subtopics.every((subtopic) =>
+       newCompletedLessonIds.includes(subtopic.id)
+     );
 
-    saveProgress(nextProgress);
+     if (allLessonsComplete && !progress.completedTopicIds.includes(topicId)) {
+       nextProgress.completedTopicIds = [...progress.completedTopicIds, topicId];
+       setShowTopicCompleted(true);
+     }
 
-    // Update streak via API (non-blocking)
-    updateStreak(true).then(() => {
-      window.dispatchEvent(new Event("codemaster-learning-updated"));
-    }).catch(e => {
-      console.error("Failed to update streak", e);
-    });
+     saveProgress(nextProgress);
+
+     // Update streak via API (non-blocking) - ONLY for new completions
+     updateStreak(true).then((result) => {
+       // Dispatch event with new streak value for immediate celebration
+       window.dispatchEvent(new CustomEvent("codemaster-streak-incremented", {
+         detail: { streak: result.currentStreak }
+       }));
+       // Also trigger general update to refresh all progress
+       window.dispatchEvent(new Event("codemaster-learning-updated"));
+     }).catch(e => {
+       console.error("Failed to update streak", e);
+     });
 
     const currentIndex = topic.subtopics.findIndex((subtopic) => subtopic.id === activeLessonId);
     if (currentIndex < topic.subtopics.length - 1) {
@@ -379,9 +388,9 @@ export default function TopicPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-12">
-          <section className="space-y-6 xl:col-span-8">
+           <section className="space-y-6 xl:col-span-9">
             <div
               className={`overflow-hidden rounded-[28px] border ${
                 isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#0c0c12]"
@@ -771,243 +780,35 @@ export default function TopicPage() {
             </div>
           </section>
 
-           <aside className="space-y-6 xl:col-span-4">
-             <div
-               className={`lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1 space-y-6 rounded-[28px] border p-5 sm:p-6 ${
-                 isLight
-                   ? "border-gray-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
-                   : "border-white/10 bg-[#09090c] shadow-2xl"
-               }`}
-             >
-              <div>
-                <p
-                  className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${
-                    isLight ? "text-gray-500" : "text-gray-500"
-                  }`}
-                >
-                  Course Outline
-                </p>
-                <h3
-                  className={`mt-2 text-lg font-bold tracking-tight ${
-                    isLight ? "text-gray-900" : "text-white"
-                  }`}
-                >
-                  {topic.title}
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div
-                  className={`rounded-2xl border p-4 ${
-                    isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-white/[0.03]"
-                  }`}
-                >
-                  <p className={`text-[10px] uppercase tracking-[0.16em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
-                    Lessons
-                  </p>
-                  <p className={`mt-1 text-lg font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                    {totalLessons}
-                  </p>
-                </div>
-                <div
-                  className={`rounded-2xl border p-4 ${
-                    isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-white/[0.03]"
-                  }`}
-                >
-                  <p className={`text-[10px] uppercase tracking-[0.16em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
-                    Progress
-                  </p>
-                  <p className={`mt-1 text-lg font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                    {progressPercentage}%
-                  </p>
-                </div>
-                <div
-                  className={`rounded-2xl border p-4 ${
-                    isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-white/[0.03]"
-                  }`}
-                >
-                  <p className={`text-[10px] uppercase tracking-[0.16em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
-                    Time Spent
-                  </p>
-                  <p className={`mt-1 text-lg font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                    {topicMinutes}m
-                  </p>
-                </div>
-                <div
-                  className={`rounded-2xl border p-4 ${
-                    isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-white/[0.03]"
-                  }`}
-                >
-                  <p className={`text-[10px] uppercase tracking-[0.16em] ${isLight ? "text-gray-500" : "text-gray-500"}`}>
-                    Reward
-                  </p>
-                  <p className={`mt-1 text-lg font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                    +50 XP
-                  </p>
-                </div>
-              </div>
-
-               <div className="space-y-3">
-                {topic.subtopics.map((subtopic, idx) => {
-                  const completed = isLessonCompleted(subtopic.id);
-                  const active = subtopic.id === activeLessonId;
-                  const locked = isLessonLocked(subtopic.id);
-                  const hasExercise = !!subtopic.content.example;
-
-                  return (
-                    <button
-                      key={subtopic.id}
-                      onClick={() => !locked && handleSelectLesson(subtopic.id)}
-                      disabled={locked}
-                      className={`group relative flex w-full flex-col gap-2 rounded-2xl border p-4 text-left transition-all ${
-                        active
-                          ? isLight
-                            ? "border-pink-300 bg-pink-50 shadow-lg shadow-pink-500/10"
-                            : "border-pink-500/30 bg-pink-500/10 ring-1 ring-pink-500/20"
-                          : completed
-                          ? isLight
-                            ? "border-emerald-200 bg-emerald-50"
-                            : "border-emerald-500/20 bg-emerald-500/10"
-                          : locked
-                          ? isLight
-                            ? "border-gray-200 bg-gray-50 opacity-50"
-                            : "border-white/5 bg-white/5 opacity-50"
-                          : isLight
-                          ? "border-gray-200 bg-white hover:border-pink-200 hover:bg-gray-50"
-                          : "border-white/10 hover:border-pink-500/20 hover:bg-white/5"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="mt-1.5 flex h-2.5 w-2.5 shrink-0 items-center justify-center">
-                          <div
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              active ? "bg-pink-500" : completed ? "bg-emerald-500" : "bg-gray-300"
-                            }`}
-                          />
-                        </div>
-
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
-                          {completed ? (
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                          ) : locked ? (
-                            <Lock className="h-4 w-4 text-gray-400" />
-                          ) : (
-                            <span
-                              className={`text-xs font-bold ${
-                                active
-                                  ? "text-pink-600"
-                                  : isLight
-                                  ? "text-gray-600"
-                                  : "text-gray-300"
-                              }`}
-                            >
-                               {idx + 1}
-                             </span>
-                           )}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className={`truncate text-sm font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                              {subtopic.title}
-                            </p>
-                            {subtopic.duration && (
-                              <span className={`shrink-0 text-xs ${isLight ? "text-gray-400" : "text-gray-500"}`}>
-                                {subtopic.duration}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="mt-1 flex items-center gap-2">
-                            {hasExercise ? (
-                              <span
-                                className={`inline-flex items-center gap-1 text-xs ${
-                                  isLight ? "text-blue-600" : "text-blue-400"
-                                }`}
-                              >
-                                <Terminal className="h-3 w-3" />
-                                Interactive
-                              </span>
-                            ) : (
-                              <span className={`text-xs ${isLight ? "text-gray-400" : "text-gray-500"}`}>
-                                Read only
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div
-                className={`rounded-2xl border p-5 ${
-                  isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-white/[0.03]"
-                }`}
-              >
-                <h4 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                  This topic includes
-                </h4>
-                <div className={`mt-4 space-y-3 text-sm ${isLight ? "text-gray-600" : "text-gray-400"}`}>
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    {totalLessons} structured lessons
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Terminal className="h-4 w-4" />
-                    Interactive coding practice
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Trophy className="h-4 w-4" />
-                    Completion reward
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Layers3 className="h-4 w-4" />
-                    Guided topic progression
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className={`rounded-2xl border p-5 ${
-                  isLight ? "border-pink-200 bg-pink-50" : "border-pink-500/20 bg-pink-500/10"
-                }`}
-              >
-                <h4 className={`text-base font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                  Ready to practice?
-                </h4>
-                <p className={`mt-2 text-sm ${isLight ? "text-gray-600" : "text-gray-400"}`}>
-                  Turn this lesson into action with a challenge or duel once you finish the topic.
-                </p>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <button
-                    className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-                      isLight
-                        ? "bg-white text-gray-800 hover:bg-gray-100"
-                        : "bg-white/[0.06] text-white hover:bg-white/[0.1]"
-                    }`}
-                  >
-                    <Trophy className="h-4 w-4" />
-                    Practice Challenge
-                  </button>
-
-                  <button
-                    className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-                      isLight
-                        ? "bg-white text-gray-800 hover:bg-gray-100"
-                        : "bg-white/[0.06] text-white hover:bg-white/[0.1]"
-                    }`}
-                  >
-                    <Swords className="h-4 w-4" />
-                    Start Duel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </aside>
+ <aside className="hidden xl:block xl:fixed xl:top-24 xl:right-8 xl:w-80 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+                <div className={`rounded-[28px] border p-5 sm:p-6 shadow-2xl ${isLight ? "border-gray-200 bg-white" : "border-white/10 bg-[#09090c]"} `}>
+                <CourseOutline
+                track={track}
+                topic={topic}
+                activeLessonId={activeLessonId}
+                onSelectLesson={handleSelectLesson}
+                progress={progress}
+                isLessonCompleted={isLessonCompleted}
+                isLessonLocked={isLessonLocked}
+                topicMinutes={topicMinutes}
+               />
+               </div>
+             </aside>
         </div>
+      </div>
+
+      {/* Mobile Course Outline */}
+      <div className="xl:hidden px-4 pb-6">
+        <CourseOutline
+          track={track}
+          topic={topic}
+          activeLessonId={activeLessonId}
+          onSelectLesson={handleSelectLesson}
+          progress={progress}
+          isLessonCompleted={isLessonCompleted}
+          isLessonLocked={isLessonLocked}
+          topicMinutes={topicMinutes}
+        />
       </div>
 
       <AnimatePresence>

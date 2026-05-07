@@ -423,7 +423,7 @@ export default function LearningPathEngine() {
         </div>
 
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-12">
-          <div className="space-y-8 pb-20 xl:col-span-8">
+           <div className="space-y-8 pb-20 xl:col-span-9">
             <LearningHero path={heroPath} />
 
             {activeStep && contentPath && (
@@ -486,8 +486,21 @@ export default function LearningPathEngine() {
                         {completedStepsCount}/{totalStepsCount} completed
                       </p>
                     </div>
-                  </div>
-                </div>
+            </div>
+
+            {/* Mobile Course Outline */}
+            <div className="xl:hidden sm:mt-10 px-4 pb-6">
+              <LearningOutline
+                path={{
+                  completedSteps: enhancedPath.completedSteps,
+                  totalSteps: enhancedPath.totalSteps,
+                  steps: enhancedPath.steps,
+                }}
+                onStepSelect={handleStepSelect}
+                activeStepId={activeStepId || undefined}
+              />
+            </div>
+          </div>
 
                 <div className="px-6 py-6 sm:px-8">
                   <LearningContent
@@ -570,9 +583,9 @@ export default function LearningPathEngine() {
                     hasNextCourse={false}
                     rating={path.rating}
                     totalRatings={path.totalRatings}
-                  />
-                </div>
+                />
               </div>
+            </div>
             )}
 
             {relatedPaths.length > 0 && (
@@ -654,9 +667,9 @@ export default function LearningPathEngine() {
             )}
           </div>
 
-           <div className="xl:col-span-4">
-             <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto p-2 pb-6 pt-4 pr-8">
-               <LearningOutline
+            <div className="hidden xl:block xl:col-span-3">
+              <div className="sticky top-24">
+                <LearningOutline
                 path={{
                   completedSteps: enhancedPath.completedSteps,
                   totalSteps: enhancedPath.totalSteps,

@@ -184,7 +184,7 @@ export default function PublicLessonPreviewPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:pr-96">
         {/* Track + Topic title */}
         <div className="mb-8">
           <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -207,7 +207,7 @@ export default function PublicLessonPreviewPage() {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-stretch">
           {/* Main content */}
-          <section className="space-y-6 lg:col-span-8">
+           <section className="space-y-6 lg:col-span-12">
             <div className="rounded-2xl border border-fuchsia-500/20 bg-fuchsia-500/8 px-5 py-4">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -317,12 +317,9 @@ export default function PublicLessonPreviewPage() {
             </div>
           </section>
 
-           {/* Sticky Sidebar */}
-           <aside className="lg:col-span-4">
-             <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
-              <div className="space-y-6">
-                {/* Course outline */}
-                <div className="rounded-2xl border border-white/10 bg-[#0a0a0f] p-5 sm:p-6">
+ {/* Sticky Sidebar */}
+             <aside className="hidden lg:block lg:fixed lg:top-24 lg:right-8 lg:w-80 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+              <div className="rounded-[28px] border border-white/10 bg-[#0a0a0f] p-5 sm:p-6 shadow-2xl">
                   <div className="mb-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">
                       Previewing
@@ -381,7 +378,7 @@ export default function PublicLessonPreviewPage() {
                 {/* Included */}
                 <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 px-5 py-4">
                   <h4 className="text-sm font-semibold text-amber-100">
-                    What’s included
+                    What's included
                   </h4>
 
                   <div className="mt-3 space-y-2 text-sm text-amber-200/70">
@@ -394,10 +391,9 @@ export default function PublicLessonPreviewPage() {
                       Complete first lesson content
                     </div>
                   </div>
-                </div>
 
-                {/* Sticky CTA card */}
-                <div className="rounded-2xl border border-fuchsia-500/20 bg-gradient-to-br from-fuchsia-500/10 to-pink-500/10 p-5">
+                 {/* Sticky CTA */}
+                 <div className="rounded-2xl border border-fuchsia-500/20 bg-gradient-to-br from-fuchsia-500/10 to-pink-500/10 p-5">
                   <p className="text-sm font-semibold text-white">
                     Ready to continue?
                   </p>
@@ -419,15 +415,73 @@ export default function PublicLessonPreviewPage() {
                     >
                       Log In
                     </a>
-                  </div>
-                </div>
+                   </div>
+                 </div>
+               </div>
+             </aside>
+        </div>
+    </main>
+
+    {/* Mobile Course Outline */}
+    <div className="lg:hidden px-4 pb-6">
+      <div className="rounded-2xl border border-white/10 bg-[#0a0a0f] p-5 sm:p-6">
+        <div className="mb-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">
+            Course Outline
+          </p>
+          <h3 className="mt-1 text-base font-bold text-white">
+            {topic.title}
+          </h3>
+        </div>
+
+        <p className="mb-4 text-xs text-white/50">
+          Lesson 1 of {topic.subtopics.length}
+        </p>
+
+        <div className="space-y-2">
+          {topic.subtopics.map((subtopic, idx) => (
+            <div
+              key={subtopic.id}
+              className={`flex items-start gap-3 rounded-xl border p-3 text-sm ${
+                idx === 0
+                  ? "border-fuchsia-500/30 bg-fuchsia-500/10 ring-1 ring-fuchsia-500/20"
+                  : "border-white/10 bg-white/5 opacity-70"
+              }`}
+            >
+              <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white">
+                {idx + 1}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`truncate text-sm font-medium ${
+                    idx === 0 ? "text-white" : "text-white/70"
+                  }`}
+                >
+                  {subtopic.title}
+                </p>
+                {idx === 0 ? (
+                  <p className="mt-1 text-xs text-fuchsia-300">
+                    Available in preview
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-white/40">
+                    Unlock after sign up
+                  </p>
+                )}
               </div>
             </div>
-          </aside>
+          ))}
         </div>
-      </main>
 
-       {/* Simple footer */}
+        <p className="mt-4 text-xs text-white/40">
+          Sign up to unlock all {topic.subtopics.length} lessons in
+          this topic.
+        </p>
+      </div>
+    </div>
+
+    {/* Simple footer */}
        <footer className="border-t border-white/10 py-6 text-center text-sm text-white/30">
          <p>© 2026 CodeMaster. Learning preview. Sign up to continue.</p>
        </footer>

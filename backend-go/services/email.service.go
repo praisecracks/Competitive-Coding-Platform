@@ -10,6 +10,7 @@ import (
 	"net/smtp"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"codingplatform/database"
@@ -63,6 +64,14 @@ type ResendEmailRequest struct {
 // ResendEmailResponse represents the response from Resend API
 type ResendEmailResponse struct {
 	ID string `json:"id"`
+}
+
+// BroadcastStats contains statistics about a broadcast operation
+type BroadcastStats struct {
+	TotalUsers           int `json:"total_users"`
+	NotificationsCreated int `json:"notifications_created"`
+	EmailsSent           int `json:"emails_sent"`
+	EmailsFailed         int `json:"emails_failed"`
 }
 
 // SendPasswordResetEmail sends a password reset email to the user
@@ -261,42 +270,31 @@ The CODEMASTER Team`, resetLink)
 return fmt.Errorf("no email service (SMTP or Resend) is configured")
 }
 
-// createNotificationsOnly creates in-app notifications without sending emails
-func createNotificationsOnly(subject, message, actionUrl string, sendToAll bool) error {
-	usersCollection := database.GetCollection("users")
-	ctx := context.Background()
-
-	filter := bson.M{}
-	if !sendToAll {
-		filter = bson.M{"email_notifications": true}
+// CreateBroadcastNotifications creates in-app notifications for the given users
+// Returns the count of successfully created notifications
+func CreateBroadcastNotifications(users []models.User, subject, message string) int {
+	if len(users) == 0 {
+		return 0
 	}
-
-	cursor, err := usersCollection.Find(ctx, filter)
-	if err != nil {
-		return fmt.Errorf("failed to fetch users: %w", err)
-	}
-	defer cursor.Close(ctx)
-
-	var users []models.User
-	if err := cursor.All(ctx, &users); err != nil {
-		return fmt.Errorf("failed to decode users: %w", err)
-	}
-
 	notificationsCollection := database.GetCollection("notifications")
+	ctx := context.Background()
+	count := 0
 	for _, user := range users {
 		notification := models.Notification{
 			UserID:    user.ID.Hex(),
-			Type:      models.NotificationSystem,
+			Type:      models.NotificationBroadcast,
 			Title:     subject,
 			Message:   message,
 			Read:      false,
 			CreatedAt: time.Now().UTC(),
 		}
-		notificationsCollection.InsertOne(ctx, notification)
+		if _, err := notificationsCollection.InsertOne(ctx, notification); err != nil {
+			fmt.Printf(">>> FAILED to create notification for user %s: %v\n", user.ID.Hex(), err)
+		} else {
+			count++
+		}
 	}
-
-	fmt.Printf(">>> TEST MODE: Created %d in-app notifications\n", len(users))
-	return nil
+	return count
 }
 
 // isValidSender checks if the sender email is valid for Resend.
@@ -315,88 +313,133 @@ func isValidSender(email string) bool {
 	return true
 }
 
-// SendBroadcastEmail sends an email to all users with email notifications enabled
-// It also needs to save in-app notifications for all users
-func SendBroadcastEmail(subject, message, htmlContent, actionUrl string, sendToAll bool) error {
+// SendBroadcastEmail sends broadcast emails to target users and creates in-app notifications for all target users.
+// sendToAll: if true, send to all users; if false, only users with email_notifications=true
+// Returns stats about the broadcast; email send failures are logged but not treated as fatal errors.
+func SendBroadcastEmail(subject, message, htmlContent, actionUrl string, sendToAll bool) (BroadcastStats, error) {
+	var stats BroadcastStats
 	config := GetEmailConfig()
-
-	fmt.Printf(">>> EMAIL SERVICE: Attempting to send broadcast email\n")
-
-	// Check for test mode - logs only, no real emails
 	isTestMode := strings.ToLower(strings.TrimSpace(os.Getenv("BROADCAST_TEST_MODE"))) == "true"
 
-	if isTestMode {
-		fmt.Printf(">>> BROADCAST TEST MODE - Logging emails only (no actual sends)\n")
-	}
-
-	if !IsEmailConfigured() || isTestMode {
-		fmt.Printf(">>> MOCK BROADCAST EMAIL:\nSubject: %s\nBody: %s\nTo: %s users\n\n", 
-			subject, message, map[bool]string{true: "all", false: "opted-in"}[sendToAll])
-		// Still create in-app notifications even in mock mode
-		return createNotificationsOnly(subject, message, actionUrl, sendToAll)
-	}
-
-	fromName := strings.TrimSpace(config.FromName)
-	if fromName == "" {
-		fromName = "CODEMASTER"
-	}
-
-	fromEmail := strings.TrimSpace(config.FromEmail)
-	if fromEmail == "" || !isValidSender(fromEmail) {
-		return fmt.Errorf("invalid FROM_EMAIL configuration")
-	}
-
-	from := fmt.Sprintf("%s <%s>", fromName, fromEmail)
-
-	// Get all users who have email notifications enabled (or all users if sendToAll is true)
+	// Fetch target users
 	usersCollection := database.GetCollection("users")
 	ctx := context.Background()
-
 	filter := bson.M{}
 	if !sendToAll {
 		filter = bson.M{"email_notifications": true}
 	}
-
 	cursor, err := usersCollection.Find(ctx, filter)
 	if err != nil {
-		return fmt.Errorf("failed to fetch users: %w", err)
+		return stats, fmt.Errorf("failed to fetch users: %w", err)
 	}
 	defer cursor.Close(ctx)
 
 	var users []models.User
 	if err := cursor.All(ctx, &users); err != nil {
-		return fmt.Errorf("failed to decode users: %w", err)
+		return stats, fmt.Errorf("failed to decode users: %w", err)
+	}
+	if len(users) == 0 {
+		fmt.Printf(">>> BROADCAST: No users found matching criteria\n")
+		return stats, nil
+	}
+	stats.TotalUsers = len(users)
+	fmt.Printf(">>> BROADCAST: Targeting %d users\n", len(users))
+
+	// Create in-app notifications for ALL target users (synchronously for reliability)
+	stats.NotificationsCreated = CreateBroadcastNotifications(users, subject, message)
+
+	// If email service is not configured, skip email sending
+	if !IsEmailConfigured() {
+		fmt.Printf(">>> EMAIL SERVICE: Not configured - skipping email sends. Notifications created: %d\n", stats.NotificationsCreated)
+		return stats, nil
 	}
 
-	// Use a background context for the inserts since we already have the users
-	insertCtx := context.Background()
-
-	// Send emails and create in-app notifications for each user
-	for _, user := range users {
-		// Send email
-		if err := sendSingleEmail(user.Email, from, subject, message, htmlContent); err != nil {
-			fmt.Printf(">>> FAILED to send email to %s: %v\n", user.Email, err)
-			continue
+	// Determine which users to send emails to
+	var emailTargets []models.User
+	if isTestMode {
+		// Test mode: send only to test recipients
+		testEmailsStr := os.Getenv("TEST_EMAIL_RECIPIENTS")
+		if testEmailsStr == "" {
+			// Default to admin users only
+			for _, u := range users {
+				if u.Role == "admin" || u.Role == "super_admin" {
+					emailTargets = append(emailTargets, u)
+				}
+			}
+			if len(emailTargets) == 0 && len(users) > 0 {
+				// Fallback: first 2 users
+				if len(users) > 2 {
+					emailTargets = users[:2]
+				} else {
+					emailTargets = users
+				}
+			}
+			fmt.Printf(">>> BROADCAST TEST MODE: No TEST_EMAIL_RECIPIENTS set, using admin/first users (%d recipients)\n", len(emailTargets))
+		} else {
+			// Parse the comma-separated test email list
+			testEmails := strings.Split(testEmailsStr, ",")
+			for _, u := range users {
+				for _, testEmail := range testEmails {
+					if strings.EqualFold(u.Email, strings.TrimSpace(testEmail)) {
+						emailTargets = append(emailTargets, u)
+						break
+					}
+				}
+			}
+			fmt.Printf(">>> BROADCAST TEST MODE: Sending to %d test recipients from TEST_EMAIL_RECIPIENTS list\n", len(emailTargets))
 		}
-
-		// Create in-app notification (no CTA button per user request)
-		notification := models.Notification{
-			UserID:    user.ID.Hex(),
-			Type:      models.NotificationSystem,
-			Title:     subject,
-			Message:   message,
-			Read:      false,
-			CreatedAt: time.Now().UTC(),
-		}
-
-		notificationsCollection := database.GetCollection("notifications")
-		if _, err := notificationsCollection.InsertOne(insertCtx, notification); err != nil {
-			fmt.Printf(">>> FAILED to create notification for user %s: %v\n", user.ID.Hex(), err)
-		}
+	} else {
+		// Production mode: all target users
+		emailTargets = users
 	}
 
-	fmt.Printf(">>> BROADCAST COMPLETE: Sent to %d users\n", len(users))
-	return nil
+	if len(emailTargets) == 0 {
+		fmt.Printf(">>> BROADCAST: No email recipients to send to\n")
+		return stats, nil
+	}
+
+	// Prepare from address
+	fromName := strings.TrimSpace(config.FromName)
+	if fromName == "" {
+		fromName = "CODEMASTER"
+	}
+	fromEmail := strings.TrimSpace(config.FromEmail)
+	if fromEmail == "" || !isValidSender(fromEmail) {
+		return stats, fmt.Errorf("invalid FROM_EMAIL configuration")
+	}
+	from := fmt.Sprintf("%s <%s>", fromName, fromEmail)
+
+	// Send emails concurrently with rate limiting (max 10 in-flight)
+	var wg sync.WaitGroup
+	semaphore := make(chan struct{}, 10)
+	var mu sync.Mutex
+
+	for _, user := range emailTargets {
+		wg.Add(1)
+		go func(u models.User) {
+			defer wg.Done()
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
+
+			if err := sendSingleEmail(u.Email, from, subject, message, htmlContent); err != nil {
+				fmt.Printf(">>> FAILED to send email to %s: %v\n", u.Email, err)
+				mu.Lock()
+				stats.EmailsFailed++
+				mu.Unlock()
+			} else {
+				mu.Lock()
+				stats.EmailsSent++
+				mu.Unlock()
+			}
+		}(user)
+	}
+
+	wg.Wait()
+
+	fmt.Printf(">>> BROADCAST COMPLETE: Emails sent: %d, failed: %d; Notifications created: %d/%d\n",
+		stats.EmailsSent, stats.EmailsFailed, stats.NotificationsCreated, stats.TotalUsers)
+
+	return stats, nil
 }
 
 // sendSingleEmail sends a single email via SMTP or Resend

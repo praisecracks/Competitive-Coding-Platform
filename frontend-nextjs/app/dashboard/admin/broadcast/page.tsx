@@ -441,7 +441,7 @@ export default function BroadcastNotificationPage() {
                   </div>
                   <span className="text-xs font-bold text-emerald-400">Enabled</span>
                 </div>
-
+                
                 <div className={`flex items-center justify-between rounded-2xl border p-4 ${isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-black/30"}`}>
                   <div className="flex items-center gap-3">
                     <Bell className="h-4 w-4 text-emerald-400" />
@@ -457,3 +457,4 @@ export default function BroadcastNotificationPage() {
     </div>
   );
 }
+

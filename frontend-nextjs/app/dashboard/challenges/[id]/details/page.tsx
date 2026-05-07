@@ -133,10 +133,9 @@ export default function ChallengeDetailsPage() {
 
         <div className="grid grid-cols-1 xl:grid-cols-[220px_1fr_280px] gap-10">
 
-          {/* SIDEBAR */}
-          <aside className="hidden xl:block sticky top-24 h-fit">
-            <nav
-              className={`space-y-3 text-sm rounded-2xl border p-4 ${
+ {/* SIDEBAR */}
+             <nav
+              className={`hidden xl:block xl:sticky xl:top-24 self-start h-fit text-sm w-80 rounded-2xl border p-4 ${
                 isLight
                   ? "border-gray-200 bg-white shadow-sm"
                   : "border-white/10 bg-[#0b0b0f]"
@@ -166,11 +165,10 @@ export default function ChallengeDetailsPage() {
                   {item.label}
                 </a>
               ))}
-            </nav>
-          </aside>
+             </nav>
 
-          {/* MAIN */}
-          <div className="space-y-12 max-w-3xl">
+ {/* MAIN */}
+            <div className="space-y-12 max-w-3xl xl:mr-10">
 
             {/* OVERVIEW */}
             <section id="overview">
@@ -305,17 +303,17 @@ Output:
                 </p>
               </div>
             </section>
-          </div>
+        </div>
 
-          {/* RIGHT PANEL */}
-          <aside className="hidden xl:block sticky top-24 h-fit">
-            <div
-              className={`rounded-2xl border p-5 ${
-                isLight
-                  ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
-                  : "border-white/10 bg-[#0b0b0f]"
-              }`}
-            >
+        {/* RIGHT PANEL */}
+        <aside className="hidden xl:block xl:sticky xl:top-24 self-start w-80">
+          <div
+            className={`rounded-2xl border p-5 ${
+              isLight
+                ? "border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+                : "border-white/10 bg-[#0b0b0f]"
+            }`}
+          >
               <p className={`${isLight ? "text-gray-600" : "text-gray-400"} text-sm`}>
                 Next Step
               </p>

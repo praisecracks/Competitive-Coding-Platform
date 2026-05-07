@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -34,6 +34,7 @@ interface LearningStatsHubProps {
   earnedMilestones: Milestone[];
   lastCompletedDate?: string;
   onContinueLearning?: () => void;
+  onStreakIncrease?: (newStreak: number) => void;
 }
 
 type ActivePanel = "streak" | "progress" | "badges" | null;
@@ -71,8 +72,18 @@ export default function LearningStatsHub({
   earnedMilestones,
   lastCompletedDate,
   onContinueLearning,
+  onStreakIncrease,
 }: LearningStatsHubProps) {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  const prevStreakRef = useRef(streak);
+
+  // Detect streak increase and notify parent
+  useEffect(() => {
+    if (streak > prevStreakRef.current) {
+      onStreakIncrease?.(streak);
+    }
+    prevStreakRef.current = streak;
+  }, [streak, onStreakIncrease]);
 
   const streakState = useMemo<StreakState>(() => {
     if (streak <= 0) return "empty";

@@ -7,20 +7,30 @@ import {
   Search,
   Clock,
   ChevronRight,
-  Lock,
   ArrowRight,
   BookOpen,
   GraduationCap,
   PlayCircle,
+  Check,
 } from "lucide-react";
-import { LEARNING_PATHS, LEARNING_TRACKS, ADDITIONAL_TRACKS, getCourseProgressFromTrack } from "../data";
+import { LEARNING_PATHS, getTrackById } from "../data";
 import { useTheme } from "@/app/context/ThemeContext";
 import PageFooter from "@/app/components/PageFooter";
-import {
-  getUserProgressKey,
-  getUserLegacyProgressKey,
-} from "@/lib/auth";
-import { migrateLegacyProgress, getLearningProgress } from "@/lib/learning-api";
+import { migrateLegacyProgress } from "@/lib/learning-api";
+
+// Mapping from standalone course ID to its corresponding track and topic IDs
+const COURSE_TO_TRACK_MAPPING: Record<string, { trackId: string; topicIds: string[] }> = {
+  "js-functions-basics": { trackId: "master-javascript", topicIds: ["js-functions"] },
+  "python-while-loops": { trackId: "master-python", topicIds: ["py-loops"] },
+  "go-basics-structs": { trackId: "master-go", topicIds: ["go-structs"] },
+  "binary-search-mastery": { trackId: "algorithms", topicIds: ["algo-binary-search"] },
+  "sliding-window-tech": { trackId: "algorithms", topicIds: ["algo-sliding-window"] },
+  "two-pointers-pattern": { trackId: "algorithms", topicIds: ["algo-two-pointers"] },
+  "recursion-intro": { trackId: "algorithms", topicIds: ["algo-recursion"] },
+  "dynamic-programming-intro": { trackId: "algorithms", topicIds: ["algo-dp"] },
+  "hashing-basics": { trackId: "data-structures", topicIds: ["ds-hashing"] },
+  "sql-basics": { trackId: "sql-databases", topicIds: ["sql-fundamentals"] },
+};
 
 type PathStatus = "not_started" | "in_progress" | "completed";
 
@@ -37,6 +47,7 @@ interface UserProgress {
 
 interface TrackProgress {
   completedTopicIds: string[];
+  completedLessonIds?: string[];
   lessonProgress?: Record<string, { completed: boolean; timeSpentSeconds: number }>;
   topicTimeSpent?: Record<string, number>;
 }
@@ -50,10 +61,6 @@ const categoryColors: Record<string, { light: string; dark: string; text: string
 };
 
 export default function ExploreCoursesPage() {
-  const router = useRouter();
-  const { theme } = useTheme();
-  const isLight = theme === "light";
-
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [userProgress, setUserProgress] = useState<UserProgress>({
@@ -62,100 +69,297 @@ export default function ExploreCoursesPage() {
   });
   const [trackProgressMap, setTrackProgressMap] = useState<Record<string, TrackProgress>>({});
 
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+  const router = useRouter();
+
   useEffect(() => {
-    async function loadProgress() {
-      try {
-        // Try from MongoDB API first
-        const data = await migrateLegacyProgress();
-        if (data.trackProgress && Object.keys(data.trackProgress).length > 0) {
-          setTrackProgressMap(data.trackProgress);
-        }
-        if (data.legacyProgress && Object.keys(data.legacyProgress).length > 0) {
-          setUserProgress({ paths: data.legacyProgress as any, totalXp: 0 });
-        }
-      } catch (e) {
-        console.warn("API failed", e);
-      }
-      
-      // Check user-scoped localStorage
-      const userEmail = localStorage.getItem("user_email");
-      const sanitized = userEmail ? userEmail.toLowerCase().replace(/[^a-z0-9@._-]/g, "_").slice(0, 64) : null;
-      
-      // Try user-scoped keys first
-      if (sanitized) {
-        const localProgress = localStorage.getItem(`codemaster_learning_track_progress_${sanitized}`);
-        if (localProgress) {
+      async function loadProgress() {
+        const userEmail = localStorage.getItem("user_email");
+        const sanitized = userEmail ? userEmail.toLowerCase().replace(/[^a-z0-9@._-]/g, "_").slice(0, 64) : null;
+        
+        // Read all possible sources synchronously first
+        const userTrackKey = sanitized ? `codemaster_learning_track_progress_${sanitized}` : null;
+        const userLegacyKey = sanitized ? `codemaster_learning_progress_v1_${sanitized}` : null;
+        
+        const userTrackStr = userTrackKey ? localStorage.getItem(userTrackKey) : null;
+        const userLegacyStr = userLegacyKey ? localStorage.getItem(userLegacyKey) : null;
+        const globalTrackStr = localStorage.getItem("codemaster_learning_track_progress");
+        const globalLegacyStr = localStorage.getItem("codemaster_learning_progress_v1");
+        
+        // Parse user-scoped track data
+        let userTrackData: Record<string, TrackProgress> = {};
+        if (userTrackStr) {
           try {
-            const parsed = JSON.parse(localProgress);
-            if (parsed && Object.keys(parsed).length > 0 && Object.keys(trackProgressMap).length === 0) {
-              setTrackProgressMap(parsed);
+            const parsed = JSON.parse(userTrackStr);
+            if (parsed && Object.keys(parsed).length > 0) {
+              userTrackData = parsed;
             }
           } catch {}
         }
-        const localLegacy = localStorage.getItem(`codemaster_learning_progress_v1_${sanitized}`);
-        if (localLegacy && Object.keys(userProgress.paths).length === 0) {
+        
+        // Parse user-scoped legacy data
+        let userLegacyData: UserProgress["paths"] = {};
+        if (userLegacyStr) {
           try {
-            setUserProgress({ paths: JSON.parse(localLegacy), totalXp: 0 });
+            const parsed: UserProgress = JSON.parse(userLegacyStr);
+            if (parsed?.paths && Object.keys(parsed.paths).length > 0) {
+              userLegacyData = parsed.paths;
+            }
           } catch {}
+        }
+        
+        // Parse global track data (fallback)
+        let globalTrackData: Record<string, TrackProgress> = {};
+        if (globalTrackStr) {
+          try {
+            const parsed = JSON.parse(globalTrackStr);
+            if (parsed && Object.keys(parsed).length > 0) {
+              globalTrackData = parsed as Record<string, TrackProgress>;
+            }
+          } catch {}
+        }
+        
+        // Parse global legacy data (fallback)
+        let globalLegacyData: UserProgress["paths"] = {};
+        if (globalLegacyStr) {
+          try {
+            const parsed: UserProgress = JSON.parse(globalLegacyStr);
+            if (parsed?.paths && Object.keys(parsed.paths).length > 0) {
+              globalLegacyData = parsed.paths;
+            }
+          } catch {}
+        }
+        
+        // Try MongoDB API (authoritative if available)
+        try {
+          const apiData = await migrateLegacyProgress();
+          if (apiData.trackProgress && Object.keys(apiData.trackProgress).length > 0) {
+            setTrackProgressMap(apiData.trackProgress);
+          } else if (Object.keys(userTrackData).length > 0) {
+            setTrackProgressMap(userTrackData);
+          } else if (Object.keys(globalTrackData).length > 0) {
+            setTrackProgressMap(globalTrackData);
+          }
+          
+          if (apiData.legacyProgress && Object.keys(apiData.legacyProgress).length > 0) {
+            setUserProgress({ paths: apiData.legacyProgress, totalXp: 0 });
+          } else if (Object.keys(userLegacyData).length > 0) {
+            setUserProgress({ paths: userLegacyData, totalXp: 0 });
+          } else if (Object.keys(globalLegacyData).length > 0) {
+            setUserProgress({ paths: globalLegacyData, totalXp: 0 });
+          }
+        } catch (e) {
+          console.warn("API failed, using localStorage", e);
+          // API failed - use best available localStorage data
+          if (Object.keys(userTrackData).length > 0) {
+            setTrackProgressMap(userTrackData);
+          } else if (Object.keys(globalTrackData).length > 0) {
+            setTrackProgressMap(globalTrackData);
+          }
+          
+          if (Object.keys(userLegacyData).length > 0) {
+            setUserProgress({ paths: userLegacyData, totalXp: 0 });
+          } else if (Object.keys(globalLegacyData).length > 0) {
+            setUserProgress({ paths: globalLegacyData, totalXp: 0 });
+          }
+        }
+        
+        // After state updates, derivedPaths will recompute
+      };
+      
+      loadProgress();
+
+      const handleProgressUpdate = () => {
+        loadProgress();
+      };
+
+      window.addEventListener("codemaster-learning-updated", handleProgressUpdate);
+
+      return () => {
+        window.removeEventListener("codemaster-learning-updated", handleProgressUpdate);
+      };
+    }, []);
+
+
+
+    const getProgressForCourse = (
+      path: (typeof LEARNING_PATHS)[number],
+      progressMap: Record<string, TrackProgress>,
+      legacyProgress: UserProgress
+    ) => {
+      // 1. Check direct legacy course progress
+      const directCourseProgress = legacyProgress?.paths?.[path.id];
+      
+      if (directCourseProgress?.completedStepIds && Array.isArray(directCourseProgress.completedStepIds)) {
+        const completedSteps = directCourseProgress.completedStepIds.length;
+        const totalSteps = path.steps.length;
+        const progressPercentage = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+        
+        const status: PathStatus =
+          progressPercentage === 100
+            ? "completed"
+            : progressPercentage > 0
+            ? "in_progress"
+            : "not_started";
+        
+        return {
+          completedSteps,
+          totalSteps,
+          progressPercentage,
+          status,
+        };
+      }
+      
+      // 2. Check track-based progress via mapping
+      const mapping = COURSE_TO_TRACK_MAPPING[path.id];
+      if (mapping) {
+        const trackProgress = progressMap[mapping.trackId];
+        if (trackProgress) {
+          const track = getTrackById(mapping.trackId);
+          if (!track) {
+            return {
+              completedSteps: 0,
+              totalSteps: path.steps.length,
+              progressPercentage: 0,
+              status: "not_started" as PathStatus,
+            };
+          }
+          
+          let totalLessons = 0;
+          let completedLessons = 0;
+          
+          mapping.topicIds.forEach((topicId) => {
+            const topic = track.topics.find((t) => t.id === topicId);
+            if (!topic) return;
+            
+            const subtopicLessons = topic.subtopics.length;
+            totalLessons += subtopicLessons;
+            
+            topic.subtopics.forEach((subtopic) => {
+              if (
+                trackProgress.lessonProgress?.[subtopic.id]?.completed ||
+                trackProgress.completedLessonIds?.includes(subtopic.id)
+              ) {
+                completedLessons++;
+              }
+            });
+          });
+          
+          // If the topic itself is marked completed, all its lessons count
+          if (mapping.topicIds.some(tid => trackProgress.completedTopicIds?.includes(tid))) {
+            completedLessons = totalLessons;
+          }
+          
+          completedLessons = Math.min(completedLessons, totalLessons);
+          
+          const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+          const status: PathStatus =
+            progressPercentage === 100
+              ? "completed"
+              : progressPercentage > 0
+              ? "in_progress"
+              : "not_started";
+          
+          return {
+            completedSteps: completedLessons,
+            totalSteps: totalLessons,
+            progressPercentage,
+            status,
+          };
         }
       }
       
-      // Last resort: check old global keys (for backward compatibility)
-      const globalProgress = localStorage.getItem("codemaster_learning_track_progress");
-      if (globalProgress && Object.keys(trackProgressMap).length === 0) {
-        try {
-          setTrackProgressMap(JSON.parse(globalProgress));
-        } catch {}
+      // 3. Fallback: check if course ID directly matches a track topic
+      for (const [trackId, progress] of Object.entries(progressMap)) {
+        const track = getTrackById(trackId);
+        if (!track) continue;
+        
+        const topic = track.topics.find((t) => t.id === path.id);
+        if (topic) {
+          const totalLessons = topic.subtopics.length;
+          let completedLessons = 0;
+          
+          topic.subtopics.forEach((subtopic) => {
+            if (
+              progress.lessonProgress?.[subtopic.id]?.completed ||
+              progress.completedLessonIds?.includes(subtopic.id)
+            ) {
+              completedLessons++;
+            }
+          });
+          
+          if (progress.completedTopicIds?.includes(path.id)) {
+            completedLessons = totalLessons;
+          }
+          
+          const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+          const status: PathStatus =
+            progressPercentage === 100
+              ? "completed"
+              : progressPercentage > 0
+              ? "in_progress"
+              : "not_started";
+          
+          return {
+            completedSteps: completedLessons,
+            totalSteps: totalLessons,
+            progressPercentage,
+            status,
+          };
+        }
       }
-      const globalLegacy = localStorage.getItem("codemaster_learning_progress_v1");
-      if (globalLegacy && Object.keys(userProgress.paths).length === 0) {
-        try {
-          setUserProgress({ paths: JSON.parse(globalLegacy), totalXp: 0 });
-        } catch {}
-      }
-    }
-    loadProgress();
-  }, []);
-
-  const allTracks = useMemo(() => [...LEARNING_TRACKS, ...ADDITIONAL_TRACKS], []);
-
-  const getProgressForCourse = (
-    path: (typeof LEARNING_PATHS)[number],
-    progressMap: Record<string, TrackProgress>,
-    legacyProgress: UserProgress
-  ) => {
-    const directCourseProgress = legacyProgress?.paths?.[path.id];
-    const progress = getCourseProgressFromTrack(path.id, progressMap, directCourseProgress);
-    const totalSteps = progress.totalLessons || path.steps.length;
-
-    const status: PathStatus =
-      progress.progressPercentage === 100
-        ? "completed"
-        : progress.progressPercentage > 0
-        ? "in_progress"
-        : "not_started";
-
-    return {
-      completedSteps: Math.min(progress.completedLessons, totalSteps),
-      totalSteps,
-      progressPercentage: progress.progressPercentage,
-      status,
-    };
-  };
-
-  const derivedPaths = useMemo(() => {
-    return LEARNING_PATHS.map((path) => {
-      const resolvedProgress = getProgressForCourse(path, trackProgressMap, userProgress);
-
+      
+      // No progress found
       return {
-        ...path,
-        completedSteps: resolvedProgress.completedSteps,
-        totalSteps: resolvedProgress.totalSteps,
-        progressPercentage: resolvedProgress.progressPercentage,
-        status: resolvedProgress.status,
+        completedSteps: 0,
+        totalSteps: path.steps.length,
+        progressPercentage: 0,
+        status: "not_started" as PathStatus,
       };
-    });
-  }, [userProgress, trackProgressMap]);
+    };
+
+   // Helper to check if a specific course is fully completed (100%)
+   const isCourseCompleted = (pathId: string): boolean => {
+     const path = LEARNING_PATHS.find(p => p.id === pathId);
+     if (!path) return true; // Unknown path considered satisfied
+     const progress = getProgressForCourse(path, trackProgressMap, userProgress);
+     return progress.progressPercentage === 100;
+   };
+   
+   // Helper function to check if a course is locked based on prerequisites
+   const isCourseLocked = (pathId: string): boolean => {
+     const path = LEARNING_PATHS.find(p => p.id === pathId);
+     if (!path) return true;
+     
+     // Beginner courses are always auto-unlocked
+     if (path.difficulty === "Beginner") {
+       return false;
+     }
+     
+     if (!path.prerequisiteIds || path.prerequisiteIds.length === 0) {
+       return false;
+     }
+     
+     // Course is locked if ANY prerequisite is not completed (progress < 100%)
+     return path.prerequisiteIds.some(prereqId => !isCourseCompleted(prereqId));
+   };
+
+      const derivedPaths = useMemo(() => {
+        return LEARNING_PATHS.map((path) => {
+          const resolvedProgress = getProgressForCourse(path, trackProgressMap, userProgress);
+          const isLocked = isCourseLocked(path.id);
+
+          return {
+            ...path,
+            completedSteps: resolvedProgress.completedSteps,
+            totalSteps: resolvedProgress.totalSteps,
+            progressPercentage: resolvedProgress.progressPercentage,
+            status: resolvedProgress.status,
+            isLocked,
+          };
+        });
+      }, [userProgress, trackProgressMap]);
 
   const filteredPaths = derivedPaths.filter((path) => {
     const matchesSearch =
@@ -256,35 +460,35 @@ export default function ExploreCoursesPage() {
                 </div>
               </div>
 
-              <div
-                className={`flex items-center rounded-2xl border px-4 py-3 ${
-                  isLight
-                    ? "border-purple-200 bg-purple-50 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
-                    : "border-purple-500/15 bg-purple-500/[0.06]"
-                }`}
-              >
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                    isLight ? "bg-purple-50" : "bg-purple-500/15"
-                  }`}
-                >
-                  <BookOpen
-                    className={`h-5 w-5 ${isLight ? "text-purple-600" : "text-purple-400"}`}
-                  />
-                </div>
-                <div className="ml-3">
-                  <p
-                    className={`text-[10px] uppercase tracking-[0.18em] ${
-                      isLight ? "text-gray-500" : "text-gray-400"
-                    }`}
-                  >
-                    Topics
-                  </p>
-                  <p className={`text-lg font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
-                    {derivedPaths.reduce((sum, p) => sum + p.totalSteps, 0)}
-                  </p>
-                </div>
-              </div>
+               <div
+                 className={`flex items-center rounded-2xl border px-4 py-3 ${
+                   isLight
+                     ? "border-purple-200 bg-purple-50 shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
+                     : "border-purple-500/15 bg-purple-500/[0.06]"
+                 }`}
+               >
+                 <div
+                   className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                     isLight ? "bg-purple-50" : "bg-purple-500/15"
+                   }`}
+                 >
+                   <BookOpen
+                     className={`h-5 w-5 ${isLight ? "text-purple-600" : "text-purple-400"}`}
+                   />
+                 </div>
+                 <div className="ml-3">
+                   <p
+                     className={`text-[10px] uppercase tracking-[0.18em] ${
+                       isLight ? "text-gray-500" : "text-gray-400"
+                     }`}
+                   >
+                     Topics
+                   </p>
+                   <p className={`text-lg font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
+                     {LEARNING_PATHS.reduce((sum, p) => sum + p.steps.length, 0)}
+                   </p>
+                 </div>
+               </div>
             </div>
           </div>
         </div>
@@ -346,13 +550,15 @@ export default function ExploreCoursesPage() {
                 transition={{ delay: index * 0.05, duration: 0.3 }}
                 className="group cursor-pointer"
               >
-                <div
-                  className={`relative overflow-hidden rounded-[20px] border transition-all duration-400 ease-out ${
-                    isLight
-                      ? "border-gray-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
-                      : "border-white/10 bg-[#0c0c12]"
-                  } group-hover:-translate-y-2 group-hover:shadow-[0_20px_50px_rgba(15,23,42,0.15)]`}
-                >
+                 <div
+                   className={`relative overflow-hidden rounded-[20px] border transition-all duration-400 ease-out ${
+                     isLight
+                       ? "border-gray-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
+                       : "border-white/10 bg-[#0c0c12]"
+                   } group-hover:-translate-y-2 group-hover:shadow-[0_20px_50px_rgba(15,23,42,0.15)] ${
+                     path.isLocked ? "opacity-50 pointer-events-none" : ""
+                   }`}
+                 >
                   <div className="relative h-40 overflow-hidden">
                     <motion.img
                       src={path.coverImage}
@@ -375,8 +581,8 @@ export default function ExploreCoursesPage() {
 
                     {path.status === "completed" && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-                          <Lock className="h-6 w-6 text-white" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/90 backdrop-blur-sm">
+                          <Check className="h-6 w-6 text-white" />
                         </div>
                       </div>
                     )}
@@ -453,29 +659,39 @@ export default function ExploreCoursesPage() {
                       </p>
                     </div>
 
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleStart(path.id)}
-                      className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-semibold transition-all duration-300 ${
-                        path.status === "completed"
-                          ? isLight
-                            ? "bg-gray-100 text-gray-700 hover:bg-emerald-500 hover:text-white"
-                            : "bg-white/[0.06] text-white hover:bg-emerald-500"
-                          : path.status === "in_progress"
-                          ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                          : isLight
-                          ? "bg-gray-100 text-gray-700 hover:bg-pink-500 hover:text-white"
-                          : "bg-white/[0.06] text-white hover:bg-pink-500"
-                      }`}
-                    >
-                      {path.status === "completed"
-                        ? "Review Course"
-                        : path.status === "in_progress"
-                        ? "Continue Learning"
-                        : "Start Course"}
-                      <ChevronRight className="h-4 w-4" />
-                    </motion.button>
+                     <motion.button
+                       whileHover={{ scale: 1.02 }}
+                       whileTap={{ scale: 0.98 }}
+                       onClick={() => {
+                         if (!path.isLocked) {
+                           handleStart(path.id);
+                         }
+                       }}
+                       className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-semibold transition-all duration-300 ${
+                         path.status === "completed"
+                           ? isLight
+                             ? "bg-gray-100 text-gray-700 hover:bg-emerald-500 hover:text-white"
+                             : "bg-white/[0.06] text-white hover:bg-emerald-500"
+                           : path.status === "in_progress"
+                           ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                           : path.isLocked
+                           ? isLight
+                             ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                             : "bg-white/[0.06] text-gray-400 cursor-not-allowed"
+                           : isLight
+                           ? "bg-gray-100 text-gray-700 hover:bg-pink-500 hover:text-white"
+                           : "bg-white/[0.06] text-white hover:bg-pink-500"
+                       }`}
+                     >
+                       {path.isLocked
+                         ? "Locked"
+                         : path.status === "completed"
+                         ? "Review Course"
+                         : path.status === "in_progress"
+                         ? "Continue Learning"
+                         : "Start Course"}
+                       <ChevronRight className="h-4 w-4" />
+                     </motion.button>
                   </div>
                 </div>
               </motion.article>

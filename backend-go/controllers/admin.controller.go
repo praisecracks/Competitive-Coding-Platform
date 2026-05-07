@@ -242,6 +242,7 @@ type BroadcastNotificationRequest struct {
 	Message   string `json:"message" binding:"required"`
 	ActionURL string `json:"actionUrl"`
 	SendToAll bool   `json:"sendToAll"`
+	DryRun    bool   `json:"dryRun"` // Set to true to simulate broadcast without sending emails
 }
 
 // SendBroadcastNotification sends a notification to all users (email + in-app)
@@ -317,16 +318,57 @@ func SendBroadcastNotification(c *gin.Context) {
 </html>
 `, input.Title, logoHTML, input.Title, input.Message, actionButton)
 
-	// Send broadcast emails
-	if err := services.SendBroadcastEmail(input.Title, input.Message, htmlBody, input.ActionURL, input.SendToAll); err != nil {
+	// Handle dry run - create notifications only, no emails
+	if input.DryRun {
+		fmt.Printf(">>> BROADCAST DRY RUN: Creating notifications only for %s users\n", map[bool]string{true: "all", false: "opted-in"}[input.SendToAll])
+		
+		usersCollection := database.GetCollection("users")
+		ctx := context.Background()
+		filter := bson.M{}
+		if !input.SendToAll {
+			filter = bson.M{"email_notifications": true}
+		}
+		
+		cursor, err := usersCollection.Find(ctx, filter)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "FAILED_TO_FETCH_USERS"})
+			return
+		}
+		defer cursor.Close(ctx)
+		
+		var users []models.User
+		if err := cursor.All(ctx, &users); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "FAILED_TO_DECODE_USERS"})
+			return
+		}
+		
+		// Create notifications using shared service
+		notificationsCreated := services.CreateBroadcastNotifications(users, input.Title, input.Message)
+		
+		c.JSON(http.StatusOK, gin.H{
+			"message":            "Dry run completed - notifications created only",
+			"title":              input.Title,
+			"recipients":         len(users),
+			"notifications_created": notificationsCreated,
+			"emails_sent":        0,
+			"mode":               "dry_run",
+		})
+		return
+	}
+
+	// Normal broadcast: send emails + create notifications
+	stats, err := services.SendBroadcastEmail(input.Title, input.Message, htmlBody, input.ActionURL, input.SendToAll)
+	if err != nil {
 		fmt.Printf(">>> BROADCAST FAILED: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "BROADCAST_FAILED"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "BROADCAST_FAILED", "details": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Broadcast sent successfully",
-		"title":   input.Title,
-		"recipients": "all_users_with_email_notifications",
+		"message":              "Broadcast sent successfully",
+		"title":                input.Title,
+		"recipients":           map[bool]string{true: "all_users", false: "opted_in_users"}[input.SendToAll],
+		"mode":                 "production",
+		"stats":                stats,
 	})
 }

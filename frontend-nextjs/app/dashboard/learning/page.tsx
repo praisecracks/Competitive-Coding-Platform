@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -16,11 +16,12 @@ import {
   GraduationCap,
   ArrowRight,
 } from "lucide-react";
-import { LEARNING_TRACKS, ADDITIONAL_TRACKS } from "./data";
+ import { LEARNING_TRACKS, ADDITIONAL_TRACKS, LEARNING_PATHS } from "./data";
 import { useTheme } from "@/app/context/ThemeContext";
 import FeedbackFAB from "../../components/FeedbackFAB";
 import PageFooter from "@/app/components/PageFooter";
 import LearningStatsHub from "./components/LearningStatsHub";
+import { CelebrationOverlay } from "@/app/components/StreakCelebration";
 import { migrateLegacyProgress, TrackProgress } from "@/lib/learning-api";
 import {
   getUserProgressKey,
@@ -213,6 +214,26 @@ export default function LearningPage() {
     }
   });
 
+  // Track previous streak to detect increments
+  const prevStreakRef = useRef(streakData.currentStreak);
+
+  // Celebration state
+  const [celebration, setCelebration] = useState<{ type: "streak"; value: number } | null>(null);
+
+  // Called when celebration should be shown (called by parent or children)
+  const showStreakCelebration = useCallback((newStreak: number) => {
+    // Only show if streak actually increased
+    if (newStreak > prevStreakRef.current) {
+      setCelebration({ type: "streak", value: newStreak });
+      // Could also send to navbar notification system here
+      console.log("🔥 Streak increased to:", newStreak);
+    }
+  }, []);
+
+  const dismissCelebration = useCallback(() => {
+    setCelebration(null);
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState("");
 
   const allTracks = useMemo(
@@ -243,25 +264,52 @@ export default function LearningPage() {
     }
   };
 
-  useEffect(() => {
-    loadProgress();
+   useEffect(() => {
+     loadProgress();
 
-    const handleProgressUpdate = () => {
-      loadProgress();
-    };
+     const handleProgressUpdate = () => {
+       loadProgress();
+     };
 
-    window.addEventListener(
-      "codemaster-learning-updated",
-      handleProgressUpdate
-    );
+     window.addEventListener(
+       "codemaster-learning-updated",
+       handleProgressUpdate
+     );
 
-    return () => {
-      window.removeEventListener(
-        "codemaster-learning-updated",
-        handleProgressUpdate
-      );
-    };
-  }, []);
+     return () => {
+       window.removeEventListener(
+         "codemaster-learning-updated",
+         handleProgressUpdate
+       );
+     };
+   }, []);
+
+   // Detect streak increases and trigger celebration
+   useEffect(() => {
+     const currentStreak = streakData.currentStreak;
+     const prevStreak = prevStreakRef.current;
+     
+     if (currentStreak > prevStreak) {
+       // Streak increased!
+       showStreakCelebration(currentStreak);
+     }
+     
+     // Always update the ref
+     prevStreakRef.current = currentStreak;
+   }, [streakData.currentStreak, showStreakCelebration]);
+
+   // Also listen for custom event from topic page (for immediate feedback)
+   useEffect(() => {
+     const handleStreakUpdate = (e: Event) => {
+       const detail = (e as CustomEvent).detail;
+       if (detail?.streak) {
+         showStreakCelebration(detail.streak);
+       }
+     };
+
+     window.addEventListener("codemaster-streak-incremented", handleStreakUpdate);
+     return () => window.removeEventListener("codemaster-streak-incremented", handleStreakUpdate);
+   }, [showStreakCelebration]);
 
   const getTrackProgress = (track: (typeof allTracks)[number]) => {
     const trackProgress = trackProgressMap[track.id];
@@ -345,78 +393,84 @@ export default function LearningPage() {
     );
   }, [searchQuery, orderedTracks]);
 
-  const trackStats = useMemo(() => {
-    let totalTopics = 0;
-    let completedTopics = 0;
-    let completedLessons = 0;
-    let totalLessons = 0;
+   const trackStats = useMemo(() => {
+     let totalTopics = 0;
+     let completedTopics = 0;
+     let completedTrackLessons = 0;
+     let totalTrackLessons = 0;
 
-    allTracks.forEach((track) => {
-      const progress = trackProgressMap[track.id];
-      const completedTopicIds = progress?.completedTopicIds || [];
-      const completedLessonIds = progress?.completedLessonIds || [];
+     allTracks.forEach((track) => {
+       const progress = trackProgressMap[track.id];
+       const completedTopicIds = progress?.completedTopicIds || [];
+       const completedLessonIds = progress?.completedLessonIds || [];
 
-      totalTopics += track.topics.length;
+       totalTopics += track.topics.length;
 
-      track.topics.forEach((topic) => {
-        const topicLessons = topic.subtopics.length;
-        totalLessons += topicLessons;
+       track.topics.forEach((topic) => {
+         const topicLessons = topic.subtopics.length;
+         totalTrackLessons += topicLessons;
 
-        let topicCompletedLessons = 0;
+         let topicCompletedLessons = 0;
 
-        if (completedTopicIds.includes(topic.id)) {
-          completedTopics++;
-          topicCompletedLessons = topicLessons;
-        } else {
-          topic.subtopics.forEach((subtopic) => {
-            if (
-              progress?.lessonProgress?.[subtopic.id]?.completed ||
-              completedLessonIds.includes(subtopic.id)
-            ) {
-              topicCompletedLessons++;
-            }
-          });
-        }
+         if (completedTopicIds.includes(topic.id)) {
+           completedTopics++;
+           topicCompletedLessons = topicLessons;
+         } else {
+           topic.subtopics.forEach((subtopic) => {
+             if (
+               progress?.lessonProgress?.[subtopic.id]?.completed ||
+               completedLessonIds.includes(subtopic.id)
+             ) {
+               topicCompletedLessons++;
+             }
+           });
+         }
 
-        completedLessons += topicCompletedLessons;
-      });
-    });
+         completedTrackLessons += topicCompletedLessons;
+       });
+     });
 
-    const legacyLessonsCompleted = Object.values(
-      legacyProgress?.paths || {}
-    ).reduce((sum, p) => sum + (p.completedStepIds?.length || 0), 0);
+      const standaloneCompletedLessons = Object.values(
+        legacyProgress?.paths || {}
+      ).reduce((sum, p) => sum + (p.completedStepIds?.length || 0), 0);
 
-    const totalLessonsFromBoth = completedLessons + legacyLessonsCompleted;
-
-    const milestones = [
-      { count: 5, label: "5", iconName: "Sprout" },
-      { count: 10, label: "10", iconName: "BookOpen" },
-      { count: 15, label: "15", iconName: "Code2" },
-      { count: 20, label: "20", iconName: "Flame" },
-      { count: 25, label: "25", iconName: "Zap" },
-      { count: 30, label: "30", iconName: "Award" },
-      { count: 40, label: "40", iconName: "Gem" },
-      { count: 50, label: "50", iconName: "Crown" },
-    ];
-
-    const earnedMilestones = milestones
-      .filter((m) => totalLessonsFromBoth >= m.count)
-      .reverse();
-
-    const progressPercent =
-      totalLessons > 0
-        ? Math.round((completedLessons / totalLessons) * 100)
+      const standaloneTotalLessons = LEARNING_PATHS.length > 0
+        ? LEARNING_PATHS.reduce((sum, p) => sum + p.steps.length, 0)
         : 0;
 
-    return {
-      totalTopics,
-      completedTopics,
-      totalLessons,
-      totalLessonsCompleted: completedLessons,
-      progressPercent,
-      earnedMilestones,
-    };
-  }, [trackProgressMap, legacyProgress, allTracks]);
+     const totalLessonsFromBoth = completedTrackLessons + standaloneCompletedLessons;
+
+     const milestones = [
+       { count: 5, label: "5", iconName: "Sprout" },
+       { count: 10, label: "10", iconName: "BookOpen" },
+       { count: 15, label: "15", iconName: "Code2" },
+       { count: 20, label: "20", iconName: "Flame" },
+       { count: 25, label: "25", iconName: "Zap" },
+       { count: 30, label: "30", iconName: "Award" },
+       { count: 40, label: "40", iconName: "Gem" },
+       { count: 50, label: "50", iconName: "Crown" },
+     ];
+
+     const earnedMilestones = milestones
+       .filter((m) => totalLessonsFromBoth >= m.count)
+       .reverse();
+
+     const trackProgressPercent =
+       totalTrackLessons > 0
+         ? Math.round((completedTrackLessons / totalTrackLessons) * 100)
+         : 0;
+
+     return {
+       totalTopics,
+       completedTopics,
+       totalTrackLessons,
+       completedTrackLessons,
+       standaloneCompletedLessons,
+       standaloneTotalLessons,
+       trackProgressPercent,
+       earnedMilestones,
+     };
+   }, [trackProgressMap, legacyProgress, allTracks]);
 
   const continueLearning = useMemo(() => {
     const inProgressTrack = orderedTracks.find((track) => {
@@ -474,9 +528,16 @@ export default function LearningPage() {
     router.push("/dashboard/learning/explore");
   };
 
-  return (
-    <div className="space-y-7">
-      <section className="space-y-5">
+   return (
+     <div className="space-y-7">
+{/* Celebration Overlay */}
+        <CelebrationOverlay
+          celebration={celebration}
+          isLight={isLight}
+          onDismiss={dismissCelebration}
+        />
+
+       <section className="space-y-5">
         <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_680px] xl:items-start">
             <div>
@@ -546,15 +607,18 @@ export default function LearningPage() {
               lastCompletedDate={streakData.lastCompletedDate || undefined}
               completedTopics={trackStats.completedTopics}
               totalTopics={trackStats.totalTopics}
-              completedLessons={trackStats.totalLessonsCompleted}
-              totalLessons={trackStats.totalLessons}
-              progressPercent={trackStats.progressPercent}
+              trackCompletedLessons={trackStats.completedTrackLessons}
+              trackTotalLessons={trackStats.totalTrackLessons}
+              standaloneCompletedLessons={trackStats.standaloneCompletedLessons}
+              standaloneTotalLessons={trackStats.standaloneTotalLessons}
+              trackProgressPercent={trackStats.trackProgressPercent}
               earnedMilestones={trackStats.earnedMilestones}
               onContinueLearning={
                 continueLearning
                   ? () => router.push(continueLearning.href)
                   : undefined
               }
+              onStreakIncrease={showStreakCelebration}
             />
           </div>
 

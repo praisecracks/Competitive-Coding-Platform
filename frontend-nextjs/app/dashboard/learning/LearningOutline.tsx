@@ -113,8 +113,8 @@ export default function LearningOutline({
     }
   };
 
-   return (
-     <aside className="space-y-4 pb-10">
+    return (
+      <aside className="w-full xl:w-90 space-y-4 pb-10">
       <section
         className={`rounded-[28px] border p-5 sm:p-6 ${
           isLight

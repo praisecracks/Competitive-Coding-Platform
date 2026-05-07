@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -28,12 +28,15 @@ interface LearningStatsHubProps {
   streak: number;
   completedTopics: number;
   totalTopics: number;
-  completedLessons: number;
-  totalLessons: number;
-  progressPercent: number;
+  trackCompletedLessons: number;
+  trackTotalLessons: number;
+  standaloneCompletedLessons: number;
+  standaloneTotalLessons: number;
+  trackProgressPercent: number;
   earnedMilestones: Milestone[];
   lastCompletedDate?: string;
   onContinueLearning?: () => void;
+  onStreakIncrease?: (newStreak: number) => void;
 }
 
 type ActivePanel = "streak" | "progress" | "badges" | null;
@@ -65,14 +68,30 @@ export default function LearningStatsHub({
   streak,
   completedTopics,
   totalTopics,
-  completedLessons,
-  totalLessons,
-  progressPercent,
+  trackCompletedLessons,
+  trackTotalLessons,
+  standaloneCompletedLessons,
+  standaloneTotalLessons,
+  trackProgressPercent,
   earnedMilestones,
   lastCompletedDate,
   onContinueLearning,
+  onStreakIncrease,
 }: LearningStatsHubProps) {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  const prevStreakRef = useRef(streak);
+
+  // Combined lessons for badge calculation
+  const combinedCompletedLessons = trackCompletedLessons + standaloneCompletedLessons;
+  const combinedTotalLessons = trackTotalLessons + standaloneTotalLessons;
+
+  // Notify parent when streak increases
+  useEffect(() => {
+    if (streak > prevStreakRef.current) {
+      onStreakIncrease?.(streak);
+    }
+    prevStreakRef.current = streak;
+  }, [streak, onStreakIncrease]);
 
   const streakState = useMemo<StreakState>(() => {
     if (streak <= 0) return "empty";
@@ -117,11 +136,11 @@ export default function LearningStatsHub({
     },
   }[streakState];
 
-  const nextBadge =
-    badgeTargets.find((badge) => completedLessons < badge.count) ||
-    badgeTargets[badgeTargets.length - 1];
+   const nextBadge =
+     badgeTargets.find((badge) => combinedCompletedLessons < badge.count) ||
+     badgeTargets[badgeTargets.length - 1];
 
-  const lessonsToNextBadge = Math.max(nextBadge.count - completedLessons, 0);
+   const lessonsToNextBadge = Math.max(nextBadge.count - combinedCompletedLessons, 0);
 
   const cardBase = `group relative overflow-hidden rounded-2xl border p-3 text-left transition-all duration-300 ${
     isLight
@@ -271,69 +290,74 @@ export default function LearningStatsHub({
           </p>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setActivePanel("progress")}
-          className={cardBase}
-        >
-          <div className="absolute -right-5 -top-6 opacity-10">
-            <Target className="h-20 w-20" />
-          </div>
+           <button
+             type="button"
+             onClick={() => setActivePanel("progress")}
+             className={cardBase}
+           >
+             <div className="absolute -right-5 -top-6 opacity-10">
+               <Target className="h-20 w-20" />
+             </div>
 
-          <div className="flex items-start justify-between gap-3">
-            <div
-              className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                isLight
-                  ? "bg-emerald-100 text-emerald-500"
-                  : "bg-emerald-500/15 text-emerald-300"
-              }`}
-            >
-              <Target className="h-[18px] w-[18px]" />
-            </div>
+             <div className="flex items-start justify-between gap-2">
+               <div
+                 className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                   isLight
+                     ? "bg-emerald-100 text-emerald-500"
+                     : "bg-emerald-500/15 text-emerald-300"
+                 }`}
+               >
+                 <Target className="h-[18px] w-[18px]" />
+               </div>
 
-            <span
-              className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wide ${
-                isLight
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-emerald-500/10 text-emerald-300"
-              }`}
-            >
-              Level {Math.max(1, Math.floor(completedLessons / 10) + 1)}
-            </span>
-          </div>
+               <span
+                 className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wide ${
+                   isLight
+                     ? "bg-emerald-50 text-emerald-700"
+                     : "bg-emerald-500/10 text-emerald-300"
+                 }`}
+               >
+                 Level {Math.max(1, Math.floor(combinedCompletedLessons / 10) + 1)}
+               </span>
+             </div>
 
-          <p
-            className={`mt-3 text-[11px] font-bold uppercase tracking-wide ${
-              isLight ? "text-gray-700" : "text-gray-400"
-            }`}
-          >
-            Mission Progress
-          </p>
+             <p
+               className={`mt-3 text-[11px] font-bold uppercase tracking-wide ${
+                 isLight ? "text-gray-700" : "text-gray-400"
+               }`}
+             >
+               Mission Progress
+             </p>
 
-          <div className="mt-1 flex items-end gap-1.5">
-            <span className={`text-3xl font-black leading-none ${strongText}`}>
-              {progressPercent}%
-            </span>
-            <span className={`text-xs ${mutedText}`}>complete</span>
-          </div>
+             <div className="mt-1 flex items-end gap-1.5">
+               <span
+                 className={`text-3xl font-black leading-none ${strongText}`}
+               >
+                 {trackProgressPercent}%
+               </span>
+               <span className={`text-xs ${mutedText}`}>complete</span>
+             </div>
 
-          <div
-            className={`mt-3 h-2 overflow-hidden rounded-full ${
-              isLight ? "bg-gray-100" : "bg-white/10"
-            }`}
-          >
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 0.9, ease: "easeOut" }}
-              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-400"
-            />
-          </div>
+             <div
+               className={`mt-3 h-2 overflow-hidden rounded-full ${
+                 isLight ? "bg-gray-100" : "bg-white/10"
+               }`}
+             >
+               <motion.div
+                 initial={{ width: 0 }}
+                 animate={{ width: `${trackProgressPercent}%` }}
+                 transition={{ duration: 0.9, ease: "easeOut" }}
+                 className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-400"
+               />
+             </div>
 
-          <p className={`mt-3 text-[11px] leading-5 ${mutedText}`}>
-            {completedLessons}/{totalLessons} lessons completed.
-          </p>
-        </button>
+             <p className={`mt-3 text-[11px] leading-5 ${mutedText}`}>
+               {trackCompletedLessons}/{trackTotalLessons} track lessons.
+               {standaloneCompletedLessons > 0 && (
+                 <span> +{standaloneCompletedLessons} standalone.</span>
+               )}
+             </p>
+           </button>
 
         <button
           type="button"
@@ -532,38 +556,39 @@ export default function LearningStatsHub({
                   </>
                 )}
 
-                {activePanel === "progress" && (
-                  <>
-                    <div
-                      className={`rounded-xl border p-3 ${
-                        isLight
-                          ? "border-emerald-100 bg-emerald-50"
-                          : "border-emerald-500/10 bg-emerald-500/10"
-                      }`}
-                    >
-                      <p className={`text-xs leading-5 ${mutedText}`}>
-                        You have completed{" "}
-                        <strong>{completedLessons}</strong> out of{" "}
-                        <strong>{totalLessons}</strong> lessons and{" "}
-                        <strong>{completedTopics}</strong> out of{" "}
-                        <strong>{totalTopics}</strong> topics.
-                      </p>
-                    </div>
+                 {activePanel === "progress" && (
+                   <>
+                     <div
+                       className={`rounded-xl border p-3 ${
+                         isLight
+                           ? "border-emerald-100 bg-emerald-50"
+                           : "border-emerald-500/10 bg-emerald-500/10"
+                       }`}
+                     >
+                       <p className={`text-xs leading-5 ${mutedText}`}>
+                         You have completed <strong>{trackCompletedLessons}</strong> out of{" "}
+                         <strong>{trackTotalLessons}</strong> track lessons ({trackProgressPercent}%){" "}
+                         and <strong>{standaloneCompletedLessons}</strong> out of{" "}
+                         <strong>{standaloneTotalLessons}</strong> standalone course lessons.
+                         <br />
+                         <strong>{completedTopics}</strong> of <strong>{totalTopics}</strong> topics completed.
+                       </p>
+                     </div>
 
-                    <div
-                      className={`h-3 overflow-hidden rounded-full ${
-                        isLight ? "bg-gray-100" : "bg-white/10"
-                      }`}
-                    >
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progressPercent}%` }}
-                        transition={{ duration: 1 }}
-                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-400"
-                      />
-                    </div>
-                  </>
-                )}
+                     <div
+                       className={`h-3 overflow-hidden rounded-full ${
+                         isLight ? "bg-gray-100" : "bg-white/10"
+                       }`}
+                     >
+                       <motion.div
+                         initial={{ width: 0 }}
+                         animate={{ width: `${trackProgressPercent}%` }}
+                         transition={{ duration: 1 }}
+                         className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-400"
+                       />
+                     </div>
+                   </>
+                 )}
 
                 {activePanel === "badges" && (
                   <>
@@ -582,8 +607,8 @@ export default function LearningStatsHub({
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
-                      {badgeTargets.map((badge) => {
-                        const unlocked = completedLessons >= badge.count;
+                       {badgeTargets.map((badge) => {
+                         const unlocked = combinedCompletedLessons >= badge.count;
 
                         return (
                           <div
